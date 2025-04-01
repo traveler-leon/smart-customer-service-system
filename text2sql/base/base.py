@@ -67,7 +67,10 @@ import sqlparse
 from ..exceptions import DependencyError, ImproperlyConfigured, ValidationError
 from ..types import TrainingPlan, TrainingPlanItem
 from ..utils import validate_config_path
+from common.logging import get_logger
 
+# 获取text2sql模块的日志记录器
+logger = get_logger("text2sql.base")
 
 class VannaBase(ABC):
     def __init__(self, config=None):
@@ -80,9 +83,10 @@ class VannaBase(ABC):
         self.dialect = self.config.get("dialect", "SQL")
         self.language = self.config.get("language", None)
         self.max_tokens = self.config.get("max_tokens", 14000)
+        logger.info(f"初始化VannaBase，配置信息：dialect={self.dialect}, language={self.language}, max_tokens={self.max_tokens}")
 
     def log(self, message: str, title: str = "Info"):
-        print(f"{title}: {message}")
+        logger.info(f"{title}: {message}")
 
     def _response_language(self) -> str:
         if self.language is None:
@@ -117,52 +121,57 @@ class VannaBase(ABC):
         Returns:
             str: The SQL query that answers the question.
         """
-        if self.config is not None:
-            initial_prompt = self.config.get("initial_prompt", None)
-        else:
-            initial_prompt = None
-        question_sql_list = self.get_similar_question_sql(question, **kwargs)
-        ddl_list = self.get_related_ddl(question, **kwargs)
-        doc_list = self.get_related_documentation(question, **kwargs)
-        prompt = self.get_sql_prompt(
-            initial_prompt=initial_prompt,
-            question=question,
-            question_sql_list=question_sql_list,
-            ddl_list=ddl_list,
-            doc_list=doc_list,
-            **kwargs,
-        )
-        self.log(title="SQL Prompt", message=prompt)
-        llm_response = self.submit_prompt(prompt, **kwargs)
-        self.log(title="LLM Response", message=llm_response)
+        logger.info(f"开始生成SQL，问题：{question}")
+        try:
+            if self.config is not None:
+                initial_prompt = self.config.get("initial_prompt", None)
+            else:
+                initial_prompt = None
+            question_sql_list = self.get_similar_question_sql(question, **kwargs)
+            ddl_list = self.get_related_ddl(question, **kwargs)
+            doc_list = self.get_related_documentation(question, **kwargs)
+            prompt = self.get_sql_prompt(
+                initial_prompt=initial_prompt,
+                question=question,
+                question_sql_list=question_sql_list,
+                ddl_list=ddl_list,
+                doc_list=doc_list,
+                **kwargs,
+            )
+            self.log(title="SQL Prompt", message=prompt)
+            llm_response = self.submit_prompt(prompt, **kwargs)
+            self.log(title="LLM Response", message=llm_response)
 
-        if 'intermediate_sql' in llm_response:
-            if not allow_llm_to_see_data:
-                return "The LLM is not allowed to see the data in your database. Your question requires database introspection to generate the necessary SQL. Please set allow_llm_to_see_data=True to enable this."
+            if 'intermediate_sql' in llm_response:
+                if not allow_llm_to_see_data:
+                    return "The LLM is not allowed to see the data in your database. Your question requires database introspection to generate the necessary SQL. Please set allow_llm_to_see_data=True to enable this."
 
-            if allow_llm_to_see_data:
-                intermediate_sql = self.extract_sql(llm_response)
+                if allow_llm_to_see_data:
+                    intermediate_sql = self.extract_sql(llm_response)
 
-                try:
-                    self.log(title="Running Intermediate SQL", message=intermediate_sql)
-                    df = self.run_sql(intermediate_sql)
+                    try:
+                        self.log(title="Running Intermediate SQL", message=intermediate_sql)
+                        df = self.run_sql(intermediate_sql)
 
-                    prompt = self.get_sql_prompt(
-                        initial_prompt=initial_prompt,
-                        question=question,
-                        question_sql_list=question_sql_list,
-                        ddl_list=ddl_list,
-                        doc_list=doc_list+[f"The following is a pandas DataFrame with the results of the intermediate SQL query {intermediate_sql}: \n" + df.to_markdown()],
-                        **kwargs,
-                    )
-                    self.log(title="Final SQL Prompt", message=prompt)
-                    llm_response = self.submit_prompt(prompt, **kwargs)
-                    self.log(title="LLM Response", message=llm_response)
-                except Exception as e:
-                    return f"Error running intermediate SQL: {e}"
+                        prompt = self.get_sql_prompt(
+                            initial_prompt=initial_prompt,
+                            question=question,
+                            question_sql_list=question_sql_list,
+                            ddl_list=ddl_list,
+                            doc_list=doc_list+[f"The following is a pandas DataFrame with the results of the intermediate SQL query {intermediate_sql}: \n" + df.to_markdown()],
+                            **kwargs,
+                        )
+                        self.log(title="Final SQL Prompt", message=prompt)
+                        llm_response = self.submit_prompt(prompt, **kwargs)
+                        self.log(title="LLM Response", message=llm_response)
+                    except Exception as e:
+                        return f"Error running intermediate SQL: {e}"
 
 
-        return self.extract_sql(llm_response)
+            return self.extract_sql(llm_response)
+        except Exception as e:
+            logger.error(f"生成SQL失败：{str(e)}")
+            raise
 
     def extract_sql(self, llm_response: str) -> str:
         """
@@ -180,35 +189,39 @@ class VannaBase(ABC):
         Returns:
             str: The extracted SQL query.
         """
+        logger.debug(f"开始从LLM响应中提取SQL：{llm_response}")
+        try:
+            # If the llm_response contains a CTE (with clause), extract the last sql between WITH and ;
+            sqls = re.findall(r"\bWITH\b .*?;", llm_response, re.DOTALL)
+            if sqls:
+                sql = sqls[-1]
+                self.log(title="Extracted SQL", message=f"{sql}")
+                return sql
 
-        # If the llm_response contains a CTE (with clause), extract the last sql between WITH and ;
-        sqls = re.findall(r"\bWITH\b .*?;", llm_response, re.DOTALL)
-        if sqls:
-            sql = sqls[-1]
-            self.log(title="Extracted SQL", message=f"{sql}")
-            return sql
+            # If the llm_response is not markdown formatted, extract last sql by finding select and ; in the response
+            sqls = re.findall(r"SELECT.*?;", llm_response, re.DOTALL)
+            if sqls:
+                sql = sqls[-1]
+                self.log(title="Extracted SQL", message=f"{sql}")
+                return sql
 
-        # If the llm_response is not markdown formatted, extract last sql by finding select and ; in the response
-        sqls = re.findall(r"SELECT.*?;", llm_response, re.DOTALL)
-        if sqls:
-            sql = sqls[-1]
-            self.log(title="Extracted SQL", message=f"{sql}")
-            return sql
+            # If the llm_response contains a markdown code block, with or without the sql tag, extract the last sql from it
+            sqls = re.findall(r"```sql\n(.*)```", llm_response, re.DOTALL)
+            if sqls:
+                sql = sqls[-1]
+                self.log(title="Extracted SQL", message=f"{sql}")
+                return sql
 
-        # If the llm_response contains a markdown code block, with or without the sql tag, extract the last sql from it
-        sqls = re.findall(r"```sql\n(.*)```", llm_response, re.DOTALL)
-        if sqls:
-            sql = sqls[-1]
-            self.log(title="Extracted SQL", message=f"{sql}")
-            return sql
+            sqls = re.findall(r"```(.*)```", llm_response, re.DOTALL)
+            if sqls:
+                sql = sqls[-1]
+                self.log(title="Extracted SQL", message=f"{sql}")
+                return sql
 
-        sqls = re.findall(r"```(.*)```", llm_response, re.DOTALL)
-        if sqls:
-            sql = sqls[-1]
-            self.log(title="Extracted SQL", message=f"{sql}")
-            return sql
-
-        return llm_response
+            return llm_response
+        except Exception as e:
+            logger.error(f"提取SQL失败：{str(e)}")
+            raise
 
     def is_sql_valid(self, sql: str) -> bool:
         """
@@ -225,14 +238,18 @@ class VannaBase(ABC):
         Returns:
             bool: True if the SQL query is valid, False otherwise.
         """
+        logger.debug(f"验证SQL有效性：{sql}")
+        try:
+            parsed = sqlparse.parse(sql)
 
-        parsed = sqlparse.parse(sql)
+            for statement in parsed:
+                if statement.get_type() == 'SELECT':
+                    return True
 
-        for statement in parsed:
-            if statement.get_type() == 'SELECT':
-                return True
-
-        return False
+            return False
+        except Exception as e:
+            logger.error(f"SQL验证失败：{str(e)}")
+            return False
 
     def should_generate_chart(self, df: pd.DataFrame) -> bool:
         """
@@ -751,6 +768,7 @@ class VannaBase(ABC):
         warehouse: Union[str, None] = None,
         **kwargs
     ):
+        logger.info(f"正在连接到Snowflake数据库：account={account}, database={database}")
         try:
             snowflake = __import__("snowflake.connector")
         except ImportError:
@@ -822,6 +840,7 @@ class VannaBase(ABC):
         self.dialect = "Snowflake SQL"
         self.run_sql = run_sql_snowflake
         self.run_sql_is_set = True
+        logger.info("Snowflake数据库连接成功")
 
     def connect_to_sqlite(self, url: str, check_same_thread: bool = False,  **kwargs):
         """
@@ -890,7 +909,7 @@ class VannaBase(ABC):
             password (str): The postgres password.
             port (int): The postgres Port.
         """
-
+        logger.info(f"正在连接到PostgreSQL数据库：host={host}, dbname={dbname}")
         try:
             import psycopg2
             import psycopg2.extras
@@ -986,6 +1005,7 @@ class VannaBase(ABC):
         self.dialect = "PostgreSQL"
         self.run_sql_is_set = True
         self.run_sql = run_sql_postgres
+        logger.info("PostgreSQL数据库连接成功")
 
 
     def connect_to_mysql(
@@ -1645,23 +1665,20 @@ class VannaBase(ABC):
       self.run_sql = run_sql_hive
 
     def run_sql(self, sql: str, **kwargs) -> pd.DataFrame:
-        """
-        Example:
-        ```python
-        vn.run_sql("SELECT * FROM my_table")
-        ```
+        logger.info(f"执行SQL查询：{sql}")
+        try:
+            if self.run_sql_is_set is False:
+                print(
+                    "If you want to run the SQL query, connect to a database first."
+                )
+                raise Exception("Please connect to a database first.")
 
-        Run a SQL query on the connected database.
-
-        Args:
-            sql (str): The SQL query to run.
-
-        Returns:
-            pd.DataFrame: The results of the SQL query.
-        """
-        raise Exception(
-            "You need to connect to a database first by running vn.connect_to_snowflake(), vn.connect_to_postgres(), similar function, or manually set vn.run_sql"
-        )
+            df = self.run_sql(sql)
+            logger.debug(f"SQL查询结果行数：{len(df)}")
+            return df
+        except Exception as e:
+            logger.error(f"SQL执行失败：{str(e)}")
+            raise
 
     def ask(
         self,
@@ -1678,103 +1695,85 @@ class VannaBase(ABC):
         ],
         None,
     ]:
-        """
-        **Example:**
-        ```python
-        vn.ask("What are the top 10 customers by sales?")
-        ```
-
-        Ask Vanna.AI a question and get the SQL query that answers it.
-
-        Args:
-            question (str): The question to ask.
-            print_results (bool): Whether to print the results of the SQL query.
-            auto_train (bool): Whether to automatically train Vanna.AI on the question and SQL query.
-            visualize (bool): Whether to generate plotly code and display the plotly figure.
-
-        Returns:
-            Tuple[str, pd.DataFrame, plotly.graph_objs.Figure]: The SQL query, the results of the SQL query, and the plotly figure.
-        """
-
-        if question is None:
-            question = input("Enter a question: ")
-
+        logger.info(f"处理用户问题：{question}")
         try:
+            if question is None:
+                question = input("Enter a question: ")
+
             sql = self.generate_sql(question=question, allow_llm_to_see_data=allow_llm_to_see_data)
-        except Exception as e:
-            print(e)
-            return None, None, None
+            if print_results:
+                try:
+                    Code = __import__("IPython.display", fromList=["Code"]).Code
+                    display(Code(sql))
+                except Exception as e:
+                    print(sql)
 
-        if print_results:
+            if self.run_sql_is_set is False:
+                print(
+                    "If you want to run the SQL query, connect to a database first."
+                )
+                if print_results:
+                    return None
+                else:
+                    return sql, None, None
+
             try:
-                Code = __import__("IPython.display", fromList=["Code"]).Code
-                display(Code(sql))
+                df = self.run_sql(sql)
+
+                if print_results:
+                    try:
+                        display = __import__(
+                            "IPython.display", fromList=["display"]
+                        ).display
+                        display(df)
+                    except Exception as e:
+                        print(df)
+
+                if len(df) > 0 and auto_train:
+                    self.add_question_sql(question=question, sql=sql)
+                # Only generate plotly code if visualize is True
+                if visualize:
+                    try:
+                        plotly_code = self.generate_plotly_code(
+                            question=question,
+                            sql=sql,
+                            df_metadata=f"Running df.dtypes gives:\n {df.dtypes}",
+                        )
+                        fig = self.get_plotly_figure(plotly_code=plotly_code, df=df)
+                        if print_results:
+                            try:
+                                display = __import__(
+                                    "IPython.display", fromlist=["display"]
+                                ).display
+                                Image = __import__(
+                                    "IPython.display", fromlist=["Image"]
+                                ).Image
+                                img_bytes = fig.to_image(format="png", scale=2)
+                                display(Image(img_bytes))
+                            except Exception as e:
+                                fig.show()
+                    except Exception as e:
+                        # Print stack trace
+                        traceback.print_exc()
+                        print("Couldn't run plotly code: ", e)
+                        if print_results:
+                            return None
+                        else:
+                            return sql, df, None
+                else:
+                    return sql, df, None
+
             except Exception as e:
-                print(sql)
-
-        if self.run_sql_is_set is False:
-            print(
-                "If you want to run the SQL query, connect to a database first."
-            )
-
-            if print_results:
-                return None
-            else:
-                return sql, None, None
-
-        try:
-            df = self.run_sql(sql)
-
-            if print_results:
-                try:
-                    display = __import__(
-                        "IPython.display", fromList=["display"]
-                    ).display
-                    display(df)
-                except Exception as e:
-                    print(df)
-
-            if len(df) > 0 and auto_train:
-                self.add_question_sql(question=question, sql=sql)
-            # Only generate plotly code if visualize is True
-            if visualize:
-                try:
-                    plotly_code = self.generate_plotly_code(
-                        question=question,
-                        sql=sql,
-                        df_metadata=f"Running df.dtypes gives:\n {df.dtypes}",
-                    )
-                    fig = self.get_plotly_figure(plotly_code=plotly_code, df=df)
-                    if print_results:
-                        try:
-                            display = __import__(
-                                "IPython.display", fromlist=["display"]
-                            ).display
-                            Image = __import__(
-                                "IPython.display", fromlist=["Image"]
-                            ).Image
-                            img_bytes = fig.to_image(format="png", scale=2)
-                            display(Image(img_bytes))
-                        except Exception as e:
-                            fig.show()
-                except Exception as e:
-                    # Print stack trace
-                    traceback.print_exc()
-                    print("Couldn't run plotly code: ", e)
-                    if print_results:
-                        return None
-                    else:
-                        return sql, df, None
-            else:
-                return sql, df, None
-
+                print("Couldn't run sql: ", e)
+                if print_results:
+                    return None
+                else:
+                    return sql, None, None
+            logger.info("问题处理完成")
+            return sql, df, fig
         except Exception as e:
-            print("Couldn't run sql: ", e)
-            if print_results:
-                return None
-            else:
-                return sql, None, None
-        return sql, df, fig
+            logger.error(f"问题处理失败：{str(e)}")
+            raise
 
     def train(
         self,
@@ -1784,52 +1783,39 @@ class VannaBase(ABC):
         documentation: str = None,
         plan: TrainingPlan = None,
     ) -> str:
-        """
-        **Example:**
-        ```python
-        vn.train()
-        ```
+        logger.info("开始训练模型")
+        try:
+            if question and not sql:
+                raise ValidationError("Please also provide a SQL query")
 
-        Train Vanna.AI on a question and its corresponding SQL query.
-        If you call it with no arguments, it will check if you connected to a database and it will attempt to train on the metadata of that database.
-        If you call it with the sql argument, it's equivalent to [`vn.add_question_sql()`][vanna.base.base.VannaBase.add_question_sql].
-        If you call it with the ddl argument, it's equivalent to [`vn.add_ddl()`][vanna.base.base.VannaBase.add_ddl].
-        If you call it with the documentation argument, it's equivalent to [`vn.add_documentation()`][vanna.base.base.VannaBase.add_documentation].
-        Additionally, you can pass a [`TrainingPlan`][vanna.types.TrainingPlan] object. Get a training plan with [`vn.get_training_plan_generic()`][vanna.base.base.VannaBase.get_training_plan_generic].
+            if documentation:
+                print("Adding documentation....")
+                return self.add_documentation(documentation)
 
-        Args:
-            question (str): The question to train on.
-            sql (str): The SQL query to train on.
-            ddl (str):  The DDL statement.
-            documentation (str): The documentation to train on.
-            plan (TrainingPlan): The training plan to train on.
-        """
+            if sql:
+                if question is None:
+                    question = self.generate_question(sql)
+                    print("Question generated with sql:", question, "\nAdding SQL...")
+                return self.add_question_sql(question=question, sql=sql)
 
-        if question and not sql:
-            raise ValidationError("Please also provide a SQL query")
+            if ddl:
+                print("Adding ddl:", ddl)
+                return self.add_ddl(ddl)
 
-        if documentation:
-            print("Adding documentation....")
-            return self.add_documentation(documentation)
+            if plan:
+                for item in plan._plan:
+                    if item.item_type == TrainingPlanItem.ITEM_TYPE_DDL:
+                        self.add_ddl(item.item_value)
+                    elif item.item_type == TrainingPlanItem.ITEM_TYPE_IS:
+                        self.add_documentation(item.item_value)
+                    elif item.item_type == TrainingPlanItem.ITEM_TYPE_SQL:
+                        self.add_question_sql(question=item.item_name, sql=item.item_value)
 
-        if sql:
-            if question is None:
-                question = self.generate_question(sql)
-                print("Question generated with sql:", question, "\nAdding SQL...")
-            return self.add_question_sql(question=question, sql=sql)
-
-        if ddl:
-            print("Adding ddl:", ddl)
-            return self.add_ddl(ddl)
-
-        if plan:
-            for item in plan._plan:
-                if item.item_type == TrainingPlanItem.ITEM_TYPE_DDL:
-                    self.add_ddl(item.item_value)
-                elif item.item_type == TrainingPlanItem.ITEM_TYPE_IS:
-                    self.add_documentation(item.item_value)
-                elif item.item_type == TrainingPlanItem.ITEM_TYPE_SQL:
-                    self.add_question_sql(question=item.item_name, sql=item.item_value)
+            logger.info("模型训练完成")
+            return "Training completed successfully"
+        except Exception as e:
+            logger.error(f"模型训练失败：{str(e)}")
+            raise
 
     def _get_databases(self) -> List[str]:
         try:
