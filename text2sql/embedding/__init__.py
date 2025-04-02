@@ -5,6 +5,6 @@
 默认支持基于OpenAI兼容接口的实现，可无缝切换不同供应商。
 """
 
-from .openai import OpenaiEmbedding
+from .qwen_model import QwenEmbedding
 
-__all__ = ['OpenaiEmbedding'] 
+__all__ = ['QwenEmbedding'] 

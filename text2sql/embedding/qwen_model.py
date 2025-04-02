@@ -8,7 +8,7 @@ from common.logging import get_logger
 # 获取日志记录器
 logger = get_logger("text2sql.embedding.openai")
 
-class OpenaiEmbedding(AsyncEmbeddingProvider):
+class QwenEmbedding(AsyncEmbeddingProvider):
     """基于OpenAI兼容接口的嵌入模型提供者
     
     支持多种兼容OpenAI API的厂商，包括：
@@ -75,7 +75,7 @@ class OpenaiEmbedding(AsyncEmbeddingProvider):
             embedding = response.data[0].embedding
             tokens_used = getattr(response.usage, "total_tokens", 0)
             logger.debug(f"成功生成嵌入向量，维度: {len(embedding)}，使用token: {tokens_used}")
-            return embedding
+            return {"embedding":embedding,"tokens_used":tokens_used}
             
         except Exception as e:
             logger.error(f"嵌入生成过程中发生错误: {str(e)}", exc_info=True)

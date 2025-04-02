@@ -1,7 +1,7 @@
 import asyncio
 import asyncpg
 import pandas as pd
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from ..base.interfaces import AsyncDBConnector
 
@@ -15,6 +15,13 @@ class PostgresqlConnector(AsyncDBConnector):
         self.database = self.config.get("database", "postgres")
         self.user = self.config.get("user", "postgres")
         self.password = self.config.get("password", "")
+        
+        # 添加连接池配置参数
+        self.min_size = self.config.get("min_size", 5)
+        self.max_size = self.config.get("max_size", 10)
+        self.max_inactive_time = self.config.get("max_inactive_time", 300.0)
+        self.max_queries = self.config.get("max_queries", 50000)
+        
         self.conn = None
         self.pool = None
     
@@ -28,6 +35,10 @@ class PostgresqlConnector(AsyncDBConnector):
                 database=self.database,
                 user=self.user,
                 password=self.password,
+                min_size=self.min_size,
+                max_size=self.max_size,
+                max_inactive_connection_lifetime=self.max_inactive_time,
+                max_queries=self.max_queries,
                 **kwargs
             )
         return self.pool
@@ -38,31 +49,44 @@ class PostgresqlConnector(AsyncDBConnector):
             await self.pool.close()
             self.pool = None
     
-    async def run_sql(self, sql: str, **kwargs) -> pd.DataFrame:
-        """异步执行SQL查询"""
+    async def run_sql(self, sql: str, **kwargs) -> Union[pd.DataFrame, Dict[str, Any]]:
+        """
+        异步执行SQL查询
+        成功时返回DataFrame，失败时返回包含错误信息的字典
+        """
         if not self.pool:
             await self.connect()
         
-        async with self.pool.acquire() as conn:
-            # 异步执行查询
-            stmt = await conn.prepare(sql)
-            rows = await stmt.fetch()
-            
-            # 获取列名
-            columns = [desc.name for desc in stmt.get_attributes()]
-            
-            # 转换为字典列表
-            results = []
-            for row in rows:
-                results.append({columns[i]: row[i] for i in range(len(columns))})
+        try:
+            async with self.pool.acquire() as conn:
+                # 异步执行查询
+                stmt = await conn.prepare(sql)
+                rows = await stmt.fetch()
+                
+                # 获取列名
+                columns = [desc.name for desc in stmt.get_attributes()]
+                
+                # 转换为字典列表
+                results = []
+                for row in rows:
+                    results.append({columns[i]: row[i] for i in range(len(columns))})
         
-        # 使用pandas处理结果
-        loop = asyncio.get_event_loop()
-        df = await loop.run_in_executor(
-            None, lambda: pd.DataFrame(results)
-        )
-        
-        return df
+            # 使用pandas处理结果
+            loop = asyncio.get_event_loop()
+            df = await loop.run_in_executor(
+                None, lambda: pd.DataFrame(results)
+            )
+            
+            return df
+        except Exception as e:
+            # 捕获异常并返回错误信息
+            error_message = f"SQL执行错误: {str(e)}"
+            return {
+                "error": True,
+                "message": error_message,
+                "exception_type": type(e).__name__,
+                "sql": sql
+            }
     
     async def get_schema(self, **kwargs) -> str:
         """异步获取数据库模式"""
