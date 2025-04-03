@@ -52,16 +52,12 @@ class QwenEmbedding(AsyncEmbeddingProvider):
     
     async def generate_embedding(self, data: str, **kwargs) -> List[float]:
         """异步生成文本嵌入向量"""
-        self._ensure_client()
-        
-        # 从kwargs或config获取嵌入模型
-        model = kwargs.get("embedding_model", self.embedding_model)
-        
+        self._ensure_client()        
         try:
             # 可能的额外参数
             dimensions = kwargs.get("dimensions", None)
             request_args = {
-                "model": model,
+                "model": self.embedding_model,
                 "input": data,
                 "encoding_format": "float"
             }

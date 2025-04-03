@@ -1,5 +1,4 @@
 import json
-import asyncio
 import chromadb
 from typing import List, Dict, Any, Optional
 from chromadb.config import Settings
@@ -26,13 +25,13 @@ class ChromadbStorage(AsyncVectorStore):
         self.n_results_ddl = self.config.get("n_results_ddl", self.config.get("n_results", 10))
         
         # 向量搜索配置
-        self.similarity_metric = self.config.get("similarity_metric", "cosine")  # 可选: cosine, l2, ip
-        self.hnsw_config = self.config.get("hnsw_config", {
+        hnsw_default = {
             "M": 16,                # 每个节点的最大出边数，增加可提高精度但降低速度
-            "efConstruction": 100,  # 建立索引时考虑的邻居数，增加可提高精度但降低建立速度
-            "ef": 50                # 查询时考虑的邻居数，增加可提高查询精度但降低查询速度
-        })
-        
+            "construction_ef": 100,  # 建立索引时考虑的邻居数，增加可提高精度但降低建立速度
+            "search_ef": 50,         # 查询时考虑的邻居数，增加可提高查询精度但降低查询速度
+            "space": "cosine"        # 向量空间距离计算方式，可选: cosine, l2, ip
+        } 
+        self.hnsw_config = self.config.get("hnsw_config", hnsw_default)
         # 嵌入提供者
         self.embedding_provider = embedding_provider
         
@@ -49,9 +48,9 @@ class ChromadbStorage(AsyncVectorStore):
         # 向量搜索配置参数
         return {
             "hnsw:M": self.hnsw_config["M"],
-            "hnsw:efConstruction": self.hnsw_config["efConstruction"],
-            "hnsw:ef": self.hnsw_config["ef"],
-            "hnsw:space": self.similarity_metric,
+            "hnsw:construction_ef": self.hnsw_config["construction_ef"],
+            "hnsw:search_ef": self.hnsw_config["search_ef"],
+            "hnsw:space": self.hnsw_config["space"],
             **(self.collection_metadata or {})
         }
     
@@ -90,8 +89,6 @@ class ChromadbStorage(AsyncVectorStore):
     async def close(self) -> None:
         """关闭ChromaDB客户端"""
         if self.client:
-            # AsyncClientAPI应该有close方法
-            await self.client.close()
             self.client = None
         logger.info("ChromaDB客户端已关闭")
     
@@ -99,10 +96,12 @@ class ChromadbStorage(AsyncVectorStore):
         """使用嵌入提供者生成嵌入向量"""
         if not self.embedding_provider:
             raise ValueError("未配置嵌入提供者，无法生成嵌入向量")
-        return await self.embedding_provider.generate_embedding(data, **kwargs)
-    
+        res = await self.embedding_provider.generate_embedding(data, **kwargs)
+
+        return res["embedding"]
     async def add_question_sql(self, question: str, sql: str, **kwargs) -> str:
         """异步添加问题和SQL的映射"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info(f"添加问题SQL映射: {question[:30]}...")
         
         question_sql_json = json.dumps(
@@ -115,12 +114,12 @@ class ChromadbStorage(AsyncVectorStore):
         # 生成ID
         id = deterministic_uuid(question_sql_json) + "-sql"
         # 添加到集合 - 使用嵌入提供者生成嵌入
-        embeddings = await self.generate_embedding(question_sql_json, **kwargs)
+        embeddings = await self.generate_embedding(question, **kwargs)
         await self.sql_collection.add(
-            documents=[question_sql_json],
+            documents=[question],
             embeddings=[embeddings],
             ids=[id],
-            metadatas=[{"type": "question_sql"}]
+            metadatas=[{"type":"sql-qa","detail": sql}]
         )
         
         logger.info(f"问题SQL映射添加成功, ID: {id}")
@@ -128,6 +127,7 @@ class ChromadbStorage(AsyncVectorStore):
     
     async def add_ddl(self, ddl: str, **kwargs) -> str:
         """异步添加DDL语句"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info(f"添加DDL: {ddl[:30]}...")
         
         # 生成ID
@@ -139,7 +139,7 @@ class ChromadbStorage(AsyncVectorStore):
             documents=[ddl],
             embeddings=[embeddings],
             ids=[id],
-            metadatas=[{"type": "ddl"}]
+            metadatas=[{"type": "table-ddl"}]
         )
         
         logger.info(f"DDL添加成功, ID: {id}")
@@ -147,6 +147,7 @@ class ChromadbStorage(AsyncVectorStore):
     
     async def add_documentation(self, documentation: str, **kwargs) -> str:
         """异步添加文档"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info(f"添加文档: {documentation[:30]}...")
         
         # 生成ID
@@ -158,7 +159,7 @@ class ChromadbStorage(AsyncVectorStore):
             documents=[documentation],
             embeddings=[embeddings],
             ids=[id],
-            metadatas=[{"type": "documentation"}]
+            metadatas=[{"type": "table-documentation"}]
         )
         
         logger.info(f"文档添加成功, ID: {id}")
@@ -166,62 +167,51 @@ class ChromadbStorage(AsyncVectorStore):
     
     async def get_training_data(self, **kwargs) -> pd.DataFrame:
         """异步获取训练数据"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info("获取训练数据...")
         df = pd.DataFrame()
         
         # 获取SQL数据
         sql_data = await self.sql_collection.get()
         if sql_data is not None:
-            # 数据处理是CPU操作，可以保持为同步
-            documents = [json.loads(doc) for doc in sql_data["documents"]]
-            ids = sql_data["ids"]
-            
-            # 创建DataFrame
             df_sql = pd.DataFrame({
-                "id": ids,
-                "question": [doc["question"] for doc in documents],
-                "content": [doc["sql"] for doc in documents],
+                "id": sql_data["ids"],
+                "question": sql_data["documents"],
+                "content": [meta["detail"] for meta in sql_data["metadatas"]],
+                "training_data_type":[meta["type"] for meta in sql_data["metadatas"]],
             })
-            df_sql["training_data_type"] = "sql"
             df = pd.concat([df, df_sql])
-        
         # 获取DDL数据
         ddl_data = await self.ddl_collection.get()
         if ddl_data is not None:
-            documents = [doc for doc in ddl_data["documents"]]
-            ids = ddl_data["ids"]
-            
             df_ddl = pd.DataFrame({
-                "id": ids,
-                "question": [None for doc in documents],
-                "content": [doc for doc in documents],
+                "id": ddl_data["ids"],
+                "question": [None for doc in ddl_data["documents"]],
+                "content": ddl_data["documents"],
+                "training_data_type":[meta["type"] for meta in ddl_data["metadatas"]],
             })
-            df_ddl["training_data_type"] = "ddl"
             df = pd.concat([df, df_ddl])
-        
         # 获取文档数据
         doc_data = await self.documentation_collection.get()
         if doc_data is not None:
-            documents = [doc for doc in doc_data["documents"]]
-            ids = doc_data["ids"]
-            
             df_doc = pd.DataFrame({
-                "id": ids,
-                "question": [None for doc in documents],
-                "content": [doc for doc in documents],
+                "id": doc_data["ids"],
+                "question": [None for doc in doc_data["documents"]],
+                "content": doc_data["documents"],
+                "training_data_type":[meta["type"] for meta in doc_data["metadatas"]],
             })
-            df_doc["training_data_type"] = "documentation"
             df = pd.concat([df, df_doc])
         
-        logger.info(f"获取到 {len(df)} 条训练数据")
         return df
 
     async def remove_training_data(self, id: str, **kwargs) -> bool:
         """异步移除训练数据"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info(f"移除训练数据: {id}")
         
         if id.endswith("-sql"):
             await self.sql_collection.delete(ids=[id])
+            return True
             return True
         elif id.endswith("-ddl"):
             await self.ddl_collection.delete(ids=[id])
@@ -234,6 +224,7 @@ class ChromadbStorage(AsyncVectorStore):
 
     async def remove_collection(self, collection_name: str) -> bool:
         """异步重置集合"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info(f"重置集合: {collection_name}")
         
         if collection_name == "sql-sql":
@@ -265,61 +256,79 @@ class ChromadbStorage(AsyncVectorStore):
         """从查询结果中提取文档 - 纯数据处理，保持同步"""
         if query_results is None:
             return []
-
+        print(f"query_results:{query_results}")
         if "documents" in query_results:
-            documents = query_results["documents"]
-
-            if len(documents) == 1 and isinstance(documents[0], list):
-                try:
-                    documents = [json.loads(doc) for doc in documents[0]]
-                except Exception:
-                    return documents[0]
-
-            return documents
-        
+            documents = query_results["documents"][0]
+            metadata = query_results["metadatas"][0]
+            res = []
+            try:
+                if metadata[0]["type"]== "sql-qa":
+                    res = [{"question":q,"sql":a['detail']} for q,a in zip(documents,metadata)]
+                    print("res:",res)
+                    return res
+            except Exception:
+                return documents
+        return documents
         return []
 
     async def get_similar_question_sql(self, question: str, **kwargs) -> list:
         """异步获取类似问题的SQL"""
-        logger.info(f"查询类似问题SQL: {question[:30]}...")
-        n_results = kwargs.get("n_results_sql", self.n_results_sql)
-        
+        await self.ensure_connection()  # 确保连接有效
+        logger.info(f"查询类似问题SQL: {question[:30]}...")        
         # 使用嵌入提供者生成嵌入
-        embeddings = await self.generate_embedding(question, **kwargs)
+        embedding = await self.generate_embedding(question, **kwargs)
         
         results = await self.sql_collection.query(
-            query_embeddings=[embeddings],
-            n_results=n_results
+            query_embeddings=[embedding],
+            n_results=self.n_results_sql
         )
         
         return self._extract_documents(results)
     
     async def get_related_ddl(self, question: str, **kwargs) -> list:
         """异步获取相关DDL语句"""
-        logger.info(f"查询相关DDL: {question[:30]}...")
-        n_results = kwargs.get("n_results_ddl", self.n_results_ddl)
-        
+        await self.ensure_connection()  # 确保连接有效
+        logger.info(f"查询相关DDL: {question[:30]}...")        
         # 使用嵌入提供者生成嵌入
         embeddings = await self.generate_embedding(question, **kwargs)
         
         results = await self.ddl_collection.query(
             query_embeddings=[embeddings],
-            n_results=n_results
+            n_results=self.n_results_ddl
         )
         
         return self._extract_documents(results)
     
     async def get_related_documentation(self, question: str, **kwargs) -> list:
         """异步获取相关文档"""
+        await self.ensure_connection()  # 确保连接有效
         logger.info(f"查询相关文档: {question[:30]}...")
-        n_results = kwargs.get("n_results_documentation", self.n_results_documentation)
         
         # 使用嵌入提供者生成嵌入
         embeddings = await self.generate_embedding(question, **kwargs)
         
         results = await self.documentation_collection.query(
             query_embeddings=[embeddings],
-            n_results=n_results
+            n_results=self.n_results_documentation
         )
         
         return self._extract_documents(results)
+
+    async def check_health(self) -> bool:
+        """检查ChromaDB连接健康状态"""
+        try:
+            if self.client:
+                res = await self.client.heartbeat()
+                logger.debug(f"ChromaDB心跳检测成功: {res}")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"ChromaDB心跳检测失败: {str(e)}")
+            return False
+
+    async def ensure_connection(self) -> None:
+        """确保连接有效，如果无效则重新连接"""
+        if not self.client or not await self.check_health():
+            logger.warning("ChromaDB连接不可用，尝试重新连接")
+            await self.close()  # 关闭可能的无效连接
+            await self.initialize()  # 重新初始化连接
