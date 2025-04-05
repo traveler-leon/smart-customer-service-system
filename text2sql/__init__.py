@@ -24,39 +24,43 @@ async def create_text2sql(config: Optional[Dict[str, Any]] = None):
         # 默认配置
         config = {
             "llm": {
-                "type": "qianwen",
-                "temperature": 0.7,
-                "api_key": "your_qianwen_api_key"
+                "type": "qwen",  # 使用已实现的千问模型
+                "api_key": "sk-2e8c1dd4f75a44bf8114b337a91",  # 替换为您的API密钥
+                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",  # 百炼服务的base_url
+                "model": "qwen2.5-72b-instruct"  # 使用千问2.5-72B模型
             },
             "storage": {
                 "type": "chromadb",
-                "host": "localhost",
+                "host": "116.198.252.198",
                 "port": 8000,
-                "similarity_metric": "cosine",  # 相似度度量方式: cosine, l2, ip
+                "n_results": 5,
                 "hnsw_config": {
-                    "M": 16,               # 图中每个节点的连接数
-                    "efConstruction": 100, # 构建索引时的精度参数
-                    "ef": 50               # 搜索时的精度参数
-                },
-                "n_results": 10,          # 默认返回结果数量
-                "n_results_sql": 5,       # SQL查询返回结果数量
-                "n_results_ddl": 3,       # DDL查询返回结果数量
-                "n_results_documentation": 15 # 文档查询返回结果数量
+                    "M": 16,                  # 每个节点的最大出边数
+                    "construction_ef": 100,   # 建立索引时考虑的邻居数
+                    "search_ef": 50,          # 查询时考虑的邻居数
+                    "space": "cosine"         # 向量空间距离计算方式
+                }
             },
             "db": {
-                "type": "sqlite",
-                "path": ":memory:"
+                "type": "postgresql",
+                "host": "localhost",
+                "port": 5432,
+                "database": "xtron",  # 使用默认数据库
+                "user": "postgres",
+                "password": "942413L_eon",
+                "min_size": 2,
+                "max_size": 5
             },
             "middlewares": [
-                {"type": "cache", "max_size": 100, "ttl": 3600}
+                {"type": "cache", "max_size": 10, "ttl": 60}  # 小缓存以便于测试
             ],
-            "dialect": "SQL",
+            "dialect": "PostgreSQL",
             "language": "zh",
             "embedding": {
-                "type": "openai",
-                "api_key": "sk-zcewmhyhkaelmhrijbipqbrlfxhwnfbuegcpynkhdbzkqixd",
-                "base_url": "https://api.siliconflow.cn/v1",  # 硅流API的base_url
-                "embedding_model": "BAAI/bge-large-zh-v1.5"  # 使用BGE中文嵌入模型
+                "type": "qwen",  # 使用已实现的嵌入模型
+                "api_key": "sk-2e8c1dd4f75a44bf8114b337a549",  # 请使用您的实际API密钥
+                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                "embedding_model": "text-embedding-v3"
             }
         }
     

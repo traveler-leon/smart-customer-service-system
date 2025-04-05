@@ -1,7 +1,11 @@
 import asyncio
 from typing import List, Dict, Any, Optional, Union
+
+import pandas as pd
 from common.logging import get_logger
 from .interfaces import AsyncLLMProvider, AsyncVectorStore, AsyncDBConnector, AsyncMiddleware, AsyncEmbeddingProvider
+import time
+from datetime import datetime
 
 # 获取日志记录器
 logger = get_logger("text2sql.base")
@@ -35,6 +39,8 @@ class AsyncSmartSqlBase:
         # 创建连接池和初始化其他资源
         if self.db_connector:
             await self.db_connector.connect()
+        if self.vector_store:
+            await self.vector_store.initialize()
         logger.info("AsyncSmartSqlBase组件初始化完成")
     
     async def shutdown(self) -> None:
@@ -44,9 +50,12 @@ class AsyncSmartSqlBase:
             await self.db_connector.close()
         logger.info("AsyncSmartSqlBase资源关闭完成")
     
-    async def generate_embedding(self, text: str, **kwargs) -> List[float]:
-        """异步生成文本嵌入向量"""
-        return await self.embedding_provider.generate_embedding(text, **kwargs)
+    async def generate_embedding(self, data: str, **kwargs) -> List[float]:
+        """使用嵌入提供者生成嵌入向量"""
+        if not self.embedding_provider:
+            raise ValueError("未配置嵌入提供者，无法生成嵌入向量")
+        res = await self.embedding_provider.generate_embedding(data, **kwargs)
+        return res["embedding"]
     
     async def generate_sql(self, question: str, allow_llm_to_see_data=False, **kwargs) -> str:
         """异步生成SQL查询"""
@@ -56,6 +65,14 @@ class AsyncSmartSqlBase:
         request = {'question': question, 'kwargs': kwargs}
         for middleware in self.middlewares:
             request = await middleware.process_request(request)
+        
+        # 检查中间件是否返回了缓存结果
+        if '__cached_result' in request:
+            cached_result = request['__cached_result']
+            # 返回SQL和缓存状态
+            if isinstance(cached_result, dict) and 'sql' in cached_result:
+                return cached_result['sql'], True  # True表示来自缓存
+            return cached_result, True
         
         question = request['question']
         kwargs = request['kwargs']
@@ -73,7 +90,7 @@ class AsyncSmartSqlBase:
             )
             
             # 构建提示
-            logger.debug("构建SQL提示")
+            # logger.debug("构建SQL提示") 
             prompt = await self._get_sql_prompt(
                 question=question,
                 question_sql_list=question_sql_list,
@@ -81,22 +98,35 @@ class AsyncSmartSqlBase:
                 doc_list=doc_list,
                 **kwargs
             )
-            
+            logger.info(f"构建SQL提示结束: {prompt}")
             # 调用异步LLM
-            logger.debug("调用LLM生成回答")
+            logger.info("调用LLM生成回答")
             llm_response = await self.llm_provider.submit_prompt(prompt, **kwargs)
-            logger.debug(f"LLM回答: {llm_response}")
+            logger.info(f"LLM回答: {llm_response}")
             
             # 处理中间SQL(如果需要数据库内省)
             if 'intermediate_sql' in llm_response and allow_llm_to_see_data:
                 intermediate_sql = await self._extract_sql(llm_response)
                 logger.info(f"执行中间SQL进行数据探索: {intermediate_sql}")
                 try:
-                    df = await self.db_connector.run_sql(intermediate_sql)
-                    # 构建新提示包含数据结果
-                    updated_doc_list = doc_list + [
-                        f"The following is a pandas DataFrame with the results of the intermediate SQL query {intermediate_sql}: \n" + df.to_markdown()
-                    ]
+                    result = await self.db_connector.run_sql(intermediate_sql)
+                    if isinstance(result, dict) and result.get('error'):
+                        # 处理错误情况
+                        error_msg = result.get('message', '未知错误')
+                        logger.error(f"执行中间SQL失败: {error_msg}")
+                        result =  f"运行 intermediate SQL出错: {error_msg}"
+
+                    # 确认是DataFrame后再使用
+                    df = result
+                    if isinstance(df, pd.DataFrame):
+                        updated_doc_list = doc_list + [
+                            f"下面是intermediate SQL查询结果: \n" + df.to_markdown()
+                        ]
+                    else:
+                        updated_doc_list = doc_list + [
+                            f"下面是intermediate SQL查询结果: \n" + df
+                        ]
+
                     prompt = await self._get_sql_prompt(
                         question=question,
                         question_sql_list=question_sql_list,
@@ -113,12 +143,31 @@ class AsyncSmartSqlBase:
             sql = await self._extract_sql(llm_response)
             logger.info(f"提取的最终SQL: {sql}")
             
-            # 应用响应中间件
+            # 准备响应对象，包含原始问题和参数以便中间件处理
             response = sql
+            
+            # 为中间件添加必要信息
+            if isinstance(response, dict):
+                response['__original_question'] = question
+                response['__original_kwargs'] = kwargs
+            elif isinstance(response, str):
+                # 如果是字符串结果，我们需要包装它
+                response = {
+                    'sql': response,
+                    '__original_question': question,
+                    '__original_kwargs': kwargs
+                }
+            
+            # 应用响应中间件
             for middleware in self.middlewares:
                 response = await middleware.process_response(response)
             
-            return response
+            # 如果结果被包装成了字典，但原始期望是字符串，需要解包
+            if isinstance(response, dict) and 'sql' in response and not isinstance(sql, dict):
+                return response['sql'], False
+            
+            # 返回生成的SQL和缓存状态(非缓存)
+            return sql, False
         except Exception as e:
             # 异步处理异常
             logger.error(f"SQL生成失败: {str(e)}", exc_info=True)
@@ -127,51 +176,50 @@ class AsyncSmartSqlBase:
             raise
     
     async def _get_sql_prompt(self, question, question_sql_list, ddl_list, doc_list, **kwargs):
-        """异步构建SQL生成提示"""
-        # 根据配置构建系统提示
+        # 初始提示设置
         initial_prompt = self.config.get("initial_prompt", None)
-        system_prompt = []
+        if initial_prompt is None:
+            initial_prompt = f"你是一个{self.dialect}专家。请根据给定上下文生成SQL查询来回答问题。"
         
-        if initial_prompt:
-            system_prompt.append(initial_prompt)
+        # 按区段添加内容
+        prompt = initial_prompt
         
-        system_prompt.append(f"你是一个SQL专家，精通{self.dialect}方言。")
-        
-        if self.language:
-            system_prompt.append(f"请使用{self.language}语言回答。")
-        
-        # 构建用户提示
-        user_prompt = [f"问题: {question}\n\n"]
-        
-        # 添加类似问题的SQL
-        if question_sql_list:
-            user_prompt.append("这里是一些类似问题及其SQL:\n")
-            for item in question_sql_list:
-                if isinstance(item, dict) and 'question' in item and 'sql' in item:
-                    user_prompt.append(f"问题: {item['question']}\nSQL: {item['sql']}\n")
-                elif isinstance(item, str):
-                    user_prompt.append(f"{item}\n")
-        
-        # 添加相关DDL
+        # 添加DDL信息（限制token）
         if ddl_list:
-            user_prompt.append("\n数据库模式定义:\n")
+            prompt += "\n===表结构(table schema)\n\n"
             for ddl in ddl_list:
-                user_prompt.append(f"{ddl}\n")
+                if self._estimate_tokens(prompt) + self._estimate_tokens(ddl) < self.max_tokens:
+                    prompt += f"{ddl}\n\n"
         
-        # 添加相关文档
+        # 添加文档信息（限制token）
         if doc_list:
-            user_prompt.append("\n相关文档:\n")
+            prompt += "\n===附加上下文\n\n"
             for doc in doc_list:
-                user_prompt.append(f"{doc}\n")
+                if self._estimate_tokens(prompt) + self._estimate_tokens(doc) < self.max_tokens:
+                    prompt += f"{doc}\n\n"
         
-        # 添加最终指令
-        user_prompt.append("\n请为此问题生成SQL查询。只需返回SQL代码，不要包含解释。")
+        # 添加响应指南
+        prompt += (
+            "\n===响应指南\n"
+            "1. 如果提供的上下文足够，请直接生成有效的SQL查询，不需要解释。\n"
+            "2. 如果上下文几乎足够但需要了解特定列中的值，请生成中间SQL查询查找该列中的不同值。在查询前加注释说明intermediate_sql\n"
+            "3. 如果上下文不足，请解释为什么无法生成。\n"
+            "4. 请使用最相关的表。\n"
+            "5. 如果问题之前被问过，请精确复制之前的答案。\n"
+            f"6. 确保输出的SQL符合{self.dialect}语法并可执行。\n"
+        )
         
         # 创建消息格式
-        messages = [
-            {"role": "system", "content": "\n".join(system_prompt)},
-            {"role": "user", "content": "\n".join(user_prompt)}
-        ]
+        messages = [{"role": "system", "content": prompt}]
+        
+        # 添加示例问答对
+        for example in question_sql_list:
+            if isinstance(example, dict) and "question" in example and "sql" in example:
+                messages.append({"role": "user", "content": example["question"]})
+                messages.append({"role": "assistant", "content": example["sql"]})
+        
+        # 添加当前问题
+        messages.append({"role": "user", "content": question})
         
         return messages
     
@@ -179,30 +227,154 @@ class AsyncSmartSqlBase:
         """异步从LLM响应中提取SQL"""
         import re
         
+        # 处理不同格式的LLM响应
+        if isinstance(llm_response, dict) and "content" in llm_response:
+            llm_response_text = llm_response["content"]
+        elif isinstance(llm_response, str):
+            llm_response_text = llm_response
+        else:
+            logger.warning(f"无法识别的LLM响应格式: {type(llm_response)}")
+            return llm_response  # 返回原始响应
+        
         # 尝试各种模式提取SQL
         # 1. WITH CTE模式
-        sqls = re.findall(r"\bWITH\b .*?;", llm_response, re.DOTALL)
+        sqls = re.findall(r"\bWITH\b .*?;", llm_response_text, re.DOTALL)
         if sqls:
+            logger.debug(f"从WITH CTE模式提取SQL: {sqls[-1]}")
             return sqls[-1]
         
         # 2. SELECT语句
-        sqls = re.findall(r"SELECT.*?;", llm_response, re.DOTALL)
+        sqls = re.findall(r"SELECT.*?;", llm_response_text, re.DOTALL)
         if sqls:
+            logger.debug(f"从SELECT语句提取SQL: {sqls[-1]}")
             return sqls[-1]
         
         # 3. 代码块(带SQL标签)
-        sqls = re.findall(r"```sql\n(.*?)```", llm_response, re.DOTALL)
+        sqls = re.findall(r"```sql\n(.*?)```", llm_response_text, re.DOTALL)
         if sqls:
+            logger.debug("从SQL代码块提取SQL")
             return sqls[-1].strip()
         
         # 4. 一般代码块
-        sqls = re.findall(r"```(.*?)```", llm_response, re.DOTALL)
+        sqls = re.findall(r"```(.*?)```", llm_response_text, re.DOTALL)
         if sqls:
+            logger.debug("从一般代码块提取SQL")
             return sqls[-1].strip()
         
         # 5. 如果没有匹配，返回原始响应
+        logger.warning("无法从LLM响应中提取SQL，返回原始响应")
         return llm_response
     
     async def run_sql(self, sql: str, **kwargs):
         """异步执行SQL查询"""
         return await self.db_connector.run_sql(sql, **kwargs)
+
+    def _estimate_tokens(self, text):
+        """估算文本的token数量"""
+        return len(text) / 4  # 简单估算
+
+    async def ask(self, question: str, **kwargs) -> Dict[str, Any]:
+        # 标记是否使用了缓存结果
+        used_cache = False
+        
+        try:
+            # 使用generate_sql获取SQL (可能来自缓存)
+            sql, used_cache = await self.generate_sql(question=question, **kwargs)
+            
+            sql_result = {
+                'sql': sql,
+                'data': None
+            }
+            
+            # 执行SQL
+            result = await self.db_connector.run_sql(sql)
+            
+            # 检查SQL执行结果
+            if isinstance(result, dict) and result.get('error'):
+                # SQL执行错误，如果是缓存结果则清除
+                if used_cache:
+                    # 调用缓存清理方法
+                    await self._clear_cache_for_question(question)
+                    logger.warning(f"清除问题的错误SQL缓存: {question}")
+                
+                sql_result['data'] = result
+            else:
+                sql_result['data'] = result.to_dict(orient='records')
+            
+            return sql_result
+        except Exception as e:
+            logger.error(f"问答处理失败: {str(e)}", exc_info=True)
+            return {
+                'error': str(e),
+                'sql': None,
+                'data': None,
+            }
+
+    async def train(
+        self,
+        training_data: Union[Dict[str, Any], List[Dict[str, Any]]] = None,
+        mode: str = "incremental",  # 差异化训练模式
+        source: str = "user",      # 标记训练数据来源
+        feedback_data: Dict[str, Any] = None,  # 用户反馈数据
+        **kwargs
+    ) -> Dict[str, Any]:
+        """增强的异步训练接口
+        Args:
+            training_data: 单条或多条训练数据 
+        Returns:
+            训练结果信息
+        """
+        results = {'success': [], 'failed': [], 'status': 'completed'}
+    
+        # 确保training_data是列表
+        if not isinstance(training_data, list):
+            training_data = [training_data]
+        
+        for item in training_data:
+            try:
+                if 'documentation' in item:
+                    doc_id = await self.vector_store.add_documentation(
+                        item['documentation'], 
+                        metadata={'source': source, 'timestamp': time.time()}
+                    )
+                    results['success'].append({'type': 'documentation', 'id': doc_id})
+                    
+                elif 'ddl' in item:
+                    ddl_id = await self.vector_store.add_ddl(
+                        item['ddl'],
+                        metadata={'source': source, 'timestamp': time.time()}
+                    )
+                    results['success'].append({'type': 'ddl', 'id': ddl_id})
+                    
+                elif 'question' in item and 'sql' in item:
+                    # 保存问题-SQL对和向量嵌入
+                    pair_id = await self.vector_store.add_question_sql(
+                        question=item['question'],
+                        sql=item['sql'],
+                        metadata={
+                            'source': source, 
+                            'timestamp': time.time(),
+                            'tags': item.get('tags', [])
+                        }
+                    )
+                    results['success'].append({'type': 'question_sql', 'id': pair_id})
+                    
+                else:
+                    results['failed'].append({
+                        'item': item,
+                        'reason': '未识别的训练数据类型'
+                    })
+            except Exception as e:
+                logger.error(f"训练项目失败: {str(e)}", exc_info=True)
+                results['failed'].append({
+                    'item': item,
+                    'reason': str(e)
+                })
+        
+        return results
+
+    async def _clear_cache_for_question(self, question: str):
+        """清除指定问题的缓存"""
+        for middleware in self.middlewares:
+            if hasattr(middleware, 'clear_cache'):
+                await middleware.clear_cache(question)

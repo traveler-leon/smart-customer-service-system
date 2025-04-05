@@ -61,14 +61,7 @@ class AsyncStorageFactory:
         
         try:
             module_path = f"..storage.{storage_type.lower()}"
-            
-            # 根据存储类型确定类名
-            if storage_type.lower() == "chromadb":
-                class_name = "ChromadbStorage"
-            else:
-                # 默认类名格式
-                class_name = f"{storage_type.capitalize()}Storage"
-            
+            class_name = f"{storage_type.capitalize()}Storage"
             # 动态导入模块
             module = importlib.import_module(module_path, package="text2sql.base")
             
@@ -138,18 +131,18 @@ class AsyncSmartSqlFactory:
         
         # 配置提取
         llm_config = config.get("llm", {})
-        llm_type = llm_config.pop("type", "qianwen")
+        llm_type = llm_config.pop("type", "qwen")
         
         # 新增嵌入模型配置提取
         embedding_config = config.get("embedding", {})
         # 如果没有独立配置嵌入模型，默认使用与LLM相同的提供商
-        embedding_type = embedding_config.pop("type", llm_type)
+        embedding_type = embedding_config.pop("type", "qwen")
         
         storage_config = config.get("storage", {})
         storage_type = storage_config.pop("type", "chromadb")
         
         db_config = config.get("db", {})
-        db_type = db_config.pop("type", "sqlite")
+        db_type = db_config.pop("type", "postgres")
         
         # 首先创建嵌入提供者，因为存储器需要它
         embedding_provider = await AsyncEmbeddingFactory.create(embedding_type, embedding_config)

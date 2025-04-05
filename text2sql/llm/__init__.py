@@ -1,3 +1,3 @@
-from .qwen_llm import QwenLLM
+from .qwen import QwenLLM
 
 __all__ = ["QwenLLM"]

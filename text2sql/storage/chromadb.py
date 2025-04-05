@@ -97,8 +97,8 @@ class ChromadbStorage(AsyncVectorStore):
         if not self.embedding_provider:
             raise ValueError("未配置嵌入提供者，无法生成嵌入向量")
         res = await self.embedding_provider.generate_embedding(data, **kwargs)
-
         return res["embedding"]
+    
     async def add_question_sql(self, question: str, sql: str, **kwargs) -> str:
         """异步添加问题和SQL的映射"""
         await self.ensure_connection()  # 确保连接有效
@@ -256,7 +256,6 @@ class ChromadbStorage(AsyncVectorStore):
         """从查询结果中提取文档 - 纯数据处理，保持同步"""
         if query_results is None:
             return []
-        print(f"query_results:{query_results}")
         if "documents" in query_results:
             documents = query_results["documents"][0]
             metadata = query_results["metadatas"][0]
@@ -264,7 +263,6 @@ class ChromadbStorage(AsyncVectorStore):
             try:
                 if metadata[0]["type"]== "sql-qa":
                     res = [{"question":q,"sql":a['detail']} for q,a in zip(documents,metadata)]
-                    print("res:",res)
                     return res
             except Exception:
                 return documents
@@ -274,7 +272,7 @@ class ChromadbStorage(AsyncVectorStore):
     async def get_similar_question_sql(self, question: str, **kwargs) -> list:
         """异步获取类似问题的SQL"""
         await self.ensure_connection()  # 确保连接有效
-        logger.info(f"查询类似问题SQL: {question[:30]}...")        
+        # logger.info(f"查询类似问题SQL: {question[:30]}...")        
         # 使用嵌入提供者生成嵌入
         embedding = await self.generate_embedding(question, **kwargs)
         
@@ -282,13 +280,15 @@ class ChromadbStorage(AsyncVectorStore):
             query_embeddings=[embedding],
             n_results=self.n_results_sql
         )
+        res = self._extract_documents(results)
+        logger.info(f"查询类似问题SQL结果如下：: {res}")
         
-        return self._extract_documents(results)
+        return res
     
     async def get_related_ddl(self, question: str, **kwargs) -> list:
         """异步获取相关DDL语句"""
         await self.ensure_connection()  # 确保连接有效
-        logger.info(f"查询相关DDL: {question[:30]}...")        
+        # logger.info(f"查询相关DDL: {question[:30]}...")        
         # 使用嵌入提供者生成嵌入
         embeddings = await self.generate_embedding(question, **kwargs)
         
@@ -296,13 +296,14 @@ class ChromadbStorage(AsyncVectorStore):
             query_embeddings=[embeddings],
             n_results=self.n_results_ddl
         )
-        
-        return self._extract_documents(results)
+        res = self._extract_documents(results)
+        logger.info(f"查询相关DDL结果如下：: {res}")
+        return res
     
     async def get_related_documentation(self, question: str, **kwargs) -> list:
         """异步获取相关文档"""
         await self.ensure_connection()  # 确保连接有效
-        logger.info(f"查询相关文档: {question[:30]}...")
+        # logger.info(f"查询相关文档: {question[:30]}...")
         
         # 使用嵌入提供者生成嵌入
         embeddings = await self.generate_embedding(question, **kwargs)
@@ -311,8 +312,9 @@ class ChromadbStorage(AsyncVectorStore):
             query_embeddings=[embeddings],
             n_results=self.n_results_documentation
         )
-        
-        return self._extract_documents(results)
+        res = self._extract_documents(results)
+        logger.info(f"查询相关文档结果如下：: {res}")
+        return res
 
     async def check_health(self) -> bool:
         """检查ChromaDB连接健康状态"""
