@@ -1,0 +1,15 @@
+[project]
+name = "smart-customer-service-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.21.0",
+    "asyncio>=3.4.3",
+    "asyncpg>=0.30.0",
+    "chromadb>=0.6.3",
+    "chromadb-client>=0.6.3",
+    "openai>=1.70.0",
+    "pandas>=2.2.3",
+]
