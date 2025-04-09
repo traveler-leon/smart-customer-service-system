@@ -5,11 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiohttp>=3.11.16",
     "aiosqlite>=0.21.0",
     "asyncio>=3.4.3",
     "asyncpg>=0.30.0",
     "chromadb>=0.6.3",
     "chromadb-client>=0.6.3",
+    "langchain-openai>=0.3.12",
+    "langgraph>=0.3.25",
     "openai>=1.70.0",
     "pandas>=2.2.3",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
 ]
