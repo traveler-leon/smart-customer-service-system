@@ -11,6 +11,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "chromadb>=0.6.3",
     "chromadb-client>=0.6.3",
+    "langchain-community>=0.3.21",
     "langchain-openai>=0.3.12",
     "langgraph>=0.3.25",
     "openai>=1.70.0",

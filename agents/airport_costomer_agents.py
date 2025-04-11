@@ -193,41 +193,41 @@ def check_question_completeness(state: State, config: RunnableConfig) -> Command
     Returns:
         更新后的状态对象，包含问题分析结果和可能的澄清问题
     """
-    tmp_msg = filter_messages(state)
-    if state.get("question_clarification"):
-    question_analysis_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "你是一个语言结构分析专家。你的任务是分析用户问题的语言结构完整性，判断是否存在语法或结构上的缺失。"
-            "请检查用户问题是否缺少主语、谓语、宾语、定语等关键语法成分，导致表达不清或意图模糊。"
-            "如果用户的问题在语言结构上不完整（如缺少主语、谓语等），请生成一个简短、礼貌的澄清问题，引导用户补充缺失的语法成分。"
-            "如果用户的问题在语言结构上已经完整，表达清晰，请直接确认问题完整性，无需额外澄清。"
-            "注意：你只需关注语言结构本身的完整性，而非具体业务内容的详尽程度。"
-        ),
-        ("placeholder", "user_question:{user_question}"),
-    ])
+    # tmp_msg = filter_messages(state)
+    # if state.get("question_clarification"):
+    # question_analysis_prompt = ChatPromptTemplate.from_messages(
+    # [
+    #     (
+    #         "system",
+    #         "你是一个语言结构分析专家。你的任务是分析用户问题的语言结构完整性，判断是否存在语法或结构上的缺失。"
+    #         "请检查用户问题是否缺少主语、谓语、宾语、定语等关键语法成分，导致表达不清或意图模糊。"
+    #         "如果用户的问题在语言结构上不完整（如缺少主语、谓语等），请生成一个简短、礼貌的澄清问题，引导用户补充缺失的语法成分。"
+    #         "如果用户的问题在语言结构上已经完整，表达清晰，请直接确认问题完整性，无需额外澄清。"
+    #         "注意：你只需关注语言结构本身的完整性，而非具体业务内容的详尽程度。"
+    #     ),
+    #     ("placeholder", "user_question:{user_question}"),
+    # ])
 
-    question_runnable = question_analysis_prompt | base_model.bind_tools([question_clarification])
-    # 使用prompt_template处理消息
-    messages = tmp_msg.get("messages", [])
-    response = question_runnable.invoke({"messages": messages})
-    if len(response.tool_calls) == 0:
-        return Command(
-            update={
-                'messages':[response],
-            },
-            goto="__end__"
-        )
-    else:
-        return Command(
-            update={
-                'messages':[response],
-                'question_clarification': response.tool_calls[-1]['args']['question'],
-                'clarification_needed': True
-            },
-            goto="__end__"
-        )
+    # question_runnable = question_analysis_prompt | base_model.bind_tools([question_clarification])
+    # # 使用prompt_template处理消息
+    # messages = tmp_msg.get("messages", [])
+    # response = question_runnable.invoke({"messages": messages})
+    # if len(response.tool_calls) == 0:
+    #     return Command(
+    #         update={
+    #             'messages':[response],
+    #         },
+    #         goto="__end__"
+    #     )
+    # else:
+    #     return Command(
+    #         update={
+    #             'messages':[response],
+    #             'question_clarification': response.tool_calls[-1]['args']['question'],
+    #             'clarification_needed': True
+    #         },
+    #         goto="__end__"
+    #     )
 
 
 
