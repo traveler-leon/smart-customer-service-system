@@ -7,12 +7,15 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph,START,END
 from langgraph.graph import MessagesState
 from langchain_core.runnables.config import RunnableConfig
-from typing import Dict, Annotated
+from typing import Dict, Annotated,List
 from langgraph.checkpoint.memory import MemorySaver
 from datetime import datetime
 from tools import airport_knowledge_query,flight_info_query,question_clarification
 from langgraph.types import Command
 from typing_extensions import TypedDict, Literal
+from langgraph.prebuilt import ToolNode, tools_condition
+from pydantic import BaseModel,Field
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -36,12 +39,22 @@ class State(MessagesState):
     user_base_info: Annotated[dict, dict_merge] = {}
     user_profile_info: Annotated[dict, dict_merge] = {}
 
-    user_question: str
-    question_clarification:str
-    clarification_needed: bool = False
+    user_question:str
+    similarity_context:List
+    similarity_questions:List[str]
+    next_question:List[str]
 
 
-
+class SimilarityQuestions(BaseModel):
+    """
+    根据文档总结出用户可能问的问题
+    """
+    similarity_questions:List[str] = Field(description="问题列表")
+class NextQuestion(BaseModel):
+    """
+    根据文档总结出下一步用户可能问的问题
+    """
+    next_question:List[str] = Field(description="问题列表")
 
 # 将 filter_messages 函数移动到这里
 def filter_messages(state: Dict, nb_messages: int = 10) -> Dict:
@@ -106,14 +119,18 @@ def router_sub_agent(state: State) -> State:
     if len(state["messages"][-1].tool_calls) == 0:
         return END
     elif state["messages"][-1].tool_calls[-1]['name'] == "flight_info_query":
-        return "flight_info_assistant"
+        return "flight_info_query_node"
     elif state["messages"][-1].tool_calls[-1]['name'] == "airport_knowledge_query":
-        return "airport_knowledge_assistant"
-        
+        return "airport_knowledge_query_node"
+
+
+
+airport_assistant_tool_node = ToolNode(tools=[airport_knowledge_query])
+flight_assistant_tool_node = ToolNode(tools=[flight_info_query])
 
 
 identify_model = base_model.bind_tools([flight_info_query,airport_knowledge_query])
-def identify_intent(state: State, config: RunnableConfig) -> Command[Literal["flight_info_assistant","airport_knowledge_assistant","__end__"]]:
+def identify_intent(state: State, config: RunnableConfig):
     """
     识别用户意图的节点函数
     
@@ -149,31 +166,31 @@ def identify_intent(state: State, config: RunnableConfig) -> Command[Literal["fl
     response = chain.invoke({"messages": messages})
 
 
-    if len(response.tool_calls) == 0:
-        return Command(
-            update={
-                'messages':[response],
-            },
-            goto="__end__"
-        )
-    elif response.tool_calls[-1]['name'] == "flight_info_query":
-        return Command(
-            update={
-                'messages':[response],
-                'user_question': response.tool_calls[-1]['args']['question']
-            },
-            goto="flight_info_assistant"
-        )
-    elif response.tool_calls[-1]['name'] == "airport_knowledge_query":
-        return Command(
-            update={
-                'messages':[response],
-                'user_question': response.tool_calls[-1]['args']['question']
-            },
-            goto="airport_knowledge_assistant"
-        )
+    # if len(response.tool_calls) == 0:
+    #     return Command(
+    #         update={
+    #             'messages':[response],
+    #         },
+    #         goto="__end__"
+    #     )
+    # elif response.tool_calls[-1]['name'] == "flight_info_query":
+    #     return Command(
+    #         update={
+    #             'messages':[response],
+    #             'user_question': response.tool_calls[-1]['args']['question']
+    #         },
+    #         goto="flight_assistant_tool_node"
+    #     )
+    # elif response.tool_calls[-1]['name'] == "airport_knowledge_query":
+    #     return Command(
+    #         update={
+    #             'messages':[response],
+    #             'user_question': response.tool_calls[-1]['args']['question']
+    #         },
+    #         goto="airport_assistant_tool_node"
+    #     )
     
-    # return {"messages": [response]}
+    return {"messages": [response]}
 
 
 
@@ -193,41 +210,43 @@ def check_question_completeness(state: State, config: RunnableConfig) -> Command
     Returns:
         更新后的状态对象，包含问题分析结果和可能的澄清问题
     """
-    # tmp_msg = filter_messages(state)
-    # if state.get("question_clarification"):
-    # question_analysis_prompt = ChatPromptTemplate.from_messages(
-    # [
-    #     (
-    #         "system",
-    #         "你是一个语言结构分析专家。你的任务是分析用户问题的语言结构完整性，判断是否存在语法或结构上的缺失。"
-    #         "请检查用户问题是否缺少主语、谓语、宾语、定语等关键语法成分，导致表达不清或意图模糊。"
-    #         "如果用户的问题在语言结构上不完整（如缺少主语、谓语等），请生成一个简短、礼貌的澄清问题，引导用户补充缺失的语法成分。"
-    #         "如果用户的问题在语言结构上已经完整，表达清晰，请直接确认问题完整性，无需额外澄清。"
-    #         "注意：你只需关注语言结构本身的完整性，而非具体业务内容的详尽程度。"
-    #     ),
-    #     ("placeholder", "user_question:{user_question}"),
-    # ])
+    tmp_msg = filter_messages(state)
+    if not state.get("question_clarification","") and not state.get("clarification_needed",False):
+        question_analysis_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "你是一个语言结构分析专家。你的任务是分析用户问题的语言结构完整性，判断是否存在语法或结构上的缺失。"
+                "请检查用户问题是否缺少主语、谓语、宾语、定语等关键语法成分，导致表达不清或意图模糊。"
+                "如果用户的问题在语言结构上不完整（如缺少主语、谓语等），请生成一个简短、礼貌的澄清问题，引导用户补充缺失的语法成分。"
+                "如果用户的问题在语言结构上已经完整，表达清晰，请直接确认问题完整性，无需额外澄清。"
+                "注意：你只需关注语言结构本身的完整性，而非具体业务内容的详尽程度。"
+            ),
+            ("placeholder", "user_question:{user_question}"),
+        ])
 
-    # question_runnable = question_analysis_prompt | base_model.bind_tools([question_clarification])
-    # # 使用prompt_template处理消息
-    # messages = tmp_msg.get("messages", [])
-    # response = question_runnable.invoke({"messages": messages})
-    # if len(response.tool_calls) == 0:
-    #     return Command(
-    #         update={
-    #             'messages':[response],
-    #         },
-    #         goto="__end__"
-    #     )
-    # else:
-    #     return Command(
-    #         update={
-    #             'messages':[response],
-    #             'question_clarification': response.tool_calls[-1]['args']['question'],
-    #             'clarification_needed': True
-    #         },
-    #         goto="__end__"
-    #     )
+        question_runnable = question_analysis_prompt | base_model.bind_tools([question_clarification])
+        # 使用prompt_template处理消息
+        messages = tmp_msg.get("messages", [])
+        response = question_runnable.invoke({"messages": messages})
+        if len(response.tool_calls) == 0:
+            return Command(
+                update={
+                    'messages':[response],
+                },
+                goto="__end__"
+            )
+        else:
+            return Command(
+                update={
+                    'messages':[response],
+                    'question_clarification': response.tool_calls[-1]['args']['question'],
+                    'clarification_needed': True
+                },
+                goto="__end__"
+            )
+
+
 
 
 
@@ -257,11 +276,61 @@ def airport_knowledge_assistant(state: State, config: RunnableConfig) -> State:
     Args:
     """
     print("机场知识助手")
-    return {**state,"messages":[]}
+    return state
+
+def airport_user_question_answer(state: State, config: RunnableConfig) -> State:
+    prompt = """
+    你是一个济南遥墙国际机场的一名客户支持助手，用户现在问了一个问题如下：
+    <user_question>
+    {user_question}
+    </user_question>
+    目前根据用户的问题，在我们的知识库库里检索到的相关内容如下：
+    <similarity_context>
+    {similarity_context}
+    </similarity_context>
+    请根据用户的问题和检索到的内容，来决定如何回应用户。下面是一些规定：
+    1. 如果similarity_context中没有与用户问题相关的信息，请直接告诉用户，我们没有找到相关的信息。
+    2. 如果similarity_context中的内容，相对于用户要问的问题来说，还有更详细的规定，这时候需要用户做进一步澄清，你需要生成一个更详细的问题，来引导用户做进一步的澄清。
+    3. 如果similarity_context中的内容，相对于用户要问的问题来说，已经足够回答用户的问题，这时候请根据similarity_context中的内容，给出最合适的回答。
+
+""".format(user_question=state["user_question"],similarity_context=state["similarity_context"])
+    response = base_model.invoke(prompt)
+    return {"messages":[response]}
 
 
+def airport_user_similarity_questions(state: State, config: RunnableConfig) -> State:
+    prompt = """
+    你是一个济南遥墙国际机场的一名客户支持助手，用户现在问了一个问题如下：
+    <user_question>
+    {user_question}
+    </user_question>
+    根据用户的问题在知识库里检索到的相关文档如下：
+    <similarity_context>
+    {similarity_context}
+    </similarity_context>
+    请根据用户的问题和检索到的内容，生成6条相似的问题。
 
+    """.format(user_question=state["user_question"],similarity_context=state["similarity_context"])
+    quesiton_runnable = base_model.with_structured_output(SimilarityQuestions)
+    response = quesiton_runnable.invoke(prompt)
+    return {"similarity_questions":response}
 
+def airport_user_next_question(state: State, config: RunnableConfig) -> State:
+    prompt = """
+    你是一个济南遥墙国际机场的一名客户支持助手，用户现在问了一个问题如下：
+    <user_question>
+    {user_question}
+    </user_question>
+    根据用户的问题在知识库里检索到的相关文档如下：
+    <similarity_context>
+    {similarity_context}
+    </similarity_context>
+    请根据用户的问题和检索到的内容，生成6条用户下一步可能问的问题。
+
+    """.format(user_question=state["user_question"],similarity_context=state["similarity_context"])
+    quesiton_runnable = base_model.with_structured_output(NextQuestion)
+    response = quesiton_runnable.invoke(prompt)
+    return {"next_question":response}
 
 
 
@@ -272,17 +341,30 @@ if __name__ == "__main__":
     builder.add_node("get_user_base_info",get_user_base_info)
     builder.add_node("get_user_profile_info",get_user_profile_info)
     builder.add_node("identify_intent",identify_intent)
-    builder.add_node("flight_info_assistant",flight_info_assistant)
+    builder.add_node("flight_assistant_tool_node",flight_assistant_tool_node)
+    builder.add_node("airport_assistant_tool_node",airport_assistant_tool_node)
+
+    # builder.add_node("flight_info_assistant",flight_info_assistant)
     builder.add_node("airport_knowledge_assistant",airport_knowledge_assistant)
-    builder.add_node("check_question_completeness",check_question_completeness)
+    builder.add_node("airport_user_question_answer",airport_user_question_answer)
+    builder.add_node("airport_user_similarity_questions",airport_user_similarity_questions)
+    builder.add_node("airport_user_next_question",airport_user_next_question)
 
     builder.add_edge(START, "get_user_base_info")
     builder.add_edge(START,"get_user_profile_info")
     builder.add_edge("get_user_base_info","identify_intent")
     builder.add_edge("get_user_profile_info","identify_intent")
-    # builder.add_conditional_edges("identify_intent",router_sub_agent,["flight_info_assistant","airport_knowledge_assistant",END])
-    builder.add_edge("flight_info_assistant","check_question_completeness")
-    builder.add_edge("airport_knowledge_assistant","check_question_completeness")
+    builder.add_conditional_edges("identify_intent",router_sub_agent,["flight_assistant_tool_node","airport_assistant_tool_node","__end__"])
+    # builder.add_edge("flight_assistant_tool_node",END)
+    builder.add_edge("airport_assistant_tool_node","airport_knowledge_assistant")
+    builder.add_edge("airport_knowledge_assistant","airport_user_question_answer")
+    builder.add_edge("airport_knowledge_assistant","airport_user_similarity_questions")
+    builder.add_edge("airport_knowledge_assistant","airport_user_next_question")
+    builder.add_edge("airport_user_question_answer",END)
+    builder.add_edge("airport_user_next_question",END)
+    builder.add_edge("airport_user_similarity_questions",END)
+    # builder.add_edge("flight_info_assistant","check_question_completeness")
+    # builder.add_edge("airport_knowledge_assistant","check_question_completeness")
     memory = MemorySaver()
     graph = builder.compile(
         checkpointer=memory,

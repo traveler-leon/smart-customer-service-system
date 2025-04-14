@@ -1,7 +1,11 @@
 from langchain_core.tools import tool
+from langgraph.types import Command
+from langchain_core.tools.base import InjectedToolCallId
+from typing_extensions import Annotated
+from langchain_core.messages import ToolMessage
 
 @tool
-def flight_info_query(question: str) -> str:
+def flight_info_query(question: str,tool_call_id:Annotated[str,InjectedToolCallId]) -> str:
     """
     查询航班信息的工具
     此工具用于回答用户关于航班的各类查询
@@ -13,6 +17,9 @@ def flight_info_query(question: str) -> str:
         >>> flight_info_query("CA1234航班现在的状态是什么？")
         "CA1234航班目前正在飞行中，预计17:30到达目的地，暂无延误。"
     """
-    pass
-
-
+    return Command(
+        update={
+            "messages": [ToolMessage(content=" ",tool_call_id=tool_call_id)],
+        },
+        goto="__end__"
+    )
