@@ -8,15 +8,10 @@ from common.logging import get_logger
 # 获取日志记录器
 logger = get_logger("text2sql.embedding.openai")
 
-class QwenEmbedding(AsyncEmbeddingProvider):
-    """基于OpenAI兼容接口的嵌入模型提供者
+class SiliconflowEmbedding(AsyncEmbeddingProvider):
+    """基于硅基流动AI的嵌入模型提供者
     
-    支持多种兼容OpenAI API的厂商，包括：
-    - OpenAI
-    - 硅流科技
-    - 智谱AI
-    - Azure OpenAI
-    - 等其他兼容接口的厂商
+    支持硅基流动AI的嵌入模型
     """
     
     def __init__(self, config=None):
@@ -62,8 +57,9 @@ class QwenEmbedding(AsyncEmbeddingProvider):
                 "input": data[:self.max_tokens],
                 "encoding_format": "float"
             }
-            
+
             request_args["dimensions"] = self.dimensions
+            print("embedding参数",request_args)
             response = await self.client.embeddings.create(**request_args)
             
             embedding = response.data[0].embedding

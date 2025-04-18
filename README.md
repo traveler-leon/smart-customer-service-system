@@ -1,565 +1,273 @@
-# smart-customer-service-system
-构建一个基于大模型的智能客服系统，可提供静态知识问答(静态数据)、动态知识问答（数据库），业务办理（api调用）等功能，同时系统具有自我学习能力。定期的反思可让系统变得更强大。
+# 智能机场客服系统
 
-## 模块介绍
+## 项目概述
 
-### Text2SQL 智能SQL生成模块
+智能机场客服系统是一个基于LangGraph构建的智能问答系统，专门为济南遥墙国际机场(TNA)设计。系统能够智能识别用户意图，并提供航班信息查询和机场知识检索服务，为旅客提供便捷、准确的信息服务。
 
-#### 模块简介
+## 系统架构
 
-Text2SQL是智能客服系统的核心组件之一，负责将自然语言问题转换为准确的SQL查询语句。该模块融合了向量搜索、LLM大模型推理和缓存优化，支持异步处理，具有高效率和可扩展性。
+系统基于LangGraph构建，采用图形化工作流结构，主要包含以下组件：
 
-#### 特性
+### 核心组件
 
-- **自然语言到SQL转换**：通过LLM将问题精准转换为SQL
-- **智能上下文理解**：利用相似问题、表结构和文档信息增强推理
-- **中间件支持**：可插拔的中间件架构，支持缓存等功能
-- **异步处理**：全异步设计，支持高并发场景
-- **自学习能力**：支持增量训练和用户反馈
-- **错误自愈能力**：自动检测和清除错误缓存
-- **模块化设计**：灵活组合各种LLM、向量存储和数据库连接器
+- **主图(Airport Service Graph)**: 定义整个工作流程，包括节点定义、边定义和状态管理
+- **路由节点(Router)**: 负责识别用户意图，将请求路由到相应的专业节点
+- **航班信息节点(Flight)**: 处理所有航班相关的查询请求
+- **机场知识节点(Airport)**: 处理关于机场服务、规定和流程的咨询
 
-#### 详细架构设计
+### 技术栈
 
-##### 系统组件图
+- **LangGraph**: 构建工作流和状态管理
+- **LangChain**: 基础组件库
+- **Text2SQL**: 自然语言转SQL查询组件，用于航班信息查询
+- **Text2KB**: 知识库检索组件，用于机场知识查询
+- **SQLite/PostgreSQL**: 用于持久化存储对话状态和图结构
 
+## 功能特性
+
+系统提供以下主要功能：
+
+1. **航班信息查询**：
+   - 航班状态查询（起飞/到达/延误等）
+   - 航班时刻表查询
+   - 特定航班的详细信息
+
+2. **机场知识查询**：
+   - 安全检查服务：安检区域、安检须知
+   - 出行服务：爱心服务、服务电话、贵宾室服务、头等舱休息室服务、晚到服务
+   - 行李服务：托运须知、行李打包、行李寄存、行李赔偿、行李逾重须知
+   - 值机服务：团队预约、值机区域、自助办理、自助值机
+   - 中转服务
+
+3. **多轮对话支持**：系统支持上下文感知的多轮对话，能够根据对话历史理解用户的后续问题
+
+## 图结构示意
+
+整体的业务架构图
 ```mermaid
-graph TD
-    User[用户] -->|自然语言问题| SmartSql[AsyncSmartSqlBase]
-    
-    subgraph "核心组件"
-        SmartSql -->|1.处理请求| Middleware[中间件链]
-        Middleware -->|2.检查缓存| SmartSql
-        SmartSql -->|3.获取相似问题| VectorStore[向量存储]
-        SmartSql -->|4.获取表结构| VectorStore
-        SmartSql -->|5.获取文档| VectorStore
-        SmartSql -->|6.生成提示词| LLM[大语言模型]
-        LLM -->|7.返回SQL| SmartSql
-        SmartSql -->|8.执行SQL| DBConnector[数据库连接器]
-        DBConnector -->|9.返回结果| SmartSql
-        SmartSql -->|10.处理响应| Middleware
-    end
-    
-    subgraph "辅助组件"
-        EmbeddingProvider[嵌入向量生成器]
-        TrainingModule[训练模块]
-        ErrorHandler[错误处理器]
-    end
-    
-    VectorStore -.->|生成嵌入| EmbeddingProvider
-    SmartSql -.->|错误处理| ErrorHandler
-    SmartSql -.->|增量训练| TrainingModule
-    TrainingModule -.->|更新知识| VectorStore
-    
-    SmartSql -->|返回结果| User
+flowchart TB
+  %% 顶层流程
+  A[旅客用户] --> B[入口节点]
+  B --> C[意图分类器]
+  C --> D1(机场知识问答模块)
+  C --> D2(航班信息查询模块)
+  C --> D3(业务办理模块)
+
+  %% 响应生成器
+  Q[响应生成器]
+
+  %% 机场知识问答模块
+  subgraph 机场知识问答模块
+    direction TB
+    E1[用户查询分析] --> F1{查询是否完整}
+    F1 -- 不完整 --> G1[问题澄清]
+    F1 -- 完整 --> H1[知识检索]
+    H1 --> I1{检索相关性}
+    I1 -- 低相关性 --> J1[根据检索内容猜测用户可能的问题，并引导用户具体化访问需求]
+    J1 --> K1[总结生成用户可能想问的问题推荐列表]
+
+    J1 --> L1[根据检索检索，引导用户提问新的问题]
+    I1 -- 高相关性 --> M1{检查用户问题与检索结果的粒度匹配情况}
+    M1 -- 匹配 --> N1[回答问题]
+    M1 -- 不匹配 --> O1[总结生成用户可能想问的问题推荐列表]
+    M1 --不匹配 -->P1[请用户做更细的澄清]
+    P1 -->K2[返回到推荐位置]
+    K1 -->K2[返回到推荐位置]
+
+    %% 模块输出到响应生成器
+    G1 --> Q
+    L1 --> Q
+    N1 --> Q
+    P1 --> Q
+  end
+
+  %% 航班信息查询模块
+  subgraph 航班信息查询模块
+    direction TB
+    E2[用户查询分析] --> F2[text2sql子模块]
+    F2 --> Q
+  end
+
+  %% 业务办理模块
+  subgraph 业务办理模块
+    direction TB
+    E3[用户查询分析] --> F3[参数收集]
+    F3 --> G3[API调用]
+    G3 --> Q
+  end
 ```
 
-##### 请求处理流程
 
+
+系统基于LangGraph构建的工作流图结构如下：
 ```mermaid
-sequenceDiagram
-    participant User as 用户
-    participant SmartSQL as AsyncSmartSqlBase
-    participant Cache as 缓存中间件
-    participant Vector as 向量存储
-    participant LLM as 大模型
-    participant DB as 数据库
-    
-    User->>SmartSQL: 发送自然语言问题
-    
-    SmartSQL->>Cache: 处理请求(检查缓存)
-    alt 缓存命中
-        Cache-->>SmartSQL: 返回缓存的SQL
-    else 缓存未命中
-        SmartSQL->>Vector: 并行获取相似问题
-        SmartSQL->>Vector: 并行获取相关表结构
-        SmartSQL->>Vector: 并行获取相关文档
-        Vector-->>SmartSQL: 返回上下文信息
-        
-        SmartSQL->>SmartSQL: 构建提示词
-        SmartSQL->>LLM: 提交提示词
-        LLM-->>SmartSQL: 返回生成的SQL
-        
-        opt 中间SQL执行
-            SmartSQL->>DB: 执行中间SQL查询
-            DB-->>SmartSQL: 返回中间查询结果
-            SmartSQL->>LLM: 提交更新后的提示词
-            LLM-->>SmartSQL: 返回优化后的SQL
-        end
-        
-        SmartSQL->>SmartSQL: 提取最终SQL
-        SmartSQL->>Cache: 更新缓存
-    end
-    
-    SmartSQL->>DB: 执行最终SQL
-    DB-->>SmartSQL: 返回查询结果
-    
-    alt SQL执行错误且来自缓存
-        SmartSQL->>Cache: 清除错误缓存
-    end
-    
-    SmartSQL-->>User: 返回结果
+graph LR
+    START(开始) --> Router(路由节点)
+    Router -->|航班查询| FlightTool[Flight Tool Node]
+    FlightTool --> FlightAssistant[Flight Assistant Node]
+    FlightAssistant --> END(结束)
+    Router -->|机场知识查询| AirportTool[Airport Tool Node]
+    AirportTool --> AirportAssistant[Airport Assistant Node]
+    AirportAssistant --> END
+    Router -->|其他/结束| END
 ```
 
-#### 核心接口设计
+主要节点功能：
+- **Router**: 路由节点，分析用户意图并选择合适的处理路径
+- **Flight Tool Node**: 航班工具节点，调用Text2SQL转换用户问题为SQL查询，获取航班数据
+- **Flight Assistant Node**: 航班助手节点，基于查询结果生成用户友好的回答
+- **Airport Tool Node**: 机场工具节点，从知识库检索相关信息
+- **Airport Assistant Node**: 机场助手节点，根据检索结果生成答案
 
-##### AsyncLLMProvider 接口
+系统使用条件边和状态管理，实现了完整的对话流程控制和上下文保持。
 
-```python
-class AsyncLLMProvider:
-    """大模型服务提供者异步接口"""
-    
-    async def submit_prompt(self, prompt, **kwargs):
-        """提交提示词到LLM并获取响应
-        
-        Args:
-            prompt: 提示词(字符串或消息列表)
-            **kwargs: 附加参数(温度、最大长度等)
-            
-        Returns:
-            LLM响应(通常为文本或结构化数据)
-        """
-        raise NotImplementedError
+## 快速开始
+
+### 环境要求
+
+### 环境要求
+
+- Python 3.12+
+- 依赖库：见`pyproject.toml`文件
+
+### 安装步骤
+
+1. 克隆项目并进入项目目录
+```bash
+git clone [repository-url]
+cd smart-customer-service-system
 ```
 
-##### AsyncVectorStore 接口
-
-```python
-class AsyncVectorStore:
-    """向量存储异步接口"""
-    
-    async def initialize(self):
-        """初始化向量存储"""
-        raise NotImplementedError
-    
-    async def get_similar_question_sql(self, question, top_k=5, **kwargs):
-        """获取与问题相似的问题-SQL对
-        
-        Args:
-            question: 查询问题
-            top_k: 返回结果数量
-            **kwargs: 附加参数
-            
-        Returns:
-            相似问题-SQL对列表
-        """
-        raise NotImplementedError
-    
-    async def get_related_ddl(self, question, top_k=3, **kwargs):
-        """获取与问题相关的表结构DDL
-        
-        Args:
-            question: 查询问题
-            top_k: 返回结果数量
-            **kwargs: 附加参数
-            
-        Returns:
-            相关DDL列表
-        """
-        raise NotImplementedError
-    
-    async def get_related_documentation(self, question, top_k=3, **kwargs):
-        """获取与问题相关的文档
-        
-        Args:
-            question: 查询问题
-            top_k: 返回结果数量
-            **kwargs: 附加参数
-            
-        Returns:
-            相关文档列表
-        """
-        raise NotImplementedError
-    
-    async def add_question_sql(self, question, sql, metadata=None):
-        """添加问题-SQL对到向量存储
-        
-        Args:
-            question: 问题文本
-            sql: SQL查询
-            metadata: 元数据
-            
-        Returns:
-            唯一标识符
-        """
-        raise NotImplementedError
-    
-    async def add_ddl(self, ddl, metadata=None):
-        """添加表结构定义到向量存储
-        
-        Args:
-            ddl: DDL语句
-            metadata: 元数据
-            
-        Returns:
-            唯一标识符
-        """
-        raise NotImplementedError
-    
-    async def add_documentation(self, documentation, metadata=None):
-        """添加文档到向量存储
-        
-        Args:
-            documentation: 文档内容
-            metadata: 元数据
-            
-        Returns:
-            唯一标识符
-        """
-        raise NotImplementedError
+2. 使用uv创建虚拟环境并安装依赖
+```bash
+uv sync
 ```
 
-##### AsyncDBConnector 接口
-
-```python
-class AsyncDBConnector:
-    """数据库连接异步接口"""
-    
-    async def connect(self):
-        """建立数据库连接"""
-        raise NotImplementedError
-    
-    async def close(self):
-        """关闭数据库连接"""
-        raise NotImplementedError
-    
-    async def run_sql(self, sql, **kwargs):
-        """执行SQL查询
-        
-        Args:
-            sql: SQL查询语句
-            **kwargs: 附加参数
-            
-        Returns:
-            查询结果(DataFrame或错误信息)
-        """
-        raise NotImplementedError
+这样就使用uv替代了传统的venv和pip命令，保持了项目的其他安装流程不变。
 ```
 
-##### AsyncMiddleware 接口
-
-```python
-class AsyncMiddleware:
-    """中间件异步接口"""
-    
-    async def process_request(self, request):
-        """处理请求
-        
-        Args:
-            request: 原始请求
-            
-        Returns:
-            处理后的请求
-        """
-        return request
-    
-    async def process_response(self, response):
-        """处理响应
-        
-        Args:
-            response: 原始响应
-            
-        Returns:
-            处理后的响应
-        """
-        return response
+3. 配置环境变量
+```bash
+cp .env.example .env
+# 编辑.env文件，填入必要的API密钥和配置
 ```
 
-#### 缓存策略详解
+### 运行系统
 
-缓存中间件采用多级策略确保系统既高效又准确：
-
-1. **键生成策略**: 基于问题+参数的MD5哈希
-2. **过期策略**: 支持TTL(时间)和LRU(容量)双重过期机制
-3. **一致性保障**: 自动检测错误SQL并清除对应缓存
-4. **并发保护**: 使用异步锁保护缓存读写操作
-5. **指标跟踪**: 记录命中率等指标以便性能监控
-
-```mermaid
-graph TD
-    subgraph "缓存中间件内部"
-        GenerateKey[生成缓存键]
-        CheckCache[检查缓存]
-        UpdateCache[更新缓存]
-        ClearCache[清除错误缓存]
-        
-        GenerateKey -->|MD5哈希| CheckCache
-        CheckCache -->|缓存命中| Return[返回缓存结果]
-        CheckCache -->|缓存未命中/过期| Skip[跳过缓存]
-        UpdateCache -->|存储结果| CacheStore[(缓存存储)]
-        ClearCache -->|删除项| CacheStore
-    end
-    
-    Request[请求] -->|process_request| GenerateKey
-    Response[响应] -->|process_response| UpdateCache
-    ErrorDetect[错误检测] -->|SQL执行错误| ClearCache
+```bash
+python main.py
 ```
 
-#### 错误处理机制
+## 系统结构
 
-模块实现了全面的错误处理机制：
-
-1. **SQL执行错误**: 自动检测并清除错误缓存
-2. **LLM生成错误**: 捕获并提供明确错误信息
-3. **向量检索错误**: 备选策略确保最低限度上下文
-4. **数据库连接错误**: 连接池和重试机制
-5. **日志跟踪**: 详细记录每个步骤便于调试
-
-#### 性能优化
-
-模块设计中内置多项性能优化：
-
-1. **全异步**: 所有操作采用异步设计提高吞吐量
-2. **并行查询**: 同时获取多种上下文信息
-3. **缓存机制**: 减少重复大模型调用
-4. **token优化**: 动态调整上下文长度避免超出最大token限制
-5. **流式返回**: 支持大型结果集的流式返回
-
-#### 使用示例
-
-以下是基于实际项目代码的使用示例：
-
-##### 初始化配置
-
-```python
-import asyncio
-from text2sql import create_text2sql
-
-# 创建Text2SQL配置
-config = {
-    "llm": {
-        "type": "qwen",  # 使用千问大模型
-        "api_key": "your_api_key_here",
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "model": "qwen2.5-72b-instruct"  # 使用千问2.5-72B模型
-    },
-    "storage": {
-        "type": "chromadb",  # 使用ChromaDB向量数据库
-        "host": "localhost",
-        "port": 8000,
-        "n_results": 5,  # 默认返回相似结果数量
-        "hnsw_config": {
-            "M": 16,                  # 每个节点的最大出边数
-            "construction_ef": 100,   # 建立索引时考虑的邻居数
-            "search_ef": 50,          # 查询时考虑的邻居数
-            "space": "cosine"         # 向量空间距离计算方式
-        }
-    },
-    "db": {
-        "type": "postgresql",  # 使用PostgreSQL数据库
-        "host": "localhost",
-        "port": 5432,
-        "database": "your_database",
-        "user": "your_username",
-        "password": "your_password",
-        "min_size": 2,  # 连接池最小连接数
-        "max_size": 5   # 连接池最大连接数
-    },
-    "middlewares": [
-        {"type": "cache", "max_size": 100, "ttl": 3600}  # 缓存中间件配置
-    ],
-    "dialect": "PostgreSQL",  # SQL方言
-    "language": "zh",         # 处理语言
-    "embedding": {
-        "type": "qwen",  # 使用千问嵌入模型
-        "api_key": "your_api_key_here",
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "embedding_model": "text-embedding-v3"
-    }
-}
-
-# 异步方式创建Text2SQL实例
-async def init_text2sql():
-    # 创建实例
-    text2sql = await create_text2sql(config)
-    return text2sql
-
-# 运行初始化
-text2sql = asyncio.run(init_text2sql())
+```
+smart-customer-service-system/
+├── agents/                      # 代理模块（核心功能）
+│   └── airport_service/         # 机场服务代理
+│       ├── graph_compile.py     # 图编译和管理
+│       ├── main_graph.py        # 主图定义
+│       ├── state.py             # 状态定义
+│       ├── nodes/               # 节点定义
+│       │   ├── airport.py       # 机场知识节点
+│       │   ├── flight.py        # 航班信息节点
+│       │   └── router.py        # 路由节点
+│       └── tools/               # 工具定义
+│           ├── airport.py       # 机场知识工具
+│           └── flight.py        # 航班信息工具
+├── common/                      # 通用组件
+├── config/                      # 配置管理
+├── data/                        # 数据存储
+├── logs/                        # 日志文件
+├── text2kb/                     # 知识库检索模块
+├── text2sql/                    # 自然语言转SQL模块
+├── tools/                       # 工具集
+├── .env.example                 # 环境变量示例
+├── main.py                      # 主入口文件
+├── main_graph.png               # 图结构可视化
+└── pyproject.toml               # 项目依赖配置
 ```
 
-##### 基本使用方法
+## 工作流程
 
-```python
-import asyncio
+1. 用户发送问题
+2. 路由节点分析用户意图
+3. 根据意图调用相应的专业工具（航班查询或机场知识查询）
+4. 专业节点处理用户问题并生成回答
+5. 系统返回结果给用户
 
-# 1. 直接生成SQL (不执行)
-async def generate_sql_example():
-    question = "查询最近30天的销售数据"
-    sql = await text2sql.generate_sql(question)
-    print(f"生成的SQL: {sql}")
-    return sql
 
-# 2. 生成并执行SQL
-async def ask_example():
-    question = "统计各个产品类别的销售总额"
-    result = await text2sql.ask(question)
-    
-    print(f"生成的SQL: {result['sql']}")
-    
-    # 检查结果
-    if isinstance(result['data'], dict) and result['data'].get('error'):
-        print(f"执行错误: {result['data']['message']}")
-    else:
-        print(f"查询结果: {result['data']}")
-    
-    return result
+### 配置管理
 
-# 运行示例
-sql = asyncio.run(generate_sql_example())
-result = asyncio.run(ask_example())
+系统配置存储在`.env`文件中，主要包括以下几类配置：
+
+#### LLM配置
+```
+LLM_TYPE=siliconflow                           # LLM服务提供商
+LLM_API_KEY=sk-your-api-key                    # LLM API密钥
+LLM_BASE_URL=https://api.siliconflow.cn/v1     # LLM API基础URL
+LLM_MODEL=Qwen/Qwen2.5-72B-Instruct            # 使用的大语言模型
+LLM_TEMPERATURE=0.7                            # 温度参数（创造性）
+LLM_MAX_TOKENS=20000                           # 最大令牌数
 ```
 
-##### 训练与知识更新
-
-```python
-import asyncio
-
-async def train_example():
-    # 准备训练数据
-    training_data = [
-        # 添加表结构定义
-        {
-            'ddl': '''
-            CREATE TABLE sales (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER NOT NULL,
-                amount DECIMAL(10, 2) NOT NULL,
-                sale_date TIMESTAMP NOT NULL,
-                customer_id INTEGER,
-                region TEXT
-            );
-            
-            CREATE TABLE products (
-                id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                category TEXT NOT NULL,
-                price DECIMAL(10, 2) NOT NULL
-            );
-            '''
-        },
-        
-        # 添加示例问题-SQL对
-        {
-            'question': '查询最近一周每个分类的销售额',
-            'sql': '''
-            SELECT p.category, SUM(s.amount) as total_sales
-            FROM sales s
-            JOIN products p ON s.product_id = p.id
-            WHERE s.sale_date >= NOW() - INTERVAL '7 days'
-            GROUP BY p.category
-            ORDER BY total_sales DESC;
-            '''
-        },
-        
-        # 添加业务文档
-        {
-            'documentation': '''
-            销售数据说明:
-            - sales表存储所有销售记录
-            - sale_date是销售时间戳
-            - amount是销售金额
-            - region可以是: 'North', 'South', 'East', 'West'
-            '''
-        }
-    ]
-    
-    # 提交训练
-    result = await text2sql.train(training_data=training_data, source="manual")
-    print(f"训练结果: {result}")
-    
-    # 查看成功和失败项目
-    print(f"成功条目: {len(result['success'])}")
-    print(f"失败条目: {len(result['failed'])}")
-    
-    return result
-
-# 运行训练示例
-asyncio.run(train_example())
+#### 嵌入模型配置
+```
+EMBEDDING_TYPE=siliconflow                     # 嵌入模型提供商
+EMBEDDING_API_KEY=sk-your-embedding-api-key    # 嵌入模型API密钥
+EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1 # 嵌入模型API基础URL
+EMBEDDING_MODEL=BAAI/bge-large-zh-v1.5         # 使用的嵌入模型
+EMBEDDING_DIMENSIONS=1024                      # 嵌入维度
+EMBEDDING_MAX_TOKENS=512                       # 最大令牌数
 ```
 
-##### 完整工作流示例
-
-```python
-import asyncio
-from text2sql import create_text2sql
-
-async def text2sql_workflow():
-    # 1. 初始化
-    text2sql = await create_text2sql(config)
-    
-    # 2. 添加知识
-    await text2sql.train([
-        {'ddl': 'CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)'}
-    ])
-    
-    # 3. 生成SQL
-    sql = await text2sql.generate_sql("查询所有用户的邮箱地址")
-    print(f"生成的SQL: {sql}")
-    
-    # 4. 执行查询
-    result = await text2sql.ask("有多少用户的邮箱是gmail.com结尾的?")
-    print(f"SQL: {result['sql']}")
-    print(f"结果: {result['data']}")
-    
-    # 5. 关闭资源
-    await text2sql.shutdown()
-
-# 运行工作流
-if __name__ == "__main__":
-    asyncio.run(text2sql_workflow())
+#### 数据库配置
+```
+DB_TYPE=postgresql                             # 数据库类型
+DB_DATABASE=your_database_name                 # 数据库名称
+DB_HOST=localhost                              # 数据库主机
+DB_PORT=5432                                   # 数据库端口
+DB_USER=your_username                          # 数据库用户名
+DB_PASSWORD=your_password                      # 数据库密码
+DB_MIN_SIZE=2                                  # 连接池最小大小
+DB_MAX_SIZE=5                                  # 连接池最大大小
 ```
 
-#### 配置选项
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| dialect | SQL方言 | "SQL" |
-| language | 处理语言 | None |
-| max_tokens | 最大token数 | 14000 |
-| initial_prompt | 初始提示词 | 根据dialect自动生成 |
-
-#### 缓存中间件配置
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| ttl | 缓存过期时间(秒) | 3600 |
-| max_size | 最大缓存条目数 | 100 |
-
-#### 错误处理与缓存机制
-
-系统会自动检测SQL执行结果，当发现缓存的SQL执行错误时，会自动清除相应缓存，避免错误持续影响用户：
-
-```python
-# 自动错误检测和缓存清理
-result = await text2sql.ask("查询用户数据")
-if result.get('error'):
-    print(f"查询错误: {result['error']}")
+#### 向量数据库配置
+```
+STORAGE_TYPE=chromadb                          # 向量存储类型
+CHROMA_HOST=localhost                          # ChromaDB主机
+CHROMA_PORT=7996                               # ChromaDB端口
+CHROMA_N_RESULTS=5                             # 检索结果数量
 ```
 
-#### 自定义扩展
+#### 知识库配置
+```
+KB_ADDRESS=localhost:9380                      # 知识库API地址
+KB_API_KEY=your-kb-api-key                     # 知识库API密钥
+```
 
-可以通过实现相应接口来扩展系统功能：
+#### Text2SQL配置
+```
+DIALECT=PostgreSQL                             # SQL方言
+LANGUAGE=zh                                    # 语言（中文）
+```
 
-- 实现`AsyncLLMProvider`接口添加新的LLM服务
-- 实现`AsyncVectorStore`接口添加新的向量存储
-- 实现`AsyncDBConnector`接口支持新的数据库类型
-- 实现`AsyncMiddleware`接口添加新的中间件功能
+#### 日志配置
+```
+LOG_LEVEL=DEBUG                                # 日志级别
+LOG_DIR=logs                                   # 日志目录
+LOG_MAX_BYTES=10485760                         # 单个日志文件最大大小
+LOG_BACKUP_COUNT=5                             # 保留的日志文件数量
+```
 
-#### 实现挑战与解决方案
+## 贡献指南
 
-| 挑战 | 解决方案 |
-|------|----------|
-| SQL语法错误 | 多轮校验+历史成功案例引导 |
-| 上下文长度限制 | 动态调整上下文+相关性排序 |
-| 缓存一致性 | 错误自动清除+TTL过期 |
-| 大模型依赖 | 接口抽象+多模型支持 |
-| 扩展性 | 插件架构+中间件机制 |
+欢迎贡献代码，请遵循以下步骤：
+1. Fork项目
+2. 创建功能分支
+3. 提交更改
+4. 创建Pull Request
 
-#### 未来扩展方向
+## 许可证
 
-1. **更丰富的LLM模型支持**: 集成更多开源和闭源大模型
-2. **自动模式推导**: 根据提问自动推断数据库模式
-3. **多数据源支持**: 支持跨数据库查询
-4. **自动代理决策**: 让系统自动决定是否需要生成SQL或使用其他解决方案
-5. **查询分析与优化**: 分析生成的SQL并提供性能优化建议
+[添加许可证信息]

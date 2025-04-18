@@ -9,23 +9,23 @@ from common.logging import get_logger
 # 获取日志记录器
 logger = get_logger("text2sql.llm.qwen")
 
-class QwenLLM(AsyncLLMProvider):
-    """千问AI异步LLM实现
+class SiliconflowLLM(AsyncLLMProvider):
+    """硅基流动AI异步LLM实现
     
-    基于OpenAI兼容接口的千问大语言模型
-    支持通过阿里云DashScope提供的兼容接口访问
+    基于OpenAI兼容接口的硅基流动大语言模型
+    支持通过硅基流动AI提供的兼容接口访问
     """
     
     def __init__(self, config=None):
         self.config = config or {}
         self.temperature = self.config.get("temperature", 0.7)
         self.api_key = self.config.get("api_key", os.getenv("OPENAI_API_KEY"))
-        self.base_url = self.config.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-        self.model = self.config.get("model", "qwen-plus")
+        self.base_url = self.config.get("base_url", "https://api.siliconflow.cn/v1")
+        self.model = self.config.get("model", "Qwen/Qwen2.5-72B-Instruct")
         self.max_tokens = self.config.get("max_tokens", 20000)
         self.client = None
         
-        logger.info(f"初始化千问LLM提供者，模型: {self.model}")
+        logger.info(f"初始化硅基流动LLM提供者，模型: {self.model}")
     
     def _ensure_client(self):
         """确保客户端已初始化"""
@@ -34,13 +34,13 @@ class QwenLLM(AsyncLLMProvider):
                 api_key=self.api_key,
                 base_url=self.base_url
             )
-            logger.debug("千问AI异步客户端已初始化")
+            logger.debug("硅基流动AI异步客户端已初始化")
     
     async def close(self):
         """关闭异步会话"""
         # AsyncOpenAI 客户端会自动管理会话，不需要手动关闭
         self.client = None
-        logger.debug("千问AI异步客户端已重置")
+        logger.debug("硅基流动AI异步客户端已重置")
     
     def system_message(self, message: str) -> Dict[str, str]:
         """创建系统消息"""

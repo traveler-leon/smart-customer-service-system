@@ -6,5 +6,6 @@
 """
 
 from .qwen import QwenEmbedding
+from .siliconflow import SiliconflowEmbedding
 
-__all__ = ['QwenEmbedding'] 
+__all__ = ['QwenEmbedding', 'SiliconflowEmbedding'] 

@@ -1,0 +1,23 @@
+{
+    "ddl": [
+        "CREATE TABLE flight_schedules (schedule_id SERIAL PRIMARY KEY, flight_id VARCHAR(20) REFERENCES flights(flight_id), effective_from DATE NOT NULL, effective_to DATE NOT NULL, days_of_week VARCHAR(7), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "questions": [
+        {
+            "question": "查询航班MU2331的时刻表",
+            "sql": "SELECT fs.days_of_week, f.scheduled_departure, f.scheduled_arrival FROM flight_schedules fs JOIN flights f ON fs.flight_id = f.flight_id WHERE f.flight_number = 'MU2331' AND CURRENT_DATE BETWEEN fs.effective_from AND fs.effective_to;"
+        },
+        {
+            "question": "最近一周从广州飞往成都的所有航班",
+            "sql": "SELECT f.flight_number, f.scheduled_departure, a.airline_name FROM flights f JOIN airports dep ON f.departure_airport = dep.airport_code JOIN airports arr ON f.arrival_airport = arr.airport_code JOIN airlines a ON f.airline_code = a.airline_code WHERE dep.city = '广州' AND arr.city = '成都' AND f.scheduled_departure BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '7 days');"
+        },
+        {
+            "question": "李四预订的所有未出行航班",
+            "sql": "SELECT f.flight_number, f.scheduled_departure, b.seat_number FROM bookings b JOIN flights f ON b.flight_id = f.flight_id JOIN passengers p ON b.passenger_id = p.passenger_id WHERE p.first_name = '李' AND p.last_name = '四' AND f.scheduled_departure > CURRENT_TIMESTAMP AND b.booking_status = 'confirmed';"
+        }
+    ],
+    "documentation": [
+        "flight_schedules表存储航班的定期时刻表信息，effective_from和effective_to表示时刻表的有效期，days_of_week字段是一个7位字符串，每位代表一周中的一天(1-7)，1表示该天有航班，0表示没有。",
+        "一个航班可能有多个时刻表，比如夏秋航季和冬春航季的时刻表可能不同。"
+    ]
+} 

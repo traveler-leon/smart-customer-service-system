@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# 环境变量文件
+.env
+.env.*
+!.env.example

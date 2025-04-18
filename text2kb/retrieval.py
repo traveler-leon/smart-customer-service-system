@@ -6,12 +6,9 @@
 import asyncio
 import aiohttp
 from typing import List, Dict, Any, Optional
-from .config import KB_ADDRESS, KB_API_KEY
 from common.logging import get_logger
-
 # 获取模块日志记录器
 logger = get_logger("text2kb")
-
 async def get_dataset_id(address: str, name: str, api_key: str) -> str:
     """
     异步获取知识库数据集ID
@@ -57,7 +54,7 @@ async def get_dataset_id(address: str, name: str, api_key: str) -> str:
         return ""
 
 
-async def retrieve_from_kb(question: str, dataset_name: str, address: str = KB_ADDRESS, api_key: str = KB_API_KEY, similarity_threshold: float = 0.1, top_k: int = 10) -> List[Dict[str, Any]]:
+async def retrieve_from_kb(question: str, dataset_name: str, address: str = None, api_key: str = None, similarity_threshold: float = 0.01, top_k: int = 10,key_words:bool=False) -> List[Dict[str, Any]]:
     """
     从知识库中检索信息
     
@@ -72,6 +69,7 @@ async def retrieve_from_kb(question: str, dataset_name: str, address: str = KB_A
     Returns:
         检索结果列表，包含内容和标记信息，按相关性排序
     """
+    
     logger.info(f"开始从知识库检索: '{question[:50]}...' (数据集: {dataset_name}, top_k: {top_k})")
     try:
         dataset_id = await get_dataset_id(address, dataset_name, api_key)
@@ -85,7 +83,9 @@ async def retrieve_from_kb(question: str, dataset_name: str, address: str = KB_A
         payload = {
             "question": question,
             "dataset_ids": [dataset_id],
-            "top_k": top_k
+            "similarity_threshold": similarity_threshold,
+            "top_k": top_k,
+            "key_words": key_words
         }
         
         # 设置请求头
@@ -105,7 +105,6 @@ async def retrieve_from_kb(question: str, dataset_name: str, address: str = KB_A
                         key=lambda x: x['vector_similarity'],
                         reverse=True
                     )
-                    print("超找到的长度为：",len(all_content))
                     # 添加相似度标记
                     results = []
                     for content in all_content:

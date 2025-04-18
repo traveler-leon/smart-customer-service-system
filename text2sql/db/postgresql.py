@@ -1,7 +1,7 @@
 import asyncio
 import asyncpg
 import pandas as pd
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Union
 
 from ..base.interfaces import AsyncDBConnector
 
@@ -72,12 +72,12 @@ class PostgresqlConnector(AsyncDBConnector):
                     results.append({columns[i]: row[i] for i in range(len(columns))})
         
             # 使用pandas处理结果
-            loop = asyncio.get_event_loop()
-            df = await loop.run_in_executor(
-                None, lambda: pd.DataFrame(results)
-            )
-            
-            return df
+            # loop = asyncio.get_event_loop()
+            # df = await loop.run_in_executor(
+            #     None, lambda: pd.DataFrame(results)
+            # )
+            # return df
+            return results
         except Exception as e:
             # 捕获异常并返回错误信息
             error_message = f"SQL执行错误: {str(e)}"

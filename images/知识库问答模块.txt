@@ -1,0 +1,27 @@
+graph TD
+    KQA_Entry[知识问答入口] --> QueryAnalysis[查询分析]
+    
+    QueryAnalysis --> QueryComplete{查询是否完整?}
+    QueryComplete -->|不完整| ClarificationNode[问题澄清]
+    QueryComplete -->|完整| KnowledgeRetrieval[知识检索]
+    
+    ClarificationNode --> KQA_State{状态更新}
+    KQA_State -->|用户回复| QueryAnalysis
+    
+    KnowledgeRetrieval --> RelevanceCheck{检索结果相关性}
+    RelevanceCheck -->|低相关性| AskForSpecifics[请求用户具体化]
+    RelevanceCheck -->|高相关性| GranularityCheck{检查粒度匹配}
+    
+    AskForSpecifics --> KQA_State
+    
+    GranularityCheck -->|粒度不匹配| RequestRefinement[请求用户选择更精确类别]
+    GranularityCheck -->|粒度匹配| AnswerPreparation[回答准备]
+    
+    RequestRefinement --> KQA_State
+    
+    AnswerPreparation --> StyleSelector[回答风格选择器]
+    StyleSelector --> ContentSimplifier[内容简化器]
+    ContentSimplifier --> FollowUpPredictor[后续问题预测]
+    
+    FollowUpPredictor --> FinalAnswer[最终回答生成]
+    FinalAnswer --> KQA_Exit[知识问答出口]

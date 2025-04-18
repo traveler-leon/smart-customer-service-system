@@ -29,7 +29,7 @@ class AsyncSmartSqlBase:
         self.config = config or {}
         self.dialect = self.config.get("dialect", "SQL")
         self.language = self.config.get("language", None)
-        self.max_tokens = self.config.get("max_tokens", 14000)
+        self.max_tokens = self.config.get("llm", {}).get("max_tokens", 20000)
         
         logger.info(f"初始化AsyncSmartSqlBase，配置信息：dialect={self.dialect}, language={self.language}, max_tokens={self.max_tokens}")
     
@@ -179,35 +179,61 @@ class AsyncSmartSqlBase:
         # 初始提示设置
         initial_prompt = self.config.get("initial_prompt", None)
         if initial_prompt is None:
-            initial_prompt = f"你是一个{self.dialect}专家。请根据给定上下文生成SQL查询来回答问题。"
-        
+            initial_prompt = f"""你是一个{self.dialect}专家。专门将自然语言问题翻译成可执行的SQL查询。
+                                您的主要任务是基于提供的数据库上下文（`<database_context>`）、SQL方言（`<sql_dialect>`）、对话历史和用户的当前问题（`<question>`），生成一个单一的、语法正确的SQL查询。
+
+                                **输出要求：**
+                                - 您的**整个**输出必须是**以下之一**：
+                                    1. 生成的SQL查询字符串。
+                                - **不要**包含**任何**其他文本、解释、道歉、注释（除非是SQL本身的一部分）或超出单个SQL查询或 `INVALID_QUERY` 字符串的格式。
+                                """
         # 按区段添加内容
         prompt = initial_prompt
         
         # 添加DDL信息（限制token）
         if ddl_list:
-            prompt += "\n===表结构(table schema)\n\n"
+            tmp_ddl = ""
             for ddl in ddl_list:
-                if self._estimate_tokens(prompt) + self._estimate_tokens(ddl) < self.max_tokens:
-                    prompt += f"{ddl}\n\n"
+                tmp_ddl += f"{ddl}\n\n"
+            if self._estimate_tokens(prompt) + self._estimate_tokens(tmp_ddl) < self.max_tokens:
+                prompt += f"""**输入：**
+                        1. **数据库上下文 (<database_context>):** 包含表和列的模式（DDL）以及重要的描述/注释。
+                        ```
+                        <database_context>
+                            <schema>{tmp_ddl}</schema>
+                        </database_context>
+                        """
         
         # 添加文档信息（限制token）
         if doc_list:
-            prompt += "\n===附加上下文\n\n"
+            tmp_doc = ""
             for doc in doc_list:
-                if self._estimate_tokens(prompt) + self._estimate_tokens(doc) < self.max_tokens:
-                    prompt += f"{doc}\n\n"
-        
+                tmp_doc += f"{doc}\n\n"
+            if self._estimate_tokens(prompt) + self._estimate_tokens(tmp_doc) < self.max_tokens:
+                prompt += f"<descriptions>{tmp_doc}</descriptions>"
         # 添加响应指南
-        prompt += (
-            "\n===响应指南\n"
-            "1. 如果提供的上下文足够，请直接生成有效的SQL查询，不需要解释。\n"
-            "2. 如果上下文几乎足够但需要了解特定列中的值，请生成中间SQL查询查找该列中的不同值。在查询前加注释说明intermediate_sql\n"
-            "3. 如果上下文不足，请解释为什么无法生成。\n"
-            "4. 请使用最相关的表。\n"
-            "5. 如果问题之前被问过，请精确复制之前的答案。\n"
-            f"6. 确保输出的SQL符合{self.dialect}语法并可执行。\n"
-        )
+        prompt += f"""
+        2. **SQL方言 (<sql_dialect>):** 目标SQL方言。
+            <sql_dialect>{self.dialect}</sql_dialect>
+
+        **核心规则与逻辑：**
+
+        1.  **上下文一致性：** 严格使用 `<database_context>` 中定义的元素（表、列）。参考 `<descriptions>` 以了解正确的使用方法、关系和语义含义。不要创建不存在的元素。
+        2.  **方言兼容性：** 确保生成的SQL语法对于指定的 `<sql_dialect>` 是有效的。
+        3.  **历史利用：** 分析历史对话，查找与本次问题有用的信息。
+        4.  **意图解释：** 准确生成反映用户从 `<question>`、对话历史 和 `<descriptions>` 中推导出的意图的SQL。
+        5.  **单一查询：** 生成一个单一的、有效的SQL语句。
+        6.  **查询优化与精确性：** **优先选择回答用户问题所需的最少列。除非用户明确要求获取所有信息（例如，"显示该航班的所有细节"），否则应避免使用 `SELECT *`。**
+
+        **处理说明：**
+
+        1.  **分析所有输入：** 仔细检查 `<question>`、`<database_context>`（模式 + 描述）、`<sql_dialect>` 和 `<dialogue_history>`。
+        2.  **将意图映射到上下文：** 确定用户的核心意图，使用历史记录和描述进行澄清，将其映射到数据库元素。
+        3.  **构建SQL：** 如果没有满足失败条件，则构建SQL查询。确保正确性（连接、过滤、聚合、语法），以反映意图并遵守方言，**同时遵循查询优化与精确性规则**。
+        4.  **最终输出：** **仅**输出生成的SQL字符串。
+        **最终输出（SQL查询）：**
+
+    """
         
         # 创建消息格式
         messages = [{"role": "system", "content": prompt}]
@@ -235,22 +261,21 @@ class AsyncSmartSqlBase:
         else:
             logger.warning(f"无法识别的LLM响应格式: {type(llm_response)}")
             return llm_response  # 返回原始响应
-        
         # 尝试各种模式提取SQL
         # 1. WITH CTE模式
-        sqls = re.findall(r"\bWITH\b .*?;", llm_response_text, re.DOTALL)
+        sqls = re.findall(r"\bWITH\b .*?;", llm_response_text, re.DOTALL | re.IGNORECASE)
         if sqls:
             logger.debug(f"从WITH CTE模式提取SQL: {sqls[-1]}")
             return sqls[-1]
         
         # 2. SELECT语句
-        sqls = re.findall(r"SELECT.*?;", llm_response_text, re.DOTALL)
+        sqls = re.findall(r"SELECT.*?;", llm_response_text, re.DOTALL | re.IGNORECASE)
         if sqls:
             logger.debug(f"从SELECT语句提取SQL: {sqls[-1]}")
             return sqls[-1]
         
         # 3. 代码块(带SQL标签)
-        sqls = re.findall(r"```sql\n(.*?)```", llm_response_text, re.DOTALL)
+        sqls = re.findall(r"```sql\n(.*?)```", llm_response_text, re.DOTALL | re.IGNORECASE)
         if sqls:
             logger.debug("从SQL代码块提取SQL")
             return sqls[-1].strip()
@@ -271,7 +296,16 @@ class AsyncSmartSqlBase:
 
     def _estimate_tokens(self, text):
         """估算文本的token数量"""
-        return len(text) / 4  # 简单估算
+        return len(text) / 2  # 简单估算
+    
+    def split_data(self, text):
+        """分割数据"""
+        tmp = []
+        for item in text:
+            if self._estimate_tokens(str(item))+self._estimate_tokens(str(tmp)) > self.max_tokens:
+                break
+            tmp.append(item)
+        return tmp.copy()
 
     async def ask(self, question: str, **kwargs) -> Dict[str, Any]:
         # 标记是否使用了缓存结果
@@ -288,6 +322,10 @@ class AsyncSmartSqlBase:
             
             # 执行SQL
             result = await self.db_connector.run_sql(sql)
+            if self._estimate_tokens(str(result)) > self.max_tokens:
+                
+                sql_result['data'] = self.split_data(result)
+                return sql_result
             
             # 检查SQL执行结果
             if isinstance(result, dict) and result.get('error'):
@@ -299,8 +337,9 @@ class AsyncSmartSqlBase:
                 
                 sql_result['data'] = result
             else:
-                sql_result['data'] = result.to_dict(orient='records')
-            
+                # sql_result['data'] = result.to_dict(orient='records')
+                sql_result['data'] = result
+            print(f"sql_result['data']: {sql_result['data']}")
             return sql_result
         except Exception as e:
             logger.error(f"问答处理失败: {str(e)}", exc_info=True)
