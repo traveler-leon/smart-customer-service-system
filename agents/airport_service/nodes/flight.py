@@ -67,7 +67,7 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     这是用户的问题: <question>{user_question}</question>
 """)
     ])
-    print("进入航班信息查询节点")
+    print("进入航班信息查询子智能体")
     user_question = state.get("current_query", "")
     context_docs = state.get("db_context_docs", "")
         # 获取消息历史

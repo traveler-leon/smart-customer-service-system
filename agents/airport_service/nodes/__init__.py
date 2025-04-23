@@ -29,4 +29,5 @@ def filter_messages(state: Dict, nb_messages: int = 10) -> Dict:
 from . import router
 from . import flight
 from . import airport
+from . import chitchat
 

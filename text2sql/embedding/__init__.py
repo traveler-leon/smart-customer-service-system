@@ -7,5 +7,5 @@
 
 from .qwen import QwenEmbedding
 from .siliconflow import SiliconflowEmbedding
-
-__all__ = ['QwenEmbedding', 'SiliconflowEmbedding'] 
+from .glm import GlmEmbedding
+__all__ = ['QwenEmbedding', 'SiliconflowEmbedding','GlmEmbedding'] 

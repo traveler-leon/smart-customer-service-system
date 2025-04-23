@@ -91,7 +91,7 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
             这是用户的问题: <question>{user_question}</question>
 """)
     ])
-    print("进入机场知识节点")
+    print("进入机场知识子智能体")
     user_question = state.get("current_query", "")
     context_docs = state.get("kb_context_docs", "")
         # 获取消息历史
