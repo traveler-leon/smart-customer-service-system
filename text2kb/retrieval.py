@@ -54,7 +54,14 @@ async def get_dataset_id(address: str, name: str, api_key: str) -> str:
         return ""
 
 
-async def retrieve_from_kb(question: str, dataset_name: str, address: str = None, api_key: str = None, similarity_threshold: float = 0.01, top_k: int = 10,key_words:bool=False) -> List[Dict[str, Any]]:
+async def retrieve_from_kb(question: str
+                           , dataset_name: str
+                           , address: str = None
+                           , api_key: str = None
+                           , similarity_threshold: float = 0.2
+                           ,vector_similarity_weight:float=0.5
+                           , top_k: int =5
+                           ,key_words:bool=True) -> List[Dict[str, Any]]:
     """
     从知识库中检索信息
     
@@ -84,6 +91,7 @@ async def retrieve_from_kb(question: str, dataset_name: str, address: str = None
             "question": question,
             "dataset_ids": [dataset_id],
             "similarity_threshold": similarity_threshold,
+            "vector_similarity_weight": vector_similarity_weight,
             "top_k": top_k,
             "key_words": key_words
         }
@@ -126,3 +134,71 @@ async def retrieve_from_kb(question: str, dataset_name: str, address: str = None
     except Exception as e:
         logger.error(f"检索异常: {e}", exc_info=True)
         return [] 
+  
+async def get_session_id(address: str, api_key: str,agent_id: str) -> str:
+    """
+    获取会话ID
+    """
+    session_url = f"http://{address}/api/v1/agents/{agent_id}/sessions"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(session_url, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    # print("获取会话ID",data['data'][0]['id'])
+                    if data.get('data') and len(data['data']) > 0:
+                        session_id = data['data'][0]['id']
+                        logger.debug(f"成功获取数据集ID: {session_id} (数据集: {agent_id})")
+                        return session_id
+                    logger.warning(f"数据集不存在: {agent_id}")
+                else:
+                    logger.warning(f"获取数据集ID API请求失败，状态码: {response.status}")
+                return ""
+    except Exception as e:
+        logger.error(f"获取数据集ID异常: {e}", exc_info=True)
+        return ""
+
+
+
+async def retrieve_from_kb_by_agent(question: str
+                                    ,agent_id: str
+                                    ,address: str = None
+                                    ,api_key: str = None
+                                    ):
+    
+    try:
+        session_id = await get_session_id(address,api_key,agent_id)
+        print("会话ID",session_id)
+        chat_url = f"http://{address}/api/v1/agents/{agent_id}/completions"
+        
+        # 准备请求数据
+        payload = {
+            "question": question,
+            "stream": False,
+            "session_id": session_id
+        }
+        
+        # 设置请求头
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        logger.debug(f"发送检索请求: {chat_url}")
+        # 发送异步POST请求
+        async with aiohttp.ClientSession() as session:
+            async with session.post(chat_url, json=payload, headers=headers) as response:
+                if response.status == 200:
+                    retrieval_data = await response.json()                   
+                    return retrieval_data["data"]["answer"]
+                else:
+                    logger.error(f"检索请求失败，状态码: {response.status}")
+                    return ""
+    except Exception as e:
+        logger.error(f"检索异常: {e}", exc_info=True)
+        return ""

@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from . import base_model, filter_messages
 from langgraph.prebuilt import ToolNode
 from ..tools import chitchat_query
-
+from . import max_msg_len
 
 chitchat_tool_node = ToolNode([chitchat_query])
 
@@ -46,8 +46,9 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     print("进入闲聊节点")
     chain = chitchat_prompt | base_model
     # 获取消息历史
-    new_state = filter_messages(state, 10)
+    new_state = filter_messages(state, max_msg_len)
     messages = new_state.get("messages", [])
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
+    response.role = "闲聊子智能体"
     return {"messages":[response]} 

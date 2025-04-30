@@ -1,16 +1,16 @@
 """
 路由节点
 """
-
 from ..state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
-from ..tools import airport_knowledge_query, flight_info_query,chitchat_query
+from ..tools import airport_knowledge_query, flight_info_query,chitchat_query,airport_knowledge_query_by_agent
 from . import base_model,filter_messages
-
+from . import max_msg_len
 # 绑定工具的模型
-tool_model = base_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
+# tool_model = base_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
+tool_model = base_model.bind_tools([airport_knowledge_query_by_agent, flight_info_query,chitchat_query])
 
 async def identify_intent(state: AirportMainServiceState, config: RunnableConfig):
     """
@@ -38,7 +38,7 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
 
             根据用户意图，你必须选择以下工具之一：
             - `flight_info_query`: 用于查询航班信息。
-            - `airport_knowledge_query`: 用于查询机场政策和乘机注意事项。
+            - `airport_knowledge_query_by_agent`: 用于查询机场政策和乘机注意事项。
 
             你只需分析用户意图并选择合适的工具，不要生成任何回答内容。必须调用一个工具，而不是直接回复用户。根据对话历史抽取出符合工具调用条件的参数。
 
@@ -58,14 +58,46 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     chain = airport_assistant_prompt | tool_model
     # print("当前对话历史为：",state.get("messages",[]))
     # 获取消息历史
-    new_state = filter_messages(state, 10)
+    new_state = filter_messages(state, max_msg_len)
     messages = new_state.get("messages", [])
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
+    response.role = "主路由智能体"
     # print(response)
     
     # 返回更新后的状态
     return {"messages": [response]}
+
+# def route_to_next_node(state: AirportMainServiceState):
+#     """
+#     根据当前状态路由到下一个节点
+    
+#     Args:
+#         state: 当前状态对象
+        
+#     Returns:
+#         字符串，表示下一个节点的名称
+#     """
+#     # 获取最新消息
+#     messages = state.get("messages", [])
+#     if not messages:
+#         return "chitchat_tool_node"
+#     latest_message = messages[-1]
+#     # 检查是否有工具调用
+#     if not hasattr(latest_message, "tool_calls") or not latest_message.tool_calls:
+#         return "chitchat_tool_node"
+    
+#     # 根据工具调用决定下一个节点
+#     tool_name = latest_message.tool_calls[-1].get("name", "")
+    
+#     if tool_name == "flight_info_query":
+#         return "flight_tool_node"
+#     elif tool_name == "airport_knowledge_query":
+#         return "airport_tool_node"
+#     else:
+#         return "chitchat_tool_node" 
+    
+
 
 def route_to_next_node(state: AirportMainServiceState):
     """
@@ -91,7 +123,7 @@ def route_to_next_node(state: AirportMainServiceState):
     
     if tool_name == "flight_info_query":
         return "flight_tool_node"
-    elif tool_name == "airport_knowledge_query":
+    elif tool_name == "airport_knowledge_query_by_agent":
         return "airport_tool_node"
     else:
         return "chitchat_tool_node" 

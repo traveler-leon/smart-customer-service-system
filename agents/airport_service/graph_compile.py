@@ -75,7 +75,7 @@ class GraphManager:
                 stream_mode="messages"
             ):
                 if result.content and metadata["langgraph_node"] in output_node:
-                    yield result.content
+                    yield metadata["langgraph_node"],result.content
     
     async def cleanup(self):
         """清理资源，关闭所有数据库连接"""

@@ -1,16 +1,21 @@
 """
 航班信息节点
 """
-
-from ..state import AirportMainServiceState
+import sys
+import os
+import json
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from agents.airport_service.state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
-from ..tools import flight_info_query
-from typing import List
-from pydantic import BaseModel, Field
+from agents.airport_service.tools import flight_info_query
 from langgraph.prebuilt import ToolNode
-from . import base_model,filter_messages
+from agents.airport_service.nodes.airport import base_model,filter_messages
+from sql2bi import SQLData, convert_sql_to_chart
+from langchain_core.messages import AIMessage
+from langchain_core.messages import RemoveMessage
 
+from . import max_msg_len
 flight_tool_node = ToolNode([flight_info_query])
 
 
@@ -71,8 +76,32 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     user_question = state.get("current_query", "")
     context_docs = state.get("db_context_docs", "")
         # 获取消息历史
-    new_state = filter_messages(state, 10)
+    new_state = filter_messages(state, max_msg_len)
     messages = new_state.get("messages", [])
     kb_chain = kb_prompt | base_model
     res = await kb_chain.ainvoke({ "user_question": user_question,"sql":context_docs["sql"],"sql_result":context_docs["data"],"messages":messages})
-    return {"messages":res}
+    res.role = "航班信息问答子智能体"
+    return {"messages":[res]}
+
+
+
+
+async def sql2bi(state: AirportMainServiceState, config: RunnableConfig):
+    print("进入sql2bi子智能体")
+    context_docs = state.get("db_context_docs", "")
+
+    # 创建SQLData对象
+    chart_config = {}
+    try:
+        sql_data = SQLData(context_docs["sql"], context_docs["data"])
+        chart_config = convert_sql_to_chart(sql_data)
+    except Exception as e:
+        print(f"SQL数据转换为图表配置失败: {e}")
+    # print(chart_config)
+    chart_config_str = json.dumps(chart_config, ensure_ascii=False, indent=2)
+
+    return {"messages": AIMessage(content=chart_config_str)}
+
+def filter_chatbot_message(state: AirportMainServiceState, config: RunnableConfig):
+    messages = state.get("messages", [])
+    return {"messages": [RemoveMessage(id=messages[-1].id)]}

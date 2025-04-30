@@ -5,7 +5,8 @@ import pandas as pd
 from common.logging import get_logger
 from .interfaces import AsyncLLMProvider, AsyncVectorStore, AsyncDBConnector, AsyncMiddleware, AsyncEmbeddingProvider
 import time
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 # 获取日志记录器
 logger = get_logger("text2sql.base")
@@ -292,7 +293,8 @@ class AsyncSmartSqlBase:
     
     async def run_sql(self, sql: str, **kwargs):
         """异步执行SQL查询"""
-        return await self.db_connector.run_sql(sql, **kwargs)
+        result = await self.db_connector.run_sql(sql, **kwargs)
+        return serialize_result(result)
 
     def _estimate_tokens(self, text):
         """估算文本的token数量"""
@@ -322,6 +324,8 @@ class AsyncSmartSqlBase:
             
             # 执行SQL
             result = await self.db_connector.run_sql(sql)
+            result = serialize_result(result)
+            
             if self._estimate_tokens(str(result)) > self.max_tokens:
                 
                 sql_result['data'] = self.split_data(result)
@@ -337,9 +341,8 @@ class AsyncSmartSqlBase:
                 
                 sql_result['data'] = result
             else:
-                # sql_result['data'] = result.to_dict(orient='records')
+                # 在这里应用序列化函数
                 sql_result['data'] = result
-            print(f"sql_result['data']: {sql_result['data']}")
             return sql_result
         except Exception as e:
             logger.error(f"问答处理失败: {str(e)}", exc_info=True)
@@ -417,3 +420,26 @@ class AsyncSmartSqlBase:
         for middleware in self.middlewares:
             if hasattr(middleware, 'clear_cache'):
                 await middleware.clear_cache(question)
+
+def serialize_result(obj):
+    """
+    递归处理结果对象，将不可序列化的类型转换为可序列化类型
+    """
+    if isinstance(obj, dict):
+        return {k: serialize_result(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_result(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(serialize_result(item) for item in obj)
+    elif isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    elif isinstance(obj, date):
+        return obj.isoformat()
+    elif pd.isna(obj):  # 处理NaN和None
+        return None
+    elif hasattr(obj, 'to_dict'):  # 处理Pandas DataFrame或Series
+        return serialize_result(obj.to_dict(orient='records'))
+    else:
+        return obj

@@ -5,12 +5,12 @@ from ..state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.prebuilt import ToolNode
-from ..tools import airport_knowledge_query
+from ..tools import airport_knowledge_query,airport_knowledge_query_by_agent
 from . import base_model,filter_messages
+from . import max_msg_len
 
-
-airport_tool_node = ToolNode([airport_knowledge_query])
-
+# airport_tool_node = ToolNode([airport_knowledge_query])
+airport_tool_node = ToolNode([airport_knowledge_query_by_agent])
 
 async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig):
 
@@ -95,14 +95,15 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
     user_question = state.get("current_query", "")
     context_docs = state.get("kb_context_docs", "")
         # 获取消息历史
-    new_state = filter_messages(state, 10)
+    new_state = filter_messages(state, max_msg_len)
     messages = new_state.get("messages", [])
-    if len(context_docs) < 10:
-        context_docs = context_docs[:3]
+    if len(context_docs) < max_msg_len:
+        context_docs = context_docs[:max_msg_len]
         return {"messages":"抱歉，暂时我们没有相关信息。"}
     else:
         kb_chain = kb_prompt | base_model
         res = await kb_chain.ainvoke({ "user_question": user_question,"context": context_docs,"messages":messages})
+        res.role = "机场知识问答子智能体"
         return {"messages":res}
 
 

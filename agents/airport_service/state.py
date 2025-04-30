@@ -24,3 +24,4 @@ class AirportMainServiceState(MessagesState):
     # 上下文信息
     kb_context_docs: str = ""
     db_context_docs: Dict = {}
+    chart_config: Dict = {}

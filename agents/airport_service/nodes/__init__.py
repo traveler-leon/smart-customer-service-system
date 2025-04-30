@@ -8,7 +8,8 @@ from typing import List, Dict
 
 # 从配置文件获取模型配置
 model_config = config_manager.get_agents_config().get("llm", {})
-
+max_msg_len = model_config.get("max_history_turns", 10)
+max_tokens = model_config.get("max_tokens", 10000)
 # 创建共用模型实例
 base_model = ChatOpenAI(
     model=model_config.get("model"),

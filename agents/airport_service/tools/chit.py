@@ -22,7 +22,7 @@ async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToo
     """
     return Command(
         update={
-            "messages": [ToolMessage(content=question, tool_call_id=tool_call_id)],
+            "messages": [ToolMessage(content="工具调用结束,即将转到闲聊子智能体", tool_call_id=tool_call_id)],
             "current_query": question
         }
     )
