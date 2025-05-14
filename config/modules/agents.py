@@ -11,5 +11,14 @@ AGENTS_CONFIG = {
         "temperature": os.getenv("LLM_TEMPERATURE"),
         "max_history_turns": int(os.getenv("LLM_MAX_HISTORY_TURNS", "10")),
         "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "1000")),
+    },
+    "store":{
+        "host": os.getenv("DB_HOST"),
+        "port": os.getenv("DB_PORT"),
+        "user": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD"),
+        "database": os.getenv("DB_DATABASE"),
+        "min_size": int(os.getenv("DB_POOL_MIN_SIZE", "5")),
+        "max_size": int(os.getenv("DB_POOL_MAX_SIZE", "20"))
     }
 } 

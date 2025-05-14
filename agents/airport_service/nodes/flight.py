@@ -14,12 +14,14 @@ from agents.airport_service.nodes.airport import base_model,filter_messages
 from sql2bi import SQLData, convert_sql_to_chart
 from langchain_core.messages import AIMessage
 from langchain_core.messages import RemoveMessage
-
-from . import max_msg_len
+from . import base_model,filter_messages,profile_executor,episode_executor,memery_delay,max_msg_len
+from langgraph.store.base import BaseStore
+from langgraph.config import get_store
 flight_tool_node = ToolNode([flight_info_query])
 
 
-async def provide_flight_info(state: AirportMainServiceState, config: RunnableConfig):
+async def provide_flight_info(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
+    store = get_store()
     """
     提供航班信息的节点函数
     
@@ -81,6 +83,11 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     kb_chain = kb_prompt | base_model
     res = await kb_chain.ainvoke({ "user_question": user_question,"sql":context_docs["sql"],"sql_result":context_docs["data"],"messages":messages})
     res.role = "航班信息问答子智能体"
+    # 提取用户画像
+    profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    # 提取历史事件
+    episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+
     return {"messages":[res]}
 
 

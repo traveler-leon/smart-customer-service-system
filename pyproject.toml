@@ -1,3 +1,10 @@
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple/"
+default = true
+
+[tool.uv.pip]
+index-url = "https://mirrors.aliyun.com/pypi/simple/"
+
 [project]
 name = "smart-customer-service-system"
 version = "0.1.0"
@@ -11,12 +18,13 @@ dependencies = [
     "asyncpg>=0.30.0",
     "chromadb>=0.6.3",
     "chromadb-client>=0.6.3",
-    "langchain-community>=0.3.21",
-    "langchain-openai>=0.3.12",
-    "langgraph>=0.3.25",
-    "langgraph-checkpoint-postgres>=2.0.19",
-    "langgraph-checkpoint-sqlite>=2.0.6",
-    "openai>=1.70.0",
+    "langchain-community>=0.3.23",
+    "langchain-openai>=0.3.16",
+    "langgraph>=0.4.3",
+    "langgraph-checkpoint-postgres>=2.0.21",
+    "langgraph-checkpoint-sqlite>=2.0.7",
+    "langmem>=0.0.25",
+    "openai>=1.78.0",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",
     "psycopg[binary]>=3.2.6",

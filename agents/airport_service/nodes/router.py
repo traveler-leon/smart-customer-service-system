@@ -5,14 +5,17 @@ from ..state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
+from langgraph.store.base import BaseStore
 from ..tools import airport_knowledge_query, flight_info_query,chitchat_query,airport_knowledge_query_by_agent
 from . import base_model,filter_messages
 from . import max_msg_len
+from langgraph.config import get_store
 # 绑定工具的模型
 # tool_model = base_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
 tool_model = base_model.bind_tools([airport_knowledge_query_by_agent, flight_info_query,chitchat_query])
 
-async def identify_intent(state: AirportMainServiceState, config: RunnableConfig):
+async def identify_intent(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
+    store = get_store()
     """
     识别用户意图的节点函数
     

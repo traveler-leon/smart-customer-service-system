@@ -7,12 +7,15 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from . import base_model, filter_messages
 from langgraph.prebuilt import ToolNode
+from langgraph.config import get_store
+from langgraph.store.base import BaseStore
 from ..tools import chitchat_query
-from . import max_msg_len
+from . import base_model,filter_messages,profile_executor,memery_delay,max_msg_len
 
 chitchat_tool_node = ToolNode([chitchat_query])
 
-async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig):
+async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
+    store = get_store()
     """
     处理闲聊问题的节点函数
     
@@ -32,7 +35,7 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
             作为机场客服：
             1. 你应该保持友好、专业和礼貌的态度
             2. 对于打招呼、问候等简单问题，给予温暖回应
-            3. 可以回答天气、机场周边设施、交通等非专业性问题
+            3. 可以回答天气、查询航班信息、机场知识问答、机场周边设施、交通等非专业性问题
             4. 如果用户问的是航班信息或机场政策等专业问题，你可以礼貌地建议他们咨询专门的航班查询或机场政策服务
             5. 回答应简洁明了，语气亲切自然
             
@@ -51,4 +54,6 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
     response.role = "闲聊子智能体"
+    # 提取用户画像
+    profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)
     return {"messages":[response]} 
