@@ -5,7 +5,7 @@
 from typing import Dict, List, TypedDict, Annotated, Optional
 from langchain_core.messages import BaseMessage
 from langgraph.graph import MessagesState
-
+from typing import Union
 
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -40,7 +40,7 @@ class Episode(BaseModel):
     )
     thoughts: str = Field(
         ...,
-        description="智能体在该事件中的内部推理过程和观察，是如何得出正确行动和结果的。“我……”",
+        description="智能体在该事件中的内部推理过程和观察，是如何得出正确行动和结果的.\"我……\"",
     )
     action: str = Field(
         ...,
@@ -51,6 +51,11 @@ class Episode(BaseModel):
         description="结果与回顾。你做得好的是什么？下次可以改进的是什么？我……",
     )
 
+class TranslationResult(BaseModel):
+    """翻译结果模型"""
+    language: str = Field(description="检测到的语言类型")
+    original_text: str = Field(description="用户输入的原始内容")
+    translated_text: str = Field(description="翻译成的中文内容")
 
 
 
@@ -68,7 +73,8 @@ class AirportMainServiceState(MessagesState):
     user_base_info: Annotated[Dict, dict_merge] = {}
     user_profile_info: Optional[UserProfile] = None
     # 当前查询
-    current_query: Optional[str] = None
+    current_tool_query: Optional[str] = None
+    translator_result: Optional[TranslationResult] = None
     # 上下文信息
     kb_context_docs: str = ""
     db_context_docs: Dict = {}

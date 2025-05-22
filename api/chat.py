@@ -22,18 +22,26 @@ async def chat_stream(user_input: UserInput, request: Request, response: Respons
         try:
             if isinstance(user_input.multi_params, str):
                 json.loads(user_input.multi_params)
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="multi_params格式错误")
     token = request.headers.get("token","")
     if token:
         response.headers["token"] = token
+    Is_translate = False
+    output_nodes = []
+    if Is_translate:
+        output_nodes = ["translate_output_node"]
+    else:
+        output_nodes = ["airport_assistant_node", "flight_assistant_node", "chitchat_node"]
     async def event_generator():
         try:
             threads = {
                 "configurable": {
                     "passenger_id": user_input.cid,
                     "thread_id": user_input.cid,
-                    "token": token
+                    "token": token,
+                    "Is_translate": Is_translate
                 }
             }
             logger.info(f"流用户输入: {user_input.query_txt}")
@@ -48,7 +56,7 @@ async def chat_stream(user_input: UserInput, request: Request, response: Respons
                     "answer_txt_type": "0"
                 }
             }
-            output_nodes = ["router", "airport_assistant_node", "flight_assistant_node", "chitchat_node", "sql2bi_node"]
+            # output_nodes = ["router", "airport_assistant_node", "flight_assistant_node", "chitchat_node", "sql2bi_node"]
             async for node, result in graph_manager.process_chat_message(
                 message=user_input.query_txt,
                 thread_id=threads,

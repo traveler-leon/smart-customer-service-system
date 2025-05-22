@@ -13,7 +13,8 @@ async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToo
     """
     闲聊工具
     此工具用于回答用户关于问候、天气、交通等一些闲聊问题。
-    
+    注意：如果用户问的是一些可不可以携带的物品、以及一些机场的设施，不可以使用此工具。而是要调用其他的工具。
+
     Args:
         question: 用户提出的问题"
     Examples:

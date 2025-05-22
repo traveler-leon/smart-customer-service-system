@@ -16,6 +16,12 @@ from config.utils import config_manager
 _text2kb_config = config_manager.get_text2kb_config()
 KB_ADDRESS = _text2kb_config.get("kb_address")
 KB_API_KEY = _text2kb_config.get("kb_api_key")
+KB_DATASET_NAME = _text2kb_config.get("kb_dataset_name")
+KB_SIMILARITY_THRESHOLD = float(_text2kb_config.get("kb_similarity_threshold"))
+KB_VECTOR_SIMILARITY_WEIGHT = float(_text2kb_config.get("kb_vector_similarity_weight"))
+KB_TOP_K = int(_text2kb_config.get("kb_topK"))
+KB_KEY_WORDS = bool(_text2kb_config.get("kb_key_words"))
+
 
 @tool
 async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,InjectedToolCallId]) -> str:
@@ -29,7 +35,7 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     4. 值机服务：团队预约、值机区域、自助办理、自助值机
     5. 中转服务
     
-    当用户询问任何与济南机场服务相关的问题时，应首选此工具。
+    当用户询问任何与济南机场服务相关的问题时，应首选此工具。并提供符合检索的用户的完整问题。
     如果用户问题涉及上述服务类别的相关咨询，或明确询问机场规定和服务流程，都应该调用此工具。
     
     Args:
@@ -41,18 +47,19 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
         "乘客需要通过安检门，随身行李需要通过X光机检查。液体不超过100ml，需要放在透明袋中。"
     """
     print("进入知识查询工具")
+
     results = await retrieve_from_kb(question=user_question
-                                     , dataset_name="济南"
+                                     ,dataset_name=KB_DATASET_NAME
                                      ,address=KB_ADDRESS
                                      ,api_key=KB_API_KEY
-                                     ,similarity_threshold=0.2
-                                     ,vector_similarity_weight=0.7
-                                     ,top_k=5,key_words=True)
+                                     ,similarity_threshold=KB_SIMILARITY_THRESHOLD
+                                     ,vector_similarity_weight=KB_VECTOR_SIMILARITY_WEIGHT
+                                     ,top_k=KB_TOP_K,key_words=KB_KEY_WORDS)
     format_doc = []
     if len(results) > 0:
         for i,doc in enumerate(results):
             format_doc.append(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}")
-        text = "\n\n".join(format_doc[:3])
+        text = "\n\n".join(format_doc[:6])
     else:
         text = "抱歉，在知识库中没有找到与问题相关的信息。"
     # print("检索结果",format_doc[:3])
@@ -90,7 +97,7 @@ async def airport_knowledge_query_by_agent(user_question:str,tool_call_id:Annota
     """
     print("进入知识查询工具")
     text = await retrieve_from_kb_by_agent(question=user_question
-                                     , agent_id="3e560512258d11f089699a87a364d8ff"
+                                     , agent_id="b2b2a32e33bc11f096ef4ef12f9f5002"
                                      ,address=KB_ADDRESS
                                      ,api_key=KB_API_KEY)
     print(text)
@@ -109,5 +116,5 @@ if __name__ == "__main__":
     pass
     # 测试时提供一个虚拟的tool_call_id
     # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "坐飞机可以带刀吗？", "tool_call_id": "test_call_id"})))
-    # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "坐飞机可以带刀具吗？", "tool_call_id": "test_call_id"})))
+    # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "我有个充电宝，可以带上飞机吗?", "tool_call_id": "test_call_id"})))
     # print(asyncio.run(airport_knowledge_query_by_agent.ainvoke({"user_question": "坐飞机可以带刀吗？", "tool_call_id": "test_call_id"})))

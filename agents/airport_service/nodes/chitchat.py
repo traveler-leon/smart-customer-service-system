@@ -18,7 +18,7 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     store = get_store()
     """
     处理闲聊问题的节点函数
-    
+
     Args:
         state: 当前状态对象
         config: 可运行配置

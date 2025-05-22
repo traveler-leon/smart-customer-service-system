@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI
 from config.utils import config_manager
 from typing import List, Dict
 from langmem import create_memory_store_manager,ReflectionExecutor
+from langchain.chat_models import init_chat_model
 from agents.airport_service.state import UserProfile,Episode
 
 # 从配置文件获取模型配置
@@ -55,7 +56,8 @@ episode_executor = ReflectionExecutor(episode_manager)
 # 导出模块
 from . import router
 from . import flight
-from . import airport
+from . import airport_bak
 from . import chitchat
 from . import summary
+from . import translator
 

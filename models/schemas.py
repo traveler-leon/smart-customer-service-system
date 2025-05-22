@@ -22,3 +22,8 @@ class APIResponse(BaseModel):
     ret_code: str
     ret_msg: str
     item: APIResponseItem
+
+class HumanAgentSummaryRequest(BaseModel):
+    cid: str
+    msgid: str
+    conversation_list: list

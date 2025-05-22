@@ -10,7 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from agents.airport_service.tools import flight_info_query
 from langgraph.prebuilt import ToolNode
-from agents.airport_service.nodes.airport import base_model,filter_messages
+from agents.airport_service.nodes.airport_bak import base_model,filter_messages
 from sql2bi import SQLData, convert_sql_to_chart
 from langchain_core.messages import AIMessage
 from langchain_core.messages import RemoveMessage
@@ -75,11 +75,11 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
 """)
     ])
     print("进入航班信息查询子智能体")
-    user_question = state.get("current_query", "")
+    user_question = state.get("current_tool_query", "")
     context_docs = state.get("db_context_docs", "")
         # 获取消息历史
     new_state = filter_messages(state, max_msg_len)
-    messages = new_state.get("messages", [])
+    messages = new_state.get("messages", [AIMessage(content="暂无对话历史")])
     kb_chain = kb_prompt | base_model
     res = await kb_chain.ainvoke({ "user_question": user_question,"sql":context_docs["sql"],"sql_result":context_docs["data"],"messages":messages})
     res.role = "航班信息问答子智能体"
