@@ -33,7 +33,7 @@ async def chat_stream(user_input: UserInput, request: Request, response: Respons
     if Is_translate:
         output_nodes = ["translate_output_node"]
     else:
-        output_nodes = ["airport_assistant_node", "flight_assistant_node", "chitchat_node"]
+        output_nodes = ["router","airport_assistant_node", "flight_assistant_node", "chitchat_node"]
     async def event_generator():
         try:
             threads = {

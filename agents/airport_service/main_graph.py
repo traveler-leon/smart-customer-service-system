@@ -3,7 +3,7 @@
 """
 from langgraph.graph import StateGraph, START, END
 from .state import AirportMainServiceState
-from .nodes import airport_bak, router, flight, chitchat, translator
+from .nodes import airport,router, flight, chitchat, translator
 from langgraph.pregel import RetryPolicy
 
 def build_airport_service_graph():
@@ -25,8 +25,8 @@ def build_airport_service_graph():
     graph.add_node("router", router.identify_intent, retry=RetryPolicy(max_attempts=5))
     graph.add_node("flight_tool_node", flight.flight_tool_node, retry=RetryPolicy(max_attempts=5))
     graph.add_node("flight_assistant_node", flight.provide_flight_info, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("airport_tool_node", airport_bak.airport_tool_node, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("airport_assistant_node", airport_bak.provide_airport_knowledge, retry=RetryPolicy(max_attempts=5))
+    graph.add_node("airport_tool_node", airport.airport_tool_node, retry=RetryPolicy(max_attempts=5))
+    graph.add_node("airport_assistant_node", airport.provide_airport_knowledge, retry=RetryPolicy(max_attempts=5))
     # graph.add_node("sql2bi_node", flight.sql2bi,retry=RetryPolicy(max_attempts=5))
     # graph.add_node("filter_chatbot_message", flight.filter_chatbot_message,retry=RetryPolicy(max_attempts=5))
     graph.add_node("chitchat_tool_node", chitchat.chitchat_tool_node, retry=RetryPolicy(max_attempts=5))

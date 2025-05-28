@@ -459,6 +459,19 @@ wheels = [
 ]
 
 [[package]]
+name = "dashscope"
+version = "1.23.3"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "requests" },
+    { name = "websocket-client" },
+]
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/58/91/ab7719b9b689a9bfaa8c9b7d9b72aa3501534c6d8eaec547beb812d742e9/dashscope-1.23.3-py3-none-any.whl", hash = "sha256:011717456e8aa25df9b402c8ad4af478a6cd079a902099403fd7fb3cfd0b0535" },
+]
+
+[[package]]
 name = "dataclasses-json"
 version = "0.6.7"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
@@ -2404,6 +2417,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "chromadb" },
     { name = "chromadb-client" },
+    { name = "dashscope" },
     { name = "langchain-community" },
     { name = "langchain-openai" },
     { name = "langgraph" },
@@ -2428,6 +2442,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "chromadb", specifier = ">=0.6.3" },
     { name = "chromadb-client", specifier = ">=0.6.3" },
+    { name = "dashscope", specifier = ">=1.23.3" },
     { name = "langchain-community", specifier = ">=0.3.23" },
     { name = "langchain-openai", specifier = ">=0.3.16" },
     { name = "langgraph", specifier = ">=0.4.3" },

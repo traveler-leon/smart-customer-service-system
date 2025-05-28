@@ -10,7 +10,6 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from agents.airport_service.tools import flight_info_query
 from langgraph.prebuilt import ToolNode
-from agents.airport_service.nodes.airport_bak import base_model,filter_messages
 from sql2bi import SQLData, convert_sql_to_chart
 from langchain_core.messages import AIMessage
 from langchain_core.messages import RemoveMessage
@@ -35,8 +34,8 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     kb_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
-            """你是济南遥墙国际机场 (TNA) 的虚拟客服助手，名为"遥墙小飞"。
-            你的主要职责是帮助用户解答关于济南遥墙国际机场的航班信息查询，包括航班状态、起降时间、登机口信息、航班延误等。
+            """你是深圳宝安国际机场 (SZX) 的虚拟客服助手，名为"宝安小飞"。
+            你的主要职责是帮助用户解答关于深圳宝安国际机场的航班信息查询，包括航班状态、起降时间、登机口信息、航班延误等。
 
             用户希望获得清晰、准确且简洁的航班信息回答。
 

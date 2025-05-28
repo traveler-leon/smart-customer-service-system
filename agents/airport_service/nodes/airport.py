@@ -7,6 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.prebuilt import ToolNode
 from langgraph.store.base import BaseStore
 from langchain_core.messages import AIMessage
+from langgraph.types import Command
 from langgraph.config import get_store
 from ..tools import airport_knowledge_query,airport_knowledge_query_by_agent
 from . import base_model,filter_messages,profile_executor,episode_executor,memery_delay,max_msg_len
@@ -30,8 +31,8 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
     kb_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
-            """你是济南遥墙国际机场 (TNA) 的虚拟客服助手，名为"遥墙小飞"。
-            你的主要职责是帮助用户解答关于济南遥墙国际机场的常见问题，例如安全检查、出行服务、行李服务、值机服务、中转服务等。
+            """你是深圳宝安国际机场 (SZX) 的虚拟客服助手，名为"宝安小飞"。
+            你的主要职责是帮助用户解答关于深圳宝安国际机场旅客须知问题，例如安全检查、出行服务、行李服务、值机服务、中转服务等。
 
             用户希望获得清晰、准确且简洁的回答。
 
@@ -113,9 +114,15 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
             这是当前用户的问题: <question>{user_question}</question>
 """)
     ])
-    print("进入机场知识子智能体")
+    print("进入机场知识子智能体-1")
     user_question = state.get("current_tool_query", "")
     context_docs = state.get("kb_context_docs", "")
+    print("context_docs",context_docs)
+    if "知识库中没有" in context_docs:
+        return Command(
+            goto="chitchat_node"
+        )
+
         # 获取消息历史
     new_state = filter_messages(state, max_msg_len)
     messages = new_state.get("messages", [AIMessage(content="暂无对话历史")])

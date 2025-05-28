@@ -56,7 +56,7 @@ episode_executor = ReflectionExecutor(episode_manager)
 # 导出模块
 from . import router
 from . import flight
-from . import airport_bak
+from . import airport
 from . import chitchat
 from . import summary
 from . import translator
