@@ -75,6 +75,8 @@ class AirportMainServiceState(MessagesState):
     # 当前查询
     current_tool_query: Optional[str] = None
     translator_result: Optional[TranslationResult] = None
+    # 情感识别
+    emotion_result:Dict = {}
     # 上下文信息
     kb_context_docs: str = ""
     db_context_docs: Dict = {}

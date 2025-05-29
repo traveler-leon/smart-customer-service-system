@@ -12,7 +12,7 @@ from langchain_core.messages import ToolMessage
 async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> str:
     """
     闲聊工具
-    此工具用于回答用户关于机场相关的问题和信息，如问候、天气、机场服务设施、商业信息、周边旅游景点、周边服务设施等。
+    此工具用于回答用户关于问候、天气、交通等一些闲聊问题。
     注意：如果用户问的是一些可不可以携带的物品等，不可以使用此工具。而是要调用其他的工具。
 
     Args:

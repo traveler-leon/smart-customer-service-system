@@ -20,5 +20,8 @@ AGENTS_CONFIG = {
         "database": os.getenv("DB_DATABASE"),
         "min_size": int(os.getenv("DB_POOL_MIN_SIZE", "5")),
         "max_size": int(os.getenv("DB_POOL_MAX_SIZE", "20"))
+    },
+    "emotions":{
+        'model_path':os.getenv("EMOTION_MODEL","tabularisai/multilingual-sentiment-analysis")
     }
 } 

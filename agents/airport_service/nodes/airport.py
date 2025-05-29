@@ -117,11 +117,10 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
     print("进入机场知识子智能体-1")
     user_question = state.get("current_tool_query", "")
     context_docs = state.get("kb_context_docs", "")
-    print("context_docs",context_docs)
-    if "知识库中没有" in context_docs:
-        return Command(
-            goto="chitchat_node"
-        )
+    # if "知识库中没有" in context_docs:
+    #     return Command(
+    #         goto="chitchat_node"
+    #     )
 
         # 获取消息历史
     new_state = filter_messages(state, max_msg_len)

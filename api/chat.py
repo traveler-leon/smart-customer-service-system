@@ -21,14 +21,19 @@ async def chat_stream(user_input: UserInput, request: Request, response: Respons
     if user_input.multi_params:
         try:
             if isinstance(user_input.multi_params, str):
-                json.loads(user_input.multi_params)
-
+                multi_params = json.loads(user_input.multi_params)
+                Is_translate = multi_params.get("Is_translate", False)
+                Is_emotion = multi_params.get("Is_emotion", False)
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="multi_params格式错误")
+    else:
+        Is_translate = False
+        Is_emotion = False
+        
     token = request.headers.get("token","")
     if token:
         response.headers["token"] = token
-    Is_translate = False
+
     output_nodes = []
     if Is_translate:
         output_nodes = ["translate_output_node"]
@@ -41,7 +46,8 @@ async def chat_stream(user_input: UserInput, request: Request, response: Respons
                     "passenger_id": user_input.cid,
                     "thread_id": user_input.cid,
                     "token": token,
-                    "Is_translate": Is_translate
+                    "Is_translate": Is_translate,
+                    "Is_emotion": Is_emotion
                 }
             }
             logger.info(f"流用户输入: {user_input.query_txt}")
