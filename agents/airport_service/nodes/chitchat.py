@@ -1,7 +1,7 @@
 """
 闲聊节点
 """
-
+import httpx
 from ..state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,6 +17,34 @@ from ..tools import chitchat_query
 from . import base_model,filter_messages,profile_executor,memery_delay,max_msg_len
 
 chitchat_tool_node = ToolNode([chitchat_query])
+
+
+
+async def call_dashscope(dialog_his:list):
+    url = "https://dashscope.aliyuncs.com/api/v1/apps/01dd90c394de4c468e0626dabef3d79e/completion"
+    headers = {
+        "Authorization": "Bearer sk-2e8c1dd4f75a44bf8114b337a5498a91",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "input": {
+            "messages":dialog_his
+        },
+        "parameters": {},
+        "debug": {}
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=360.0) as client:
+            response = await client.post(url, headers=headers, json=payload)
+            if response.status_code == 200:
+                return response.json()['output']['text']
+            else:
+                return "抱歉，系统繁忙，请您稍后再试"
+    except Exception as e:
+        return "抱歉，系统繁忙，请您稍后再试"
+
+
 
 async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()
@@ -58,23 +86,30 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     # 调用链获取响应
 
     msgs = chitchat_prompt.invoke({"messages": messages})
-    content = ""
+    content = []
+    tmp = dict()
     for msg in msgs.messages:
-        # print(msg.name,msg.content)
-        content += msg.type + ":" + msg.content + "\n"
-    print("用户输入：",messages[-1].content)
-    response = Application.call(
-        # 若没有配置环境变量，可用百炼API Key将下行替换为：api_key="sk-xxx"。但不建议在生产环境中直接将API Key硬编码到代码中，以减少API Key泄露风险。
-        api_key="sk-2e8c1dd4f75a44bf8114b337a5498a91",
-        app_id='01dd90c394de4c468e0626dabef3d79e',# 替换为实际的应用 ID
-        prompt=messages[-1].content)
+        tmp.clear()
+        if len(msg.content.strip()) > 0:
+            if msg.type == "human":
+                tmp["role"] = "user"
+                tmp["content"] = msg.content
+                content.append(tmp.copy())
+            elif msg.type == "ai":
+                tmp["role"] = "assistant"
+                tmp["content"] = msg.content
+                content.append(tmp.copy())
+            elif msg.type == "system":
+                tmp["role"] = "system"
+                tmp["content"] = msg.content
+                content.append(tmp.copy())
+    print("传递的参数",content)
+    response = await call_dashscope(content)
+    print("闲聊子智能体输出：",response)
 
-    if response.status_code != HTTPStatus.OK:
-        pass
-    else:
-        print("闲聊子智能体回复：",response.output.text)
-    
-    return {"messages":[AIMessage(role="闲聊子智能体",content=response.output.text)]}
+    # 提取用户画像
+    profile_executor.submit({"messages":state["messages"]+[AIMessage(role="闲聊子智能体",content=response)]},after_seconds=memery_delay)
+    return {"messages":[AIMessage(role="闲聊子智能体",content=response)]}
     
 
     # response = await chain.ainvoke({"messages": messages})

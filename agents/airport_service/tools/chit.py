@@ -12,14 +12,14 @@ from langchain_core.messages import ToolMessage
 async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> str:
     """
     闲聊工具
-    此工具用于回答用户关于问候、天气、交通等一些闲聊问题。
+    此工具用于回答用户关于问候、天气、交通、周边旅游景点、周边服务设施等一些闲聊问题。
     注意：如果用户问的是一些可不可以携带的物品等，不可以使用此工具。而是要调用其他的工具。
 
     Args:
         question: 用户提出的问题"
     Examples:
         >>> chitchat_query("你好，今天天气怎么样？")
-        "今天天气晴朗，温度适宜，适合出行。"
+        >>> chitchat_query("深圳宝安国际机场周边有哪些旅游景点？")
     """
     return Command(
         update={
