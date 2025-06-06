@@ -101,7 +101,6 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
     response.role = "主路由智能体"
-    print("主路由智能体返回的响应为：",response)
     
     # 返回更新后的状态
     return {"messages": [response]}

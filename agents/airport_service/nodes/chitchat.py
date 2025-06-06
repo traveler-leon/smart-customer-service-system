@@ -85,35 +85,35 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     messages = new_state.get("messages", [])
     # 调用链获取响应
 
-    msgs = chitchat_prompt.invoke({"messages": messages})
-    content = []
-    tmp = dict()
-    for msg in msgs.messages:
-        tmp.clear()
-        if len(msg.content.strip()) > 0:
-            if msg.type == "human":
-                tmp["role"] = "user"
-                tmp["content"] = msg.content
-                content.append(tmp.copy())
-            elif msg.type == "ai":
-                tmp["role"] = "assistant"
-                tmp["content"] = msg.content
-                content.append(tmp.copy())
-            elif msg.type == "system":
-                tmp["role"] = "system"
-                tmp["content"] = msg.content
-                content.append(tmp.copy())
-    print("传递的参数",content)
-    response = await call_dashscope(content)
-    print("闲聊子智能体输出：",response)
+    # msgs = chitchat_prompt.invoke({"messages": messages})
+    # content = []
+    # tmp = dict()
+    # for msg in msgs.messages:
+    #     tmp.clear()
+    #     if len(msg.content.strip()) > 0:
+    #         if msg.type == "human":
+    #             tmp["role"] = "user"
+    #             tmp["content"] = msg.content
+    #             content.append(tmp.copy())
+    #         elif msg.type == "ai":
+    #             tmp["role"] = "assistant"
+    #             tmp["content"] = msg.content
+    #             content.append(tmp.copy())
+    #         elif msg.type == "system":
+    #             tmp["role"] = "system"
+    #             tmp["content"] = msg.content
+    #             content.append(tmp.copy())
+    # print("传递的参数",content)
+    # response = await call_dashscope(content)
+    # print("闲聊子智能体输出：",response)
 
-    # 提取用户画像
-    profile_executor.submit({"messages":state["messages"]+[AIMessage(role="闲聊子智能体",content=response)]},after_seconds=memery_delay)
-    return {"messages":[AIMessage(role="闲聊子智能体",content=response)]}
+    # # 提取用户画像
+    # profile_executor.submit({"messages":state["messages"]+[AIMessage(role="闲聊子智能体",content=response)]},after_seconds=memery_delay)
+    # return {"messages":[AIMessage(role="闲聊子智能体",content=response)]}
     
 
-    # response = await chain.ainvoke({"messages": messages})
-    # response.role = "闲聊子智能体"
-    # # 提取用户画像
-    # profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)
-    # return {"messages":[response]} 
+    response = await chain.ainvoke({"messages": messages})
+    response.role = "闲聊子智能体"
+    # 提取用户画像
+    profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)
+    return {"messages":[response]} 
