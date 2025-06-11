@@ -13,9 +13,12 @@ from langgraph.prebuilt import ToolNode
 from sql2bi import SQLData, convert_sql_to_chart
 from langchain_core.messages import AIMessage
 from langchain_core.messages import RemoveMessage
-from . import base_model,filter_messages,profile_executor,episode_executor,memery_delay,max_msg_len
+from . import filter_messages,profile_executor,episode_executor,memery_delay,max_msg_len
 from langgraph.store.base import BaseStore
 from langgraph.config import get_store
+from . import base_model
+
+
 flight_tool_node = ToolNode([flight_info_query])
 
 

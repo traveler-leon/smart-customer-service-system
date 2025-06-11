@@ -6,7 +6,6 @@ from ..state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage
-from . import base_model, filter_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.config import get_store
 from langgraph.store.base import BaseStore
@@ -14,7 +13,8 @@ from http import HTTPStatus
 from dashscope import Application
 
 from ..tools import chitchat_query
-from . import base_model,filter_messages,profile_executor,memery_delay,max_msg_len
+from . import filter_messages,profile_executor,memery_delay,max_msg_len
+from . import base_model
 
 chitchat_tool_node = ToolNode([chitchat_query])
 
@@ -23,7 +23,7 @@ chitchat_tool_node = ToolNode([chitchat_query])
 async def call_dashscope(dialog_his:list):
     url = "https://dashscope.aliyuncs.com/api/v1/apps/01dd90c394de4c468e0626dabef3d79e/completion"
     headers = {
-        "Authorization": "Bearer sk-2e8c1dd4f75a44bf8114b337a5498a91",
+        "Authorization": "Bearer sk-054df99d025749cebbf2bf394baf84f1",
         "Content-Type": "application/json"
     }
     payload = {
@@ -68,7 +68,7 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
             1. 你应该保持友好、专业和礼貌的态度
             2. 对于打招呼、问候等简单问题，给予温暖回应
             3. 回答应简洁明了，语气亲切自然
-            4. 如果用户问题的太宽泛，请引导用户具体化问题，要求用户提供更详细的信息
+            4. 如果用户没有强制的要求你自我介绍，你不要自我介绍，只需要做最简短的回答。
             
             请注意：
             - 保持对话轻松愉快，增强旅客体验

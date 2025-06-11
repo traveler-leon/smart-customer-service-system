@@ -7,13 +7,14 @@ from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 from langgraph.store.base import BaseStore
 from ..tools import airport_knowledge_query, flight_info_query,chitchat_query,airport_knowledge_query_by_agent
-from . import base_model,filter_messages
+from . import filter_messages
 from . import max_msg_len
 from langgraph.config import get_store
 from langchain_core.messages import AIMessage
+from . import base_model,router_model
 
 # 绑定工具的模型
-tool_model = base_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
+tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
 # tool_model = base_model.bind_tools([airport_knowledge_query_by_agent, flight_info_query,chitchat_query])
 
 async def identify_intent(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
@@ -34,7 +35,7 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     [
         (
             "system",
-            """你是深圳宝安国际机场 (SZX) 的智能客服系统决策助手。你的唯一任务是识别用户的意图，并将他们的请求路由到相应的工具。不要对用户进行任何直接回答或解释。
+            """你是民航机场的智能客服系统决策助手。你的唯一任务是识别用户的意图，并将他们的请求路由到相应的工具。不要对用户进行任何直接回答或解释。
 
             <instructions>
             你需要识别的意图类型包括：
@@ -52,7 +53,7 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
             操作步骤：
             1. 仔细分析完整的对话历史，理解用户真正的意图
             2. 选择最合适的工具
-            3. 基于完整对话历史，构建一个主谓宾结构完整、且一定要包含关键词、表述清晰明确的问题作为工具参数
+            3. 基于完整对话历史，理解当前的意图，构建一个主谓宾结构完整、且一定要包含关键词、表述清晰明确的问题作为工具参数
             
             系统会根据你选择的工具自动将用户请求转发到相应的专门处理节点。
             </instructions>
@@ -61,30 +62,31 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
             1. 你是纯路由节点，不应该直接回答用户问题。必须通过工具调用进行路由。
             2. 即使是打招呼类的简单问题，也应该转交给闲聊工具，而不是回答。
             3. 当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
-            4. 必须结合完整的对话历史，构建主谓宾结构完整的问题。对话历史中可能包含关键上下文。
+            4. 必须结合完整的对话历史，理解当前的意图，构建主谓宾结构完整的问题。对话历史中可能包含关键上下文。
             </critical_rules>
 
             <examples>
-            例1:
+            <example1>
             用户: "请问明天下午3点的重庆飞济南航班是什么时候到？"
             正确操作: 使用flight_info_query，参数"明天下午3点从重庆飞往济南的航班什么时候到达？"
-            
-            例2:
+            </example1>
+            <example2>
             用户: "我可以带充电宝上飞机吗？"
             正确操作: 使用airport_knowledge_query，参数"乘客可以携带充电宝登机吗？"
-            
-            例3:
+            </example2>
+            <example3>
             用户A: "我要去北京"
             用户B: "航班是什么时候？"
             正确操作: 使用flight_info_query，参数"从济南到北京的航班是什么时候？"（注意结合了上下文）
-            
-            例4:
+            </example3>
+            <example4>
             用户: "谢谢你的帮助"
             正确操作: 使用chitchat_query，参数"谢谢你的帮助"
-            例5:
+            </example4>
+            <example5>
             用户: "现在出发，从杭州萧山国际机场到杭州西湖景区。请你提供三种公共交通出行方案"
             正确操作: 使用chitchat_query，参数"现在出发，从杭州萧山国际机场到杭州西湖景区。请你提供三种公共交通出行方案"
-
+            </example5>
             </examples>
             """
         ),

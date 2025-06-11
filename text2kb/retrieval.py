@@ -123,6 +123,7 @@ async def retrieve_from_kb(question: str
                             'low_similarity': similarity < similarity_threshold
                         })
                     logger.info(f"检索完成: 找到 {len(results)} 条结果 (数据集: {dataset_name})")
+                    # print(f"检索 query:{question} 检索结果: {results[:5]}\n\n")
                     # 记录低相似度结果的数量
                     low_similarity_count = sum(1 for r in results if r['low_similarity'])
                     if low_similarity_count > 0:

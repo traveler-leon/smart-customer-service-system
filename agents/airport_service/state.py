@@ -79,5 +79,6 @@ class AirportMainServiceState(MessagesState):
     emotion_result:Dict = {}
     # 上下文信息
     kb_context_docs: str = ""
+    kb_context_docs_maxscore: float = 0.0
     db_context_docs: Dict = {}
     chart_config: Dict = {}

@@ -21,9 +21,15 @@ emotion = config_manager.get_agents_config().get("emotions")
 # 创建共用模型实例
 base_model = ChatOpenAI(
     model=model_config.get("model"),
-    temperature=model_config.get("temperature", 0.5),
+    temperature=model_config.get("temperature", 0.7),
     api_key=model_config.get("api_key"),
     base_url=model_config.get("base_url")
+)
+router_model = ChatOpenAI(
+    model=model_config.get("router_model"),
+    temperature=model_config.get("router_temperature", 0.7),
+    api_key=model_config.get("router_api_key"),
+    base_url=model_config.get("router_base_url")
 )
 
 # 将 filter_messages 函数移动到这里

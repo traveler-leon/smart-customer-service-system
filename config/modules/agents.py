@@ -11,6 +11,11 @@ AGENTS_CONFIG = {
         "temperature": os.getenv("LLM_TEMPERATURE"),
         "max_history_turns": int(os.getenv("LLM_MAX_HISTORY_TURNS", "10")),
         "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "1000")),
+        "router_base_url": os.getenv("ROUTER_LLM_BASE_URL"),
+        "router_api_key": os.getenv("ROUTER_LLM_API_KEY"),
+        "router_model": os.getenv("ROUTER_LLM_MODEL"),
+        "router_temperature": os.getenv("ROUTER_LLM_TEMPERATURE"),
+
     },
     "store":{
         "host": os.getenv("DB_HOST"),

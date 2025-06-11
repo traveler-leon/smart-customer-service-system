@@ -5,13 +5,17 @@ from pprint import pprint
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
 import asyncio
+import aiohttp
+import json
 from langchain_core.tools import tool
 from text2kb.retrieval import retrieve_from_kb,retrieve_from_kb_by_agent
 from langgraph.types import Command
 from langchain_core.tools.base import InjectedToolCallId
 from typing_extensions import Annotated
 from langchain_core.messages import ToolMessage
+from xinference.client import Client
 from config.utils import config_manager
+from ..utils import rewrite_query,generate_step_back_query,rerank_results
 
 _text2kb_config = config_manager.get_text2kb_config()
 KB_ADDRESS = _text2kb_config.get("kb_address")
@@ -21,14 +25,15 @@ KB_SIMILARITY_THRESHOLD = float(_text2kb_config.get("kb_similarity_threshold"))
 KB_VECTOR_SIMILARITY_WEIGHT = float(_text2kb_config.get("kb_vector_similarity_weight"))
 KB_TOP_K = int(_text2kb_config.get("kb_topK"))
 KB_KEY_WORDS = bool(_text2kb_config.get("kb_key_words"))
-
+RERANKER_MODEL = _text2kb_config.get("reranker_model")
+RERANKER_ADDRESS = _text2kb_config.get("reranker_address")
 
 @tool
 async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,InjectedToolCallId]) -> str:
     """
-    用于检索深圳宝安国际机场相关知识的工具，帮助解答乘客关于乘机须知的问题。
+    用于检索民航机场相关知识的工具，帮助解答乘客关于乘机须知的问题。
     
-    此工具连接到专门的"深圳宝安国际机场知识库"，能够回答用户关于机场各个乘机须知类别的详细问题。包括：
+    此工具连接到专门的"民航机场知识库"，能够回答用户关于机场各个乘机须知类别的详细问题。包括：
     1. 安检须知
     2. 联检(边检、海关、检疫)须知
     3. 出行须知（订票（改签）、值机、登机、中转、出发、到达、行李、证件）
@@ -46,29 +51,96 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     """
     print("进入知识查询工具")
 
-    results = await retrieve_from_kb(question=user_question
-                                     ,dataset_name=KB_DATASET_NAME
-                                     ,address=KB_ADDRESS
-                                     ,api_key=KB_API_KEY
-                                     ,similarity_threshold=KB_SIMILARITY_THRESHOLD
-                                     ,vector_similarity_weight=KB_VECTOR_SIMILARITY_WEIGHT
-                                     ,top_k=KB_TOP_K,key_words=KB_KEY_WORDS)
+    # 并行生成重写查询和后退查询
+    rewritten_query_task = rewrite_query(user_question)
+    step_back_query_task = generate_step_back_query(user_question)
+    
+    # 等待两个查询生成完成
+    rewritten_query, step_back_query = await asyncio.gather(
+        rewritten_query_task, 
+        step_back_query_task, 
+        return_exceptions=True
+    )
+    
+    # 构建查询列表
+    query_list = [user_question]  # 原始用户问题
+    if rewritten_query and not isinstance(rewritten_query, Exception):
+        query_list.append(rewritten_query)
+    if step_back_query and not isinstance(step_back_query, Exception):
+        query_list.append(step_back_query)
+    
+
+    # 并行执行所有查询的检索
+    retrieval_tasks = [
+        retrieve_from_kb(question=query,
+                        dataset_name=KB_DATASET_NAME,
+                        address=KB_ADDRESS,
+                        api_key=KB_API_KEY,
+                        similarity_threshold=KB_SIMILARITY_THRESHOLD,
+                        vector_similarity_weight=KB_VECTOR_SIMILARITY_WEIGHT,
+                        top_k=KB_TOP_K,
+                        key_words=KB_KEY_WORDS)
+        for query in query_list
+    ]
+    
+    # 等待所有检索完成
+    all_results_list = await asyncio.gather(*retrieval_tasks, return_exceptions=True)
+    # 合并所有检索结果
+    all_results = []
+    for result_list in all_results_list:
+        if not isinstance(result_list, Exception):
+            all_results.extend(result_list)
+    
+    # 去重（基于文档内容）
+    seen_contents = set()
+    unique_results = []
+    for result in all_results:
+        if result['content'] not in seen_contents:
+            seen_contents.add(result['content'])
+            unique_results.append(result)
+    
+    results = unique_results
+    # 重排模型。
+    if len(results) > 0:
+        reranked_results,max_score = await rerank_results(results, user_question,RERANKER_MODEL,RERANKER_ADDRESS,KB_TOP_K)
     format_doc = []
     if len(results) > 0:
-        for i,doc in enumerate(results):
+        for i,doc in enumerate(reranked_results):
             format_doc.append(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}")
-        text = "\n\n".join(format_doc[:6])
+        text = "\n\n".join(format_doc)
     else:
         text = "抱歉，在知识库中没有找到与问题相关的信息。"
-    # print("检索结果",format_doc[:3])
-    pprint(results)
+    print(f"查询列表: {query_list}")
+    print("检索结果",reranked_results)
     return Command(
             update={
                 'messages':[ToolMessage(content="知识检索结束",tool_call_id=tool_call_id)],
                 'current_query': user_question,
                 'kb_context_docs':text,
+                'kb_context_docs_maxscore':max_score
             },
         )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @tool
 async def airport_knowledge_query_by_agent(user_question:str,tool_call_id:Annotated[str,InjectedToolCallId]) -> str:

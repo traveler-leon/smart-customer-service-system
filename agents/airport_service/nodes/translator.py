@@ -6,10 +6,9 @@ from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 from ..state import AirportMainServiceState, TranslationResult
-from . import base_model
 from trustcall import create_extractor
 from langchain_core.messages import RemoveMessage,HumanMessage,AIMessage
-
+from . import base_model
 
 # 输入翻译Prompt
 

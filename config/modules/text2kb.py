@@ -10,5 +10,7 @@ TEXT2KB_CONFIG = {
     "kb_similarity_threshold": os.environ.get("KB_SIMILARITY_THRESHOLD"),
     "kb_vector_similarity_weight": os.environ.get("KB_VACTOR_SIMILARITY_WEIGHT"),
     "kb_topK": os.environ.get("KB_TOPK"),
-    "kb_key_words": os.environ.get("KB_KEY_WORDS")
+    "kb_key_words": os.environ.get("KB_KEY_WORDS"),
+    "reranker_model": os.environ.get("RERANKER_MODEL"),
+    "reranker_address": os.environ.get("RERANKER_ADDRESS")
 }
