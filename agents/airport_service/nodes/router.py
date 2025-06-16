@@ -14,8 +14,8 @@ from langchain_core.messages import AIMessage
 from . import base_model,router_model
 
 # 绑定工具的模型
-tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
-# tool_model = base_model.bind_tools([airport_knowledge_query_by_agent, flight_info_query,chitchat_query])
+# tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
+tool_model = base_model.bind_tools([airport_knowledge_query_by_agent, flight_info_query,chitchat_query])
 
 async def identify_intent(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()

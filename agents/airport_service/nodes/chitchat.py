@@ -23,7 +23,7 @@ chitchat_tool_node = ToolNode([chitchat_query])
 async def call_dashscope(dialog_his:list):
     url = "https://dashscope.aliyuncs.com/api/v1/apps/01dd90c394de4c468e0626dabef3d79e/completion"
     headers = {
-        "Authorization": "Bearer sk-054df99d025749cebbf2bf394baf84f1",
+        "Authorization": "Bearer sk-db024fbbe96445d898ecf4d11c42a77c",
         "Content-Type": "application/json"
     }
     payload = {

@@ -125,21 +125,25 @@ class ChromadbStorage(AsyncVectorStore):
         logger.info(f"问题SQL映射添加成功, ID: {id}")
         return id
     
-    async def add_ddl(self, ddl: str, **kwargs) -> str:
+    async def add_ddl(self, ddl: str, description: str = None, **kwargs) -> str:
         """异步添加DDL语句"""
         await self.ensure_connection()  # 确保连接有效
         logger.info(f"添加DDL: {ddl[:30]}...")
         
+        # 如果没有提供描述，使用DDL本身作为描述
+        if description is None:
+            description = ddl
+        
         # 生成ID
         id = deterministic_uuid(ddl) + "-ddl"
         
-        # 添加到集合 - 使用嵌入提供者生成嵌入
-        embeddings = await self.generate_embedding(ddl, **kwargs)
+        # 使用描述生成嵌入，将DDL内容存储在metadata中
+        embeddings = await self.generate_embedding(description, **kwargs)
         await self.ddl_collection.add(
-            documents=[ddl],
+            documents=[description],
             embeddings=[embeddings],
             ids=[id],
-            metadatas=[{"type": "table-ddl"}]
+            metadatas=[{"type": "table-ddl", "ddl": ddl}]
         )
         
         logger.info(f"DDL添加成功, ID: {id}")
@@ -187,7 +191,7 @@ class ChromadbStorage(AsyncVectorStore):
             df_ddl = pd.DataFrame({
                 "id": ddl_data["ids"],
                 "question": [None for doc in ddl_data["documents"]],
-                "content": ddl_data["documents"],
+                "content": [meta.get("ddl", doc) for meta, doc in zip(ddl_data["metadatas"], ddl_data["documents"])],
                 "training_data_type":[meta["type"] for meta in ddl_data["metadatas"]],
             })
             df = pd.concat([df, df_ddl])
@@ -261,13 +265,16 @@ class ChromadbStorage(AsyncVectorStore):
             metadata = query_results["metadatas"][0]
             res = []
             try:
-                if metadata[0]["type"]== "sql-qa":
-                    res = [{"question":q,"sql":a['detail']} for q,a in zip(documents,metadata)]
-                    return res
+                if len(metadata) > 0:
+                    if metadata[0]["type"] == "sql-qa":
+                        res = [{"question":q,"sql":a['detail']} for q,a in zip(documents,metadata)]
+                        return res
+                    elif metadata[0]["type"] == "table-ddl":
+                        res = [{"description":q,"ddl":a.get('ddl', q)} for q,a in zip(documents,metadata)]
+                        return res
             except Exception:
                 return documents
         return documents
-        return []
 
     async def get_similar_question_sql(self, question: str, **kwargs) -> list:
         """异步获取类似问题的SQL"""

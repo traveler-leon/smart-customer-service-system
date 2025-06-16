@@ -177,78 +177,140 @@ class AsyncSmartSqlBase:
             raise
     
     async def _get_sql_prompt(self, question, question_sql_list, ddl_list, doc_list, **kwargs):
-        # 初始提示设置
-        initial_prompt = self.config.get("initial_prompt", None)
-        if initial_prompt is None:
-            initial_prompt = f"""你是一个{self.dialect}专家。专门将自然语言问题翻译成可执行的SQL查询。
-                                您的主要任务是基于提供的数据库上下文（`<database_context>`）、SQL方言（`<sql_dialect>`）、对话历史和用户的当前问题（`<question>`），生成一个单一的、语法正确的SQL查询。
-
-                                **输出要求：**
-                                - 您的**整个**输出必须是**以下之一**：
-                                    1. 生成的SQL查询字符串。
-                                - **不要**包含**任何**其他文本、解释、道歉、注释（除非是SQL本身的一部分）或超出单个SQL查询或 `INVALID_QUERY` 字符串的格式。
-                                """
-        # 按区段添加内容
-        prompt = initial_prompt
+        """构建SQL生成的提示信息"""
         
-        # 添加DDL信息（限制token）
-        if ddl_list:
-            tmp_ddl = ""
-            for ddl in ddl_list:
-                tmp_ddl += f"{ddl}\n\n"
-            if self._estimate_tokens(prompt) + self._estimate_tokens(tmp_ddl) < self.max_tokens:
-                prompt += f"""**输入：**
-                        1. **数据库上下文 (<database_context>):** 包含表和列的模式（DDL）以及重要的描述/注释。
-                        ```
-                        <database_context>
-                            <schema>{tmp_ddl}</schema>
-                        </database_context>
-                        """
+        # 1. 准备模板变量
+        dialect = self.dialect
+        database_context = self._build_database_context(ddl_list)
+        descriptions = self._build_descriptions(doc_list)
         
-        # 添加文档信息（限制token）
-        if doc_list:
-            tmp_doc = ""
-            for doc in doc_list:
-                tmp_doc += f"{doc}\n\n"
-            if self._estimate_tokens(prompt) + self._estimate_tokens(tmp_doc) < self.max_tokens:
-                prompt += f"<descriptions>{tmp_doc}</descriptions>"
-        # 添加响应指南
-        prompt += f"""
-        2. **SQL方言 (<sql_dialect>):** 目标SQL方言。
-            <sql_dialect>{self.dialect}</sql_dialect>
-
-        **核心规则与逻辑：**
-
-        1.  **上下文一致性：** 严格使用 `<database_context>` 中定义的元素（表、列）。参考 `<descriptions>` 以了解正确的使用方法、关系和语义含义。不要创建不存在的元素。
-        2.  **方言兼容性：** 确保生成的SQL语法对于指定的 `<sql_dialect>` 是有效的。
-        3.  **历史利用：** 分析历史对话，查找与本次问题有用的信息。
-        4.  **意图解释：** 准确生成反映用户从 `<question>`、对话历史 和 `<descriptions>` 中推导出的意图的SQL。
-        5.  **单一查询：** 生成一个单一的、有效的SQL语句。
-        6.  **查询优化与精确性：** **优先选择回答用户问题所需的最少列。除非用户明确要求获取所有信息（例如，"显示该航班的所有细节"），否则应避免使用 `SELECT *`。**
-
-        **处理说明：**
-
-        1.  **分析所有输入：** 仔细检查 `<question>`、`<database_context>`（模式 + 描述）、`<sql_dialect>` 和 `<dialogue_history>`。
-        2.  **将意图映射到上下文：** 确定用户的核心意图，使用历史记录和描述进行澄清，将其映射到数据库元素。
-        3.  **构建SQL：** 如果没有满足失败条件，则构建SQL查询。确保正确性（连接、过滤、聚合、语法），以反映意图并遵守方言，**同时遵循查询优化与精确性规则**。
-        4.  **最终输出：** **仅**输出生成的SQL字符串。
-        **最终输出（SQL查询）：**
-
-    """
+        # 2. 获取或构建系统提示模板
+        system_prompt_template = self._get_system_prompt_template()
         
-        # 创建消息格式
-        messages = [{"role": "system", "content": prompt}]
+        # 3. 填充系统提示
+        system_prompt = system_prompt_template.format(
+            dialect=dialect,
+            database_context=database_context,
+            descriptions=descriptions
+        )
         
-        # 添加示例问答对
+        # 4. 构建消息列表
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # 5. 添加示例问答对
         for example in question_sql_list:
             if isinstance(example, dict) and "question" in example and "sql" in example:
                 messages.append({"role": "user", "content": example["question"]})
                 messages.append({"role": "assistant", "content": example["sql"]})
         
-        # 添加当前问题
+        # 6. 添加当前问题
         messages.append({"role": "user", "content": question})
         
         return messages
+    
+    def _get_system_prompt_template(self):
+        """获取系统提示模板"""
+        # 优先使用配置中的自定义提示
+        custom_prompt = self.config.get("initial_prompt", None)
+        if custom_prompt:
+            return custom_prompt
+        
+        # 基于Anthropic最佳实践的系统提示模板
+        template = """<role>
+你是一个专业的 {dialect} 数据库查询专家，擅长将自然语言问题准确转换为 SQL 查询。
+</role>
+
+<task>
+根据用户的自然语言问题，结合提供的数据库上下文和业务描述，生成一个精确、高效的 SQL 查询。
+</task>
+
+<context>
+{database_context}
+
+{descriptions}
+
+<sql_dialect>{dialect}</sql_dialect>
+</context>
+
+<constraints>
+1. 严格使用提供的数据库上下文中的表名和列名，不要创造不存在的元素
+2. 确保 SQL 语法符合指定的 {dialect} 方言规范
+3. 优先选择查询所需的最少列，避免不必要的 SELECT *
+4. 生成的查询必须是单一的、完整的、可执行的 SQL 语句
+5. 充分利用提供的示例和历史对话信息
+6. 确保查询逻辑准确反映用户的真实意图
+</constraints>
+
+<output_format>
+直接输出生成的 SQL 查询语句，不包含任何解释、注释或其他文本。
+
+示例输出格式：
+SELECT column1, column2 FROM table_name WHERE condition;
+</output_format>
+
+<reasoning_steps>
+在生成 SQL 之前，请按以下步骤思考：
+
+1. **问题分析**: 理解用户问题的核心意图和所需信息
+2. **表结构映射**: 确定需要查询的表和相关字段
+3. **关系识别**: 识别表之间的关联关系（如需要JOIN）
+4. **条件提取**: 从问题中提取筛选条件和约束
+5. **聚合需求**: 判断是否需要聚合函数（COUNT、SUM等）
+6. **查询构建**: 按照SQL语法规范构建查询语句
+7. **优化检查**: 确保查询效率和准确性
+</reasoning_steps>
+
+现在，请根据用户的问题生成相应的 SQL 查询："""
+        
+        return template
+    
+    def _build_database_context(self, ddl_list):
+        """构建数据库上下文信息"""
+        if not ddl_list:
+            return "<database_schema>\n暂无数据库架构信息\n</database_schema>"
+        
+        ddl_content = ""
+        for ddl in ddl_list:
+            if isinstance(ddl, dict) and "ddl" in ddl and "description" in ddl:
+                # 新格式：包含description和ddl
+                ddl_content += f"""<table_info>
+                                <description>{ddl['description']}</description>
+                                <ddl>{ddl['ddl']}</ddl>
+                                </table_info>
+
+                                """
+            else:
+                # 兼容旧格式
+                ddl_content += f"""<table_info>
+                                        <ddl>{ddl}</ddl>
+                                    </table_info>
+
+                                    """
+        
+        # 检查token限制
+        if self._estimate_tokens(ddl_content) > self.max_tokens * 0.4:  # 最多占用40%的token
+            logger.warning("DDL内容过长，将被截断")
+            ddl_content = ddl_content[:int(self.max_tokens * 0.4 * 2)]  # 简单截断
+            ddl_content += "\n<!-- 内容因长度限制被截断 -->"
+        
+        return f"""<database_schema>{ddl_content.strip()}</database_schema>"""
+    
+    def _build_descriptions(self, doc_list):
+        """构建描述信息"""
+        if not doc_list:
+            return "<business_context>\n暂无业务上下文信息\n</business_context>"
+        
+        doc_content = ""
+        for i, doc in enumerate(doc_list, 1):
+            doc_content += f"""<context_item id="{i}">{doc}</context_item>"""
+        
+        # 检查token限制
+        if self._estimate_tokens(doc_content) > self.max_tokens * 0.3:  # 最多占用30%的token
+            logger.warning("文档内容过长，将被截断")
+            doc_content = doc_content[:int(self.max_tokens * 0.3 * 2)]  # 简单截断
+            doc_content += "\n<!-- 内容因长度限制被截断 -->"
+        
+        return f"""<business_context>{doc_content.strip()}</business_context>"""
     
     async def _extract_sql(self, llm_response):
         """异步从LLM响应中提取SQL"""
@@ -319,7 +381,8 @@ class AsyncSmartSqlBase:
             
             sql_result = {
                 'sql': sql,
-                'data': None
+                'data': None,
+                'error': None
             }
             
             # 执行SQL
@@ -382,9 +445,11 @@ class AsyncSmartSqlBase:
                     results['success'].append({'type': 'documentation', 'id': doc_id})
                     
                 elif 'ddl' in item:
+                    # 检查是否有描述字段，如果没有则使用DDL本身作为描述
+                    description = item.get('description', item['ddl'])
                     ddl_id = await self.vector_store.add_ddl(
                         item['ddl'],
-                        metadata={'source': source, 'timestamp': time.time()}
+                        description=description
                     )
                     results['success'].append({'type': 'ddl', 'id': ddl_id})
                     
@@ -420,6 +485,76 @@ class AsyncSmartSqlBase:
         for middleware in self.middlewares:
             if hasattr(middleware, 'clear_cache'):
                 await middleware.clear_cache(question)
+
+    def get_prompt_config_example(self):
+        """获取 prompt 配置示例，帮助用户理解如何自定义 prompt"""
+        example_config = {
+            "initial_prompt": """<role>
+你是一个专业的 {dialect} 数据库分析师，专门为业务用户提供数据查询服务。
+</role>
+
+<task>
+根据业务问题生成准确的 SQL 查询，重点关注业务价值和数据洞察。
+</task>
+
+<context>
+{database_context}
+{descriptions}
+<sql_dialect>{dialect}</sql_dialect>
+</context>
+
+<guidelines>
+1. 优先理解业务需求背后的真实意图
+2. 生成高效、可读性强的 SQL 查询
+3. 确保数据准确性和查询性能
+4. 遵循企业数据安全和隐私规范
+</guidelines>
+
+<output_format>
+输出格式：纯 SQL 查询语句
+</output_format>
+
+请根据用户问题生成相应的 SQL 查询：""",
+            
+            "dialect": "PostgreSQL",
+            "language": "zh-CN",
+            "llm": {
+                "max_tokens": 20000,
+                "temperature": 0.1,
+                "model": "claude-3-sonnet"
+            }
+        }
+        
+        return example_config
+    
+    def validate_prompt_template(self, template: str) -> dict:
+        """验证 prompt 模板的有效性"""
+        validation_result = {
+            "is_valid": True,
+            "errors": [],
+            "warnings": [],
+            "required_placeholders": ["{dialect}", "{database_context}", "{descriptions}"]
+        }
+        
+        # 检查必需的占位符
+        for placeholder in validation_result["required_placeholders"]:
+            if placeholder not in template:
+                validation_result["is_valid"] = False
+                validation_result["errors"].append(f"缺少必需的占位符: {placeholder}")
+        
+        # 检查模板结构
+        recommended_sections = ["<role>", "<task>", "<context>", "<output_format>"]
+        missing_sections = [section for section in recommended_sections if section not in template]
+        if missing_sections:
+            validation_result["warnings"].append(f"建议添加以下结构化标签: {', '.join(missing_sections)}")
+        
+        # 检查模板长度
+        if len(template) > 10000:
+            validation_result["warnings"].append("模板过长，可能影响性能")
+        elif len(template) < 100:
+            validation_result["warnings"].append("模板过短，可能缺少必要信息")
+        
+        return validation_result
 
 def serialize_result(obj):
     """
