@@ -9,11 +9,9 @@ from langchain_core.messages import AIMessage
 from langgraph.prebuilt import ToolNode
 from langgraph.config import get_store
 from langgraph.store.base import BaseStore
-from http import HTTPStatus
-from dashscope import Application
-
+from datetime import datetime
 from ..tools import chitchat_query
-from . import filter_messages,profile_executor,memery_delay,max_msg_len
+from . import filter_messages,filter_messages_for_llm,profile_executor,memery_delay,max_msg_len,model_config
 from . import base_model
 
 chitchat_tool_node = ToolNode([chitchat_query])
@@ -23,7 +21,7 @@ chitchat_tool_node = ToolNode([chitchat_query])
 async def call_dashscope(dialog_his:list):
     url = "https://dashscope.aliyuncs.com/api/v1/apps/01dd90c394de4c468e0626dabef3d79e/completion"
     headers = {
-        "Authorization": "Bearer sk-db024fbbe96445d898ecf4d11c42a77c",
+        "Authorization": "Bearer sk-db024fbbe96445d8981c42a77c",
         "Content-Type": "application/json"
     }
     payload = {
@@ -69,19 +67,19 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
             2. 对于打招呼、问候等简单问题，给予温暖回应
             3. 回答应简洁明了，语气亲切自然
             4. 如果用户没有强制的要求你自我介绍，你不要自我介绍，只需要做最简短的回答。
+            5.当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
             
             请注意：
             - 保持对话轻松愉快，增强旅客体验
-            - 回答完用户问题之后，必须最后加上"本内容并未在机场知识库上有规定，仅供参考"
             """
         ),
         ("placeholder", "{messages}"),
     ]
-    )
-    print("进入闲聊节点")
+    ).partial(time=datetime.now())
+    print("进入闲聊节点",datetime.now())
     chain = chitchat_prompt | base_model
     # 获取消息历史
-    new_state = filter_messages(state, max_msg_len)
+    new_state = filter_messages_for_llm(state, max_msg_len)
     messages = new_state.get("messages", [])
     # 调用链获取响应
 
@@ -103,7 +101,6 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     #             tmp["role"] = "system"
     #             tmp["content"] = msg.content
     #             content.append(tmp.copy())
-    # print("传递的参数",content)
     # response = await call_dashscope(content)
     # print("闲聊子智能体输出：",response)
 

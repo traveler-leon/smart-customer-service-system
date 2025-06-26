@@ -38,7 +38,7 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     2. 联检(边检、海关、检疫)须知
     3. 出行须知（订票（改签）、值机、登机、中转、出发、到达、行李、证件）
 
-    当用户询问任何与深圳宝安国际机场乘机须知相关的问题时，应首选此工具。并提供符合检索的用户的完整问题。
+    当用户询问任何与机场乘机须知相关的问题时，应首选此工具。并提供符合检索的用户的完整问题。
     如果用户问题涉及上述知识类别的相关咨询，或明确询问机场规定和服务流程，都应该调用此工具。
     
     Args:
@@ -120,27 +120,6 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
                 'kb_context_docs_maxscore':max_score
             },
         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @tool
 async def airport_knowledge_query_by_agent(user_question:str,tool_call_id:Annotated[str,InjectedToolCallId]) -> str:

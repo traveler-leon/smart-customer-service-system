@@ -6,7 +6,7 @@ from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from ..state import AirportMainServiceState
 from . import emotion
-from . import base_model
+from . import base_model,model_config
 
 # 全局变量存储情感分析器
 _emotion_classifier = None

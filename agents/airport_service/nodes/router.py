@@ -6,16 +6,16 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 from langgraph.store.base import BaseStore
-from ..tools import airport_knowledge_query, flight_info_query,chitchat_query,airport_knowledge_query_by_agent
-from . import filter_messages
+from ..tools import airport_knowledge_query, flight_info_query,chitchat_query
+from . import filter_messages,filter_messages_for_llm
 from . import max_msg_len
 from langgraph.config import get_store
 from langchain_core.messages import AIMessage
 from . import base_model,router_model
 
 # 绑定工具的模型
-# tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
-tool_model = base_model.bind_tools([airport_knowledge_query_by_agent, flight_info_query,chitchat_query])
+tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
+# tool_model = base_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
 
 async def identify_intent(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()
@@ -39,21 +39,22 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
 
             <instructions>
             你需要识别的意图类型包括：
-            - **信息查询:** 用户希望查询航班信息，例如航班号、起飞/到达时间、航班状态等；交通信息。
+            - **航班信息查询:** 用户希望查询航班信息，例如航班号、起飞/到达时间、航班状态等。
             - **乘机须知:** 用户希望了解在深圳宝安国际机场乘机相关的规定和信息，例如安检须知、联检(边检、海关、检疫)须知、出行须知（订票（改签）、值机、登机、中转、出发、到达、行李、证件）等。
-            - **机场服务:** 用户希望了解深圳宝安国际机场的服务信息，例如机场设施、商业服务
+            - **机场服务:** 用户希望了解机场的服务信息，例如机场设施、商业服务
             - **业务办理:** 用户希望办理机场相关业务，例如行李寄存、行李查询、航班延误、航班取消、航班改签、航班退票、无人陪伴、轮椅租赁、失物招领、投诉等。
             - **闲聊:** 用户希望与机场客服进行闲聊，比如问候、天气、周边旅游景点、周边服务设施等。
 
             根据用户意图，你必须选择以下工具之一：
-            - `flight_info_query`: 用于机场信息查询。
+            - `flight_info_query`: 用于机场航班信息查询。
             - `airport_knowledge_query`: 用于机场乘机须知问答。
             - `chitchat_query`: 用于处理闲聊类问题。
 
             操作步骤：
             1. 仔细分析完整的对话历史，理解用户真正的意图
-            2. 选择最合适的工具
-            3. 基于完整对话历史，理解当前的意图，构建一个主谓宾结构完整、且一定要包含关键词、表述清晰明确的问题作为工具参数
+            2. 基于完整对话历史，理解当前用户输入的意图，构建一个主谓宾结构完整、且一定要包含关键词、表述清晰明确的问题作为工具参数
+            3. 选择最合适的工具
+            4. 开始执行工具调用
             
             系统会根据你选择的工具自动将用户请求转发到相应的专门处理节点。
             </instructions>
@@ -96,10 +97,8 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
 
     # 构建链
     chain = airport_assistant_prompt | tool_model
-    # print("当前对话历史为：",state.get("messages",[]))
-    # 获取消息历史
-    new_state = filter_messages(state, max_msg_len)
-    messages = new_state.get("messages", [AIMessage(content="暂无对话历史，可路由到闲聊工具")])
+    new_state = filter_messages_for_llm(state, max_msg_len)
+    messages = new_state.get("messages", [])
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
     response.role = "主路由智能体"

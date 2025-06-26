@@ -13,11 +13,11 @@ from langgraph.prebuilt import ToolNode
 from sql2bi import SQLData, convert_sql_to_chart
 from langchain_core.messages import AIMessage
 from langchain_core.messages import RemoveMessage
-from . import filter_messages,profile_executor,episode_executor,memery_delay,max_msg_len
+from . import filter_messages,filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
 from langgraph.store.base import BaseStore
 from langgraph.config import get_store
 from . import base_model
-
+from datetime import datetime
 
 flight_tool_node = ToolNode([flight_info_query])
 
@@ -104,17 +104,18 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
                 - 回答中不应提及 <flight_data> 或信息来源。
                 - 永远以第二人称回答用户的问题。
                 - 满足任何 <objection_conditions> 条件时，使用拒绝回答短语。
-
+                - 当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
+                - 回答问题时，要充分考虑历史对话信息。
             </instructions>
             这是当前用户的问题: <question>{user_question}</question>
     """)
-    ])
+    ]).partial(time=datetime.now())
     print("进入航班信息查询子智能体")
     user_question = state.get("current_tool_query", "")
     context_docs = state.get("db_context_docs", "")
     
     # 获取消息历史
-    new_state = filter_messages(state, max_msg_len)
+    new_state = filter_messages_for_llm(state, max_msg_len)
     messages = new_state.get("messages", [AIMessage(content="暂无对话历史")])
     
     # 处理不同格式的sql_result

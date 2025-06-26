@@ -9,12 +9,11 @@ from langgraph.store.base import BaseStore
 from langchain_core.messages import AIMessage
 from langgraph.types import Command
 from langgraph.config import get_store
-from ..tools import airport_knowledge_query,airport_knowledge_query_by_agent
-from . import filter_messages,profile_executor,episode_executor,memery_delay,max_msg_len
+from ..tools import airport_knowledge_query
+from . import filter_messages,filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
 from . import base_model
-
+from datetime import datetime
 airport_tool_node = ToolNode([airport_knowledge_query])
-# airport_tool_node = ToolNode([airport_knowledge_query_by_agent])
 
 async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()
@@ -100,6 +99,8 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
                 - 回答中不应提及 <context> 或信息来源。
                 - 永远以第二人称回答用户的问题。
                 - 满足任何 <objection_conditions> 条件时，使用拒绝回答短语。
+                - 当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
+                - 回答问题时，要充分考虑历史对话信息。
 
             </instructions> 
             下面是实际的一些例子：
@@ -152,32 +153,37 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
 
             这是当前用户的问题: <question>{user_question}</question>
     """)
-    ])
+    ]).partial(time=datetime.now())
     print("进入机场知识子智能体-1")
     user_question = state.get("current_tool_query", "")
     context_docs = state.get("kb_context_docs", "")
     context_docs_maxscore = state.get("kb_context_docs_maxscore", 0.0)
-    # if "抱歉" in context_docs:
-    #     return Command(
-    #         goto="chitchat_node"
-    #     )
+    if "抱歉" in context_docs:
+        return Command(
+            goto="chitchat_node",
+            update={
+                "kb_context_docs":"",
+                "kb_context_docs_maxscore":0.0
+            }
+        )
 
-        # 获取消息历史
-    new_state = filter_messages(state, max_msg_len)
+    new_state = filter_messages_for_llm(state, max_msg_len)
     messages = new_state.get("messages", [AIMessage(content="暂无对话历史")])
-    if len(context_docs) < max_msg_len:
-        context_docs = context_docs[:max_msg_len]
-        return {"messages":"抱歉，暂时我们没有相关信息。"}
-    else:
-        kb_chain = kb_prompt | base_model
-        res = await kb_chain.ainvoke({ "user_question": user_question,"context": context_docs,"messages":messages})
-        res.role = "机场知识问答子智能体"
+    kb_chain = kb_prompt | base_model
+    res = await kb_chain.ainvoke({ "user_question": user_question,"context": context_docs,"messages":messages})
+    res.role = "机场知识问答子智能体"
 
-        # 提取用户画像
-        profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
-        # 提取历史事件
-        episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
-        return {"messages":res,"kb_context_docs":" "}
+    if "抱歉" in res.content:
+        return Command(
+            goto="chitchat_node",
+            update={
+                "kb_context_docs":"",
+                "kb_context_docs_maxscore":0.0
+            }
+        )
+    profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    return {"messages":res,"kb_context_docs":" "}
 
 
 
