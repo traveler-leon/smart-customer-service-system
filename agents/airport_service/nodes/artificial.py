@@ -7,6 +7,10 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from ..state import AirportMainServiceState
 from . import emotion
 from . import base_model,model_config
+from common.logging import get_logger
+
+# 获取情感识别节点专用日志记录器
+logger = get_logger("agents.nodes.artificial")
 
 # 全局变量存储情感分析器
 _emotion_classifier = None
@@ -21,8 +25,9 @@ def initialize_emotion_classifier():
     try:
         # 检查CUDA是否可用
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        print(f"使用设备: {device}")
+        logger.info(f"情感分析模型使用设备: {device}")
         # 加载tokenizer和模型
+        logger.info(f"开始加载情感分析模型: {emotion['model_path']}")
         tokenizer = AutoTokenizer.from_pretrained(emotion["model_path"])
         model = AutoModelForSequenceClassification.from_pretrained(emotion["model_path"]).to(device)
         
@@ -134,11 +139,14 @@ async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig,
         store: 存储对象
     """
     Is_emotion = config["configurable"].get("Is_emotion", False)
+    logger.info(f"进入情感识别节点 - 是否需要情感识别: {Is_emotion}")
+
     if not Is_emotion:
-        print("无需情感识别")
+        logger.info("无需情感识别，直接返回")
         return state
     else:
-        print("开始情感识别...")
+        logger.info("开始情感识别处理...")
         # 判断是否需要转人工,如果should_transfer_result为True，要转人工，后续再实现
-        should_transfer_result, reason = should_transfer(state)        
+        should_transfer_result, reason = should_transfer(state)
+        logger.info(f"情感识别完成 - 是否需要转人工: {should_transfer_result}")
         return {"emotion_result": reason}

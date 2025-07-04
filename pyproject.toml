@@ -7,7 +7,7 @@ index-url = "https://mirrors.aliyun.com/pypi/simple/"
 
 [project]
 name = "smart-customer-service-system"
-version = "0.1.0"
+version = "0.1.4"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,8 +19,10 @@ dependencies = [
     "chromadb>=0.6.3",
     "chromadb-client>=0.6.3",
     "dashscope>=1.23.3",
+    "deepeval>=3.1.8",
     "langchain-community>=0.3.23",
     "langchain-openai>=0.3.16",
+    "langchain-qwq>=0.2.0",
     "langgraph>=0.4.3",
     "langgraph-checkpoint-postgres>=2.0.21",
     "langgraph-checkpoint-sqlite>=2.0.7",

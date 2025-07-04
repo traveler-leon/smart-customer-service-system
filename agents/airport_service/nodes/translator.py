@@ -9,6 +9,10 @@ from ..state import AirportMainServiceState, TranslationResult
 from trustcall import create_extractor
 from langchain_core.messages import RemoveMessage,HumanMessage,AIMessage
 from . import base_model
+from common.logging import get_logger
+
+# 获取翻译节点专用日志记录器
+logger = get_logger("agents.nodes.translator")
 
 # 输入翻译Prompt
 
@@ -39,11 +43,13 @@ async def translate_input(state: AirportMainServiceState, config: RunnableConfig
         config: 可运行配置
     """
     Is_translate = config["configurable"].get("Is_translate",False)
+    logger.info(f"进入输入翻译节点 - 是否需要翻译: {Is_translate}")
+
     if not Is_translate:
-        print("input-无需翻译")
+        logger.info("输入无需翻译，直接返回")
         return state
     else:
-        print("input-需要翻译")
+        logger.info("输入需要翻译，开始处理")
         input_parser = PydanticOutputParser(pydantic_object=TranslationResult)
         input_translation_prompt = PromptTemplate(
             template=(
@@ -86,11 +92,13 @@ async def translate_output(state: AirportMainServiceState, config: RunnableConfi
         config: 可运行配置
     """
     Is_translate = config["configurable"].get("Is_translate",False)
+    logger.info(f"进入输出翻译节点 - 是否需要翻译: {Is_translate}")
+
     if not Is_translate:
-        print("output-无需翻译")
+        logger.info("输出无需翻译，直接返回")
         return state
     else:
-        print("output-需要翻译")
+        logger.info("输出需要翻译，开始处理")
         output_translation_prompt = ChatPromptTemplate.from_messages([
             (
                 "system",
@@ -141,10 +149,10 @@ async def translate_output(state: AirportMainServiceState, config: RunnableConfi
 
         try:
             language = state["translator_result"].language
-            print("语言类型为：",language)
+            logger.info("语言类型为：",language)
             chain = output_translation_prompt | base_model
             user_input = state["messages"][-1].content
-            print("输出prompt",output_translation_prompt.invoke({"user_input": user_input,"language":language}))
+            logger.info("输出prompt",output_translation_prompt.invoke({"user_input": user_input,"language":language}))
 
             result = await chain.ainvoke({"user_input": user_input,"language":language})
             return { "messages": [AIMessage(role = "中文翻译助手",content=result.content)]}

@@ -1,12 +1,21 @@
 """
 节点模块
+
+提供机场客服系统的各种节点实现
 """
 
 from langchain_openai import ChatOpenAI
 from config.utils import config_manager
-from typing import Dict
+from config.factory import get_logger_config
+from common.logging import setup_logger, get_logger
+from typing import Dict,List
 from langmem import create_memory_store_manager,ReflectionExecutor
 from agents.airport_service.state import UserProfile,Episode
+
+# 初始化nodes模块日志
+logger_config = get_logger_config("agents")
+setup_logger(**logger_config)
+logger = get_logger("agents.nodes")
 
 # 从配置文件获取模型配置
 model_config = config_manager.get_agents_config().get("llm", {})
@@ -18,12 +27,21 @@ emotion = config_manager.get_agents_config().get("emotions")
 
 
 # 创建共用模型实例
-base_model = ChatOpenAI(
-    model=model_config.get("model"),
-    temperature=model_config.get("temperature", 0.7),
-    api_key=model_config.get("api_key"),
-    base_url=model_config.get("base_url")
-)
+if model_config.get("base_model_type") == "qwen":
+    from langchain_qwq import ChatQwen
+    base_model = ChatQwen(
+        model=model_config.get("model"),
+        temperature=model_config.get("temperature", 0.7),
+        api_key=model_config.get("api_key"),
+        base_url=model_config.get("base_url"),
+        enable_thinking=True)
+else:
+    base_model = ChatOpenAI(
+        model=model_config.get("model"),
+        temperature=model_config.get("temperature", 0.7),
+        api_key=model_config.get("api_key"),
+        base_url=model_config.get("base_url")
+    )
 router_model = ChatOpenAI(
     model=model_config.get("router_model"),
     temperature=model_config.get("router_temperature", 0.7),
@@ -32,7 +50,7 @@ router_model = ChatOpenAI(
 )
 
 # 将 filter_messages 函数移动到这里
-def filter_messages(state: Dict, nb_messages: int = 10) -> Dict:
+def filter_messages(state: Dict, nb_messages: int = 10) -> List:
     """
     过滤消息列表，返回适合处理的格式
     确保不会破坏tool消息与tool_calls的对应关系
@@ -83,9 +101,9 @@ def filter_messages(state: Dict, nb_messages: int = 10) -> Dict:
     
     filtered_messages = messages[start_index:]
     
-    return {**state, "messages": filtered_messages}
+    return filtered_messages
 
-def filter_messages_for_llm(state: Dict, nb_messages: int = 10) -> Dict:
+def filter_messages_for_llm(state: Dict, nb_messages: int = 10) -> List:
     """
     专门用于LLM调用的消息过滤函数
     移除所有ToolMessage和有tool_calls的消息，只保留Human和AI的对话消息
@@ -107,7 +125,7 @@ def filter_messages_for_llm(state: Dict, nb_messages: int = 10) -> Dict:
     if len(filtered_messages) > nb_messages:
         filtered_messages = filtered_messages[-nb_messages:]
     
-    return {**state, "messages": filtered_messages}
+    return filtered_messages
 
 
 # 知识抽取
@@ -140,4 +158,7 @@ from . import chitchat
 from . import summary
 from . import translator
 from . import artificial
+from . import business
+
+logger.info("节点模块初始化完成")
 

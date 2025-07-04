@@ -3,6 +3,10 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from langgraph.graph import MessagesState
 from . import base_model
+from common.logging import get_logger
+
+# 获取摘要节点专用日志记录器
+logger = get_logger("agents.nodes.summary")
 
 
 
@@ -18,17 +22,18 @@ from . import base_model
 async def summarize_conversation(state: MessagesState):
     """
     对话摘要总结节点函数
-    
+
     Args:
         state: 当前状态对象
-        
+
     Returns:
         更新后的状态对象，包含对话摘要
     """
-    print("进入对话摘要总结节点")
-    
+    logger.info("进入对话摘要总结节点")
+
     # 获取消息历史
     messages = state.values.get("messages", [])
+    logger.info(f"消息历史数量: {len(messages)}")
     
     # 构建提示模板
     summary_prompt = ChatPromptTemplate.from_messages(

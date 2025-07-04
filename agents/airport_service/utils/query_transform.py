@@ -1,6 +1,10 @@
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from ..nodes import base_model
+from ..nodes import router_model as model
+from common.logging import get_logger
+
+# 获取查询转换专用日志记录器
+logger = get_logger("agents.utils.query_transform")
 
 
 async def rewrite_query(original_query):
@@ -13,6 +17,7 @@ async def rewrite_query(original_query):
     Returns:
         str: 改写后的问题（适合检索）
     """
+    logger.info(f"开始重写查询: {original_query}")
     # 带背景信息的 Prompt 模板
     query_rewrite_prompt = PromptTemplate.from_template("""
     你是一个智能客服助手，服务于中国民航机场系统。你的任务是将用户提出的模糊、简短或不完整的问题，
@@ -52,15 +57,17 @@ async def rewrite_query(original_query):
     </input>
 
     """)
-    query_rewriter = query_rewrite_prompt | base_model
+    query_rewriter = query_rewrite_prompt | model
 
     try:
 
         response = await query_rewriter.ainvoke({"original_query": original_query})
-        return response.content.strip()
+        rewritten_query = response.content.strip()
+        logger.info(f"查询重写成功: {rewritten_query}")
+        return rewritten_query
     except Exception as e:
-        print(f"[错误] 问题重写失败：{e}")
-        return ''  # 出错时返回原问题
+        logger.error(f"问题重写失败: {e}")
+        return ''  # 出错时返回空字符串
 
 
 
@@ -75,6 +82,7 @@ async def generate_step_back_query(original_query):
     Returns:
         str: 回退型问题（用于补充语义背景）
     """
+    logger.info(f"开始生成回退查询: {original_query}")
     # 问题回退的提示词模板（中文+背景）
     step_back_prompt = PromptTemplate.from_template("""
     你是一个服务于中国民航机场智能客服系统的AI助手。
@@ -104,12 +112,14 @@ async def generate_step_back_query(original_query):
     {original_query}
     </input>
     """)
-    step_back_chain = step_back_prompt | base_model
+    step_back_chain = step_back_prompt | model
 
     try:
         response = await step_back_chain.ainvoke({"original_query": original_query})
-        return response.content.strip()
+        step_back_query = response.content.strip()
+        logger.info(f"回退查询生成成功: {step_back_query}")
+        return step_back_query
     except Exception as e:
-        print(f"[错误] 回退问题生成失败：{e}")
-        return ''  # 出错时返回原问题
+        logger.error(f"回退问题生成失败: {e}")
+        return ''  # 出错时返回空字符串
 

@@ -3,8 +3,15 @@
 """
 from langchain_openai import ChatOpenAI
 from config.utils import config_manager
-from .main_graph import build_airport_service_graph 
+from config.factory import get_logger_config
+from common.logging import setup_logger, get_logger
+from .main_graph import build_airport_service_graph
 from .graph_compile import graph_manager
+
+# 初始化agents模块日志
+logger_config = get_logger_config("agents")
+setup_logger(**logger_config)
+logger = get_logger("agents.airport_service")
 
 model_config = config_manager.get_agents_config().get("llm", {})
 # 创建共用模型实例
@@ -14,6 +21,8 @@ base_model = ChatOpenAI(
     api_key=model_config.get("api_key"),
     base_url=model_config.get("base_url")
 )
+
+logger.info("机场客服多智能体系统初始化完成")
 
 
 __all__ = [

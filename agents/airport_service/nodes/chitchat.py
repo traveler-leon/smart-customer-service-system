@@ -13,6 +13,10 @@ from datetime import datetime
 from ..tools import chitchat_query
 from . import filter_messages,filter_messages_for_llm,profile_executor,memery_delay,max_msg_len,model_config
 from . import base_model
+from common.logging import get_logger
+
+# 获取闲聊节点专用日志记录器
+logger = get_logger("agents.nodes.chitchat")
 
 chitchat_tool_node = ToolNode([chitchat_query])
 
@@ -52,10 +56,12 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     Args:
         state: 当前状态对象
         config: 可运行配置
-        
+
     Returns:
         更新后的状态对象，包含闲聊回复
     """
+    # 获取用户查询
+    current_query = state.get("current_query", "")
     chitchat_prompt = ChatPromptTemplate.from_messages(
     [
         (
@@ -76,11 +82,11 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
         ("placeholder", "{messages}"),
     ]
     ).partial(time=datetime.now())
-    print("进入闲聊节点",datetime.now())
+    logger.info("进入闲聊节点，时间：%s", datetime.now())
     chain = chitchat_prompt | base_model
     # 获取消息历史
-    new_state = filter_messages_for_llm(state, max_msg_len)
-    messages = new_state.get("messages", [])
+    new_messages = filter_messages_for_llm(state, max_msg_len)
+    messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
     # 调用链获取响应
 
     # msgs = chitchat_prompt.invoke({"messages": messages})
@@ -112,5 +118,5 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     response = await chain.ainvoke({"messages": messages})
     response.role = "闲聊子智能体"
     # 提取用户画像
-    profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)
+    # profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)
     return {"messages":[response]} 

@@ -31,8 +31,9 @@
 ![系统架构图](./images/主架构图.png)
 
 ### 🛠️ 技术栈
-
-- **LangGraph**: 构建工作流和状态管理
+- **ragflow**:ragflow提供了一个很好是知识库管理平台，所以本项目的知识管理部分，依托于 ragflow（用户需自行下载）
+- **xinference**:xinference 提供了一个模型的全生命周期的管理，所以关于本项目用到的情感识别模型、embedding 模型，以及后期的本地化大模型都采用 xinference 来部署（用户需自行下载）。
+- **LangGraph**: 构建工作流和状态管理，本项目的智能体和对话管理部分几乎都是依赖于 langgraph。
 - **LangChain**: 基础组件库
 - **MCP**: 以mcp技术弹性接入第三方服务，诸如高德mcp server，12306mcp servser
 

@@ -40,9 +40,9 @@ async def load_excel_training_data(file_path: str, smart_sql):
     从Excel文件加载训练数据
     
     Excel文件应包含三个sheet:
-    - ddl: 包含DDL语句，至少有一列名为'ddl'
-    - documents: 包含文档信息，至少有一列名为'document'
-    - qa: 包含问题和SQL，至少有两列，分别名为'question'和'sql'
+    - ddl: 包含DDL语句，必须有一列名为'ddl'，可选择性包含'description'列用于描述DDL的用途
+    - documentation: 包含文档信息，至少有一列名为'documentation'
+    - qa: 包含问题和SQL，至少有两列，分别名为'question'和'sql'，可选择性包含'tags'列
     
     Args:
         file_path: Excel文件路径
@@ -64,9 +64,16 @@ async def load_excel_training_data(file_path: str, smart_sql):
             ddl_df = pd.read_excel(file_path, sheet_name='ddl')
             if 'ddl' in ddl_df.columns:
                 logger.info(f"从Excel文件加载DDL数据...")
-                for ddl in ddl_df['ddl'].dropna():
+                for _, row in ddl_df.iterrows():
+                    ddl = row.get('ddl')
                     if ddl and len(str(ddl).strip()) > 0:
-                        training_data.append({'ddl': str(ddl)})
+                        ddl_item = {'ddl': str(ddl)}
+                        # 检查是否有description列
+                        if 'description' in ddl_df.columns:
+                            description = row.get('description')
+                            if description and len(str(description).strip()) > 0:
+                                ddl_item['description'] = str(description)
+                        training_data.append(ddl_item)
                 logger.info(f"已解析{len(ddl_df['ddl'].dropna())}条DDL语句")
         except ValueError:
             logger.warning("Excel文件中没有'ddl'表格或表格格式不正确")

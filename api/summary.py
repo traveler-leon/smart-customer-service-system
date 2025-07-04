@@ -5,17 +5,23 @@ from agents.airport_service import graph_manager
 from agents.airport_service.nodes.summary import summarize_human_agent_conversation
 from common.logging import get_logger
 
-logger = get_logger("airport_service")
+# 使用专门的API摘要日志记录器
+logger = get_logger("api.summary")
 
 router = APIRouter(prefix="/chat/v1", tags=["摘要"])
 
 @router.post("/summary")
 async def get_conversation_summary(summary_req: SummaryRequest, request: Request, response: Response):
+    logger.info(f"收到对话摘要请求 - CID: {summary_req.cid}, MSGID: {summary_req.msgid}")
+
     if not summary_req.cid or not summary_req.msgid:
+        logger.error("摘要请求缺少必要字段")
         raise HTTPException(status_code=400, detail="必要字段缺失")
+
     token = request.headers.get("token", "")
     if token:
         response.headers["token"] = token
+
     try:
         threads = {
             "configurable": {

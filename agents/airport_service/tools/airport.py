@@ -7,15 +7,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 import asyncio
 import aiohttp
 import json
-from langchain_core.tools import tool
+from langchain_core.tools import tool, InjectedToolCallId
 from text2kb.retrieval import retrieve_from_kb,retrieve_from_kb_by_agent
 from langgraph.types import Command
-from langchain_core.tools.base import InjectedToolCallId
-from typing_extensions import Annotated
+from typing import Annotated, NotRequired
 from langchain_core.messages import ToolMessage
 from xinference.client import Client
 from config.utils import config_manager
 from ..utils import rewrite_query,generate_step_back_query,rerank_results
+from common.logging import get_logger
+logger = get_logger("agents.tools.airport")
 
 _text2kb_config = config_manager.get_text2kb_config()
 KB_ADDRESS = _text2kb_config.get("kb_address")
@@ -49,7 +50,8 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
         >>> airport_knowledge_query("安检需要注意什么？")
         "乘客需要通过安检门，随身行李需要通过X光机检查。液体不超过100ml，需要放在透明袋中。"
     """
-    print("进入知识查询工具")
+    logger.info("进入机场知识查询工具")
+    logger.info(f"用户问题: {user_question}")
 
     # 并行生成重写查询和后退查询
     rewritten_query_task = rewrite_query(user_question)
@@ -110,8 +112,9 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
         text = "\n\n".join(format_doc)
     else:
         text = "抱歉，在知识库中没有找到与问题相关的信息。"
-    print(f"查询列表: {query_list}")
-    print("检索结果",reranked_results)
+    logger.info(f"查询列表: {query_list}")
+    logger.info(f"检索结果数量: {len(reranked_results) if 'reranked_results' in locals() else 0}")
+    logger.debug(f"最终返回结果: {text}")
     return Command(
             update={
                 'messages':[ToolMessage(content="知识检索结束",tool_call_id=tool_call_id)],
@@ -144,12 +147,16 @@ async def airport_knowledge_query_by_agent(user_question:str,tool_call_id:Annota
         >>> airport_knowledge_query_by_agent("安检需要注意什么？")
         "乘客需要通过安检门，随身行李需要通过X光机检查。液体不超过100ml，需要放在透明袋中。"
     """
-    print("进入知识查询工具")
+    from common.logging import get_logger
+    logger = get_logger("agents.tools.airport")
+    logger.info("进入机场知识查询工具(Agent版本)")
+    logger.info(f"用户问题: {user_question}")
+
     text = await retrieve_from_kb_by_agent(question=user_question
                                      , agent_id="b2b2a32e33bc11f096ef4ef12f9f5002"
                                      ,address=KB_ADDRESS
                                      ,api_key=KB_API_KEY)
-    print(text)
+    logger.info(f"检索结果长度: {len(text) if text else 0}")
     return Command(
             update={
                 'messages':[ToolMessage(content="知识检索结束,即将转到机场知识问答子智能体",tool_call_id=tool_call_id)],

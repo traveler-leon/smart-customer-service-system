@@ -11,13 +11,16 @@ from langchain_core.prompts import ChatPromptTemplate
 from agents.airport_service.tools import flight_info_query
 from langgraph.prebuilt import ToolNode
 from sql2bi import SQLData, convert_sql_to_chart
-from langchain_core.messages import AIMessage
-from langchain_core.messages import RemoveMessage
+from langchain_core.messages import AIMessage,RemoveMessage
 from . import filter_messages,filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
 from langgraph.store.base import BaseStore
 from langgraph.config import get_store
 from . import base_model
 from datetime import datetime
+from common.logging import get_logger
+
+# 获取航班信息节点专用日志记录器
+logger = get_logger("agents.nodes.flight")
 
 flight_tool_node = ToolNode([flight_info_query])
 
@@ -26,14 +29,18 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     store = get_store()
     """
     提供航班信息的节点函数
-    
+
     Args:
         state: 当前状态对象
         config: 可运行配置
-        
+
     Returns:
         更新后的状态对象，包含航班信息
     """
+
+    # 获取用户查询和SQL结果
+    current_query = state.get("current_query", "")
+    sql_result = state.get("sql_result", "")
     kb_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
@@ -110,13 +117,13 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
             这是当前用户的问题: <question>{user_question}</question>
     """)
     ]).partial(time=datetime.now())
-    print("进入航班信息查询子智能体")
+    logger.info("进入航班信息查询子智能体")
     user_question = state.get("current_tool_query", "")
     context_docs = state.get("db_context_docs", "")
     
     # 获取消息历史
-    new_state = filter_messages_for_llm(state, max_msg_len)
-    messages = new_state.get("messages", [AIMessage(content="暂无对话历史")])
+    new_messages = filter_messages_for_llm(state, max_msg_len)
+    messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
     
     # 处理不同格式的sql_result
     sql_result = context_docs.get("data", "")
@@ -136,9 +143,8 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     res.role = "航班信息问答子智能体"
     
     # 提取用户画像
-    profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
-    # 提取历史事件
-    episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    # profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    # episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
 
     return {"messages":[res]}
 
@@ -146,18 +152,21 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
 
 
 async def sql2bi(state: AirportMainServiceState, config: RunnableConfig):
-    print("进入sql2bi子智能体")
+    logger.info("进入SQL转BI图表子智能体")
     context_docs = state.get("db_context_docs", "")
+    logger.info(f"数据库上下文文档: {type(context_docs)}")
 
     # 创建SQLData对象
     chart_config = {}
     try:
         sql_data = SQLData(context_docs["sql"], context_docs["data"])
         chart_config = convert_sql_to_chart(sql_data)
+        logger.info("SQL数据转换为图表配置成功")
     except Exception as e:
-        print(f"SQL数据转换为图表配置失败: {e}")
-    # print(chart_config)
+        logger.error(f"SQL数据转换为图表配置失败: {e}")
+
     chart_config_str = json.dumps(chart_config, ensure_ascii=False, indent=2)
+    logger.info(f"图表配置字符串长度: {len(chart_config_str)}")
 
     return {"messages": AIMessage(content=chart_config_str)}
 

@@ -6,17 +6,20 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 from langgraph.store.base import BaseStore
-from ..tools import airport_knowledge_query, flight_info_query,chitchat_query
-from . import filter_messages,filter_messages_for_llm
+from ..tools import airport_knowledge_query, flight_info_query,chitchat_query,business_handler
+from . import filter_messages_for_llm
 from . import max_msg_len
 from langgraph.config import get_store
 from langchain_core.messages import AIMessage
 from . import base_model,router_model
+from common.logging import get_logger
+
+# 获取路由节点专用日志记录器
+logger = get_logger("agents.nodes.router")
 
 # 绑定工具的模型
-tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
-# tool_model = base_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query])
-
+# tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,chitchat_query,business_handler])
+tool_model = router_model.bind_tools([airport_knowledge_query, flight_info_query,business_handler])
 async def identify_intent(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()
     """
@@ -29,7 +32,15 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     Returns:
         更新后的状态对象，包含识别出的意图
     """
-    print("进入主路由子智能体")
+    logger.info("进入主路由子智能体，开始意图识别")
+
+    # 获取用户输入
+    messages = state.get("messages", [])
+    if messages:
+        user_query = messages[-1].content if hasattr(messages[-1], 'content') else str(messages[-1])
+        logger.info(f"用户查询: {user_query}")
+    else:
+        logger.warning("没有找到用户消息")
     # 构建提示模板
     airport_assistant_prompt = ChatPromptTemplate.from_messages(
     [
@@ -40,15 +51,13 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
             <instructions>
             你需要识别的意图类型包括：
             - **航班信息查询:** 用户希望查询航班信息，例如航班号、起飞/到达时间、航班状态等。
-            - **乘机须知:** 用户希望了解在深圳宝安国际机场乘机相关的规定和信息，例如安检须知、联检(边检、海关、检疫)须知、出行须知（订票（改签）、值机、登机、中转、出发、到达、行李、证件）等。
-            - **机场服务:** 用户希望了解机场的服务信息，例如机场设施、商业服务
+            - **乘机须知:** 用户希望了解在深圳宝安国际机场乘机相关的规定和信息，例如安检须知、联检(边检、海关、检疫)须知、出行须知（订票（改签）、值机、登机、中转、出发、到达、行李、证件）等。以及处理闲聊问题
             - **业务办理:** 用户希望办理机场相关业务，例如行李寄存、行李查询、航班延误、航班取消、航班改签、航班退票、无人陪伴、轮椅租赁、失物招领、投诉等。
-            - **闲聊:** 用户希望与机场客服进行闲聊，比如问候、天气、周边旅游景点、周边服务设施等。
 
             根据用户意图，你必须选择以下工具之一：
             - `flight_info_query`: 用于机场航班信息查询。
-            - `airport_knowledge_query`: 用于机场乘机须知问答。
-            - `chitchat_query`: 用于处理闲聊类问题。
+            - `airport_knowledge_query`: 用于机场乘机须知问答,安检须知、联检(边检、海关、检疫)须知、出行须知（订票（改签）、值机、登机、中转、出发、到达、行李、证件）等。以及处理闲聊问题
+            - `business_handler`: 用于机场业务办理，例如行李寄存、行李查询、航班延误、航班取消、航班改签、航班退票、无人陪伴、轮椅租赁、失物招领、投诉等。
 
             操作步骤：
             1. 仔细分析完整的对话历史，理解用户真正的意图
@@ -82,23 +91,23 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
             </example3>
             <example4>
             用户: "谢谢你的帮助"
-            正确操作: 使用chitchat_query，参数"谢谢你的帮助"
+            正确操作: 使用airport_knowledge_query，参数"谢谢你的帮助"
             </example4>
             <example5>
-            用户: "现在出发，从杭州萧山国际机场到杭州西湖景区。请你提供三种公共交通出行方案"
-            正确操作: 使用chitchat_query，参数"现在出发，从杭州萧山国际机场到杭州西湖景区。请你提供三种公共交通出行方案"
+            用户: "我想租一个轮椅"
+            正确操作: 使用business_handler，参数"我想租一个轮椅"
             </example5>
             </examples>
             """
         ),
         ("placeholder", "{messages}"),
     ]
-    ).partial(time=datetime.now())
+    ).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     # 构建链
     chain = airport_assistant_prompt | tool_model
-    new_state = filter_messages_for_llm(state, max_msg_len)
-    messages = new_state.get("messages", [])
+    new_messages = filter_messages_for_llm(state, max_msg_len)
+    messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
     response.role = "主路由智能体"
@@ -106,64 +115,25 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     # 返回更新后的状态
     return {"messages": [response]}
 
-# def route_to_next_node(state: AirportMainServiceState):
-#     """
-#     根据当前状态路由到下一个节点
-    
-#     Args:
-#         state: 当前状态对象
-        
-#     Returns:
-#         字符串，表示下一个节点的名称
-#     """
-#     # 获取最新消息
-#     messages = state.get("messages", [])
-#     if not messages:
-#         return "chitchat_tool_node"
-#     latest_message = messages[-1]
-#     # 检查是否有工具调用
-#     if not hasattr(latest_message, "tool_calls") or not latest_message.tool_calls:
-#         return "chitchat_tool_node"
-    
-#     # 根据工具调用决定下一个节点
-#     tool_name = latest_message.tool_calls[-1].get("name", "")
-    
-#     if tool_name == "flight_info_query":
-#         return "flight_tool_node"
-#     elif tool_name == "airport_knowledge_query":
-#         return "airport_tool_node"
-#     else:
-#         return "chitchat_tool_node" 
-    
-
-
 def route_to_next_node(state: AirportMainServiceState):
-    """
-    根据当前状态路由到下一个节点
-    
-    Args:
-        state: 当前状态对象
-        
-    Returns:
-        字符串，表示下一个节点的名称
-    """
     # 获取最新消息
     messages = state.get("messages", [])
     if not messages:
-        return "chitchat_tool_node"
+        return "airport_tool_node"
+
     latest_message = messages[-1]
     # 检查是否有工具调用
     if not hasattr(latest_message, "tool_calls") or not latest_message.tool_calls:
-        return "chitchat_tool_node"
-    
+        return "airport_tool_node"
+
     # 根据工具调用决定下一个节点
     tool_name = latest_message.tool_calls[-1].get("name", "")
-    
     if tool_name == "flight_info_query":
         return "flight_tool_node"
-    # elif tool_name == "airport_knowledge_query_by_agent":
-    #     return "airport_tool_node"
-    elif tool_name == "airport_knowledge_query":
-        return "airport_tool_node"
+    elif tool_name == "business_handler":
+        return "business_tool_node"
     else:
-        return "chitchat_tool_node" 
+        return "airport_tool_node"
+
+    # else:
+    #     return "chitchat_tool_node"

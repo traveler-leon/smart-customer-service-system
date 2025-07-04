@@ -2,11 +2,14 @@ import sys
 import os
 # 添加项目根目录到系统路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from langchain_core.tools import tool
 from langgraph.types import Command
-from langchain_core.tools.base import InjectedToolCallId
-from typing_extensions import Annotated
+from langchain_core.tools import tool, InjectedToolCallId
+from typing import Annotated, NotRequired
 from langchain_core.messages import ToolMessage
+from common.logging import get_logger
+
+# 获取闲聊工具专用日志记录器
+logger = get_logger("agents.tools.chitchat")
 
 @tool
 async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> str:
@@ -21,6 +24,10 @@ async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToo
         >>> chitchat_query("你好，今天天气怎么样？")
         >>> chitchat_query("深圳宝安国际机场周边有哪些旅游景点？")
     """
+    logger.info("进入闲聊工具")
+    logger.info(f"用户问题: {question}")
+    logger.info("准备转到闲聊子智能体")
+
     return Command(
         update={
             "messages": [ToolMessage(content="工具调用结束,即将转到闲聊子智能体", tool_call_id=tool_call_id)],

@@ -1,16 +1,10 @@
 """
 状态定义模块
 """
-
 from typing import Dict, List, TypedDict, Annotated, Optional
 from langchain_core.messages import BaseMessage
 from langgraph.graph import MessagesState
-from typing import Union
-
-from typing import List, Optional
-from pydantic import BaseModel, Field
-
-from typing import List, Optional
+from langgraph.prebuilt.chat_agent_executor import AgentState
 from pydantic import BaseModel, Field
 
 class UserProfile(BaseModel):
@@ -82,3 +76,6 @@ class AirportMainServiceState(MessagesState):
     kb_context_docs_maxscore: float = 0.0
     db_context_docs: Dict = {}
     chart_config: Dict = {}
+
+class BusinessServiceState(AgentState):
+    pass

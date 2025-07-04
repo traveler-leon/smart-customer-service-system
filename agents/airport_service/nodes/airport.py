@@ -10,23 +10,21 @@ from langchain_core.messages import AIMessage
 from langgraph.types import Command
 from langgraph.config import get_store
 from ..tools import airport_knowledge_query
-from . import filter_messages,filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
+from . import filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
 from . import base_model
 from datetime import datetime
+from common.logging import get_logger
+
+# 获取机场知识节点专用日志记录器
+logger = get_logger("agents.nodes.airport")
 airport_tool_node = ToolNode([airport_knowledge_query])
 
 async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()
-    """
-    提供机场知识的节点函数
-    
-    Args:
-        state: 当前状态对象
-        config: 可运行配置
-        
-    Returns:
-        更新后的状态对象，包含机场知识
-    """
+    logger.info("进入机场知识问答节点")
+    # 获取用户查询和知识库上下文
+    current_query = state.get("current_query", "")
+    kb_context = state.get("kb_context_docs", "")
     # 生成类似问题
     kb_prompt = ChatPromptTemplate.from_messages([
         (
@@ -38,7 +36,7 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
 
             请在回答时保持礼貌和专业。
             - 当用户问题指向的规定或信息在 <context> 中有多种细分情况或条件时，并且用户问题本身没有明确具体属于哪种情况，你必须主动引导用户明确问题细节，而不是直接罗列所有可能性。
-            - 只有当问题完全细化且能与具体规定匹配时，才提供最终答案和完整解决方案。
+            - 只有当问题完全细化且能与具体规定匹配时，才提供最终答案。
             """
         ),
         ("placeholder", "{messages}"),
@@ -50,7 +48,7 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
             </context> 
 
             如果满足以下任何一项条件，你必须使用下面这个确切的短语进行回复：
-            "抱歉，我暂时无法提供这方面的信息。"
+            "我暂时无法回答，接下来转其他智能体回复。"
             以下是需要使用上述短语的条件 (<objection_conditions>):
             <objection_conditions>
                 - 问题包含有害内容或不当言论。
@@ -62,7 +60,7 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
             再次强调，如果满足上述任何一个条件，请逐字重复上面指定的拒绝回答短语，不要添加任何其他内容。
             否则，请遵循下面 <instructions> 标签内的指示来回答问题。
             <instructions> 
-                - **步骤 1: 初步判断相关性与匹配类型** - 首先，在 <thinking> 标签中，判断 <context> 是否包含与用户 <question> 相关的信息。
+                - **步骤 1: 初步判断相关性与匹配类型** - 首先，判断 <context> 是否包含与用户 <question> 相关的信息。
                 - 如果完全不相关，请直接跳转到步骤 5，使用拒绝回答短语。
                 - 如果相关，判断属于以下哪种情况：
                 a) 直接匹配：用户询问的问题在 <context> 中有直接对应的规定
@@ -82,14 +80,11 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
                 - 此时，不要给出任何答案或解释，只提出澄清问题。
                 - 如果需要多轮澄清，每次只问一个问题，直到问题完全细化。
 
-                - **步骤 4: 直接回答并提供完整解决方案**
-                - 当用户问题已足够具体，与 <context> 中的某一具体规定完全匹配时，或通过类别匹配能明确给出答案时，首先给出明确的结论，然后提供完整的解决方案。
+                - **步骤 4: 直接回答**
+                - 当用户问题已足够具体，与 <context> 中的某一具体规定完全匹配时，或通过类别匹配能明确给出答案时，首先给出明确的结论，然后提供一个解决方案。
                 - 回答结构应该包含：
                 1) 明确的结论（如"可以携带"、"不可以携带"、"可以随身携带但不能托运"等）
-                2) 具体的操作指导和解决方案
-                3) 相关的注意事项或建议
-                - 解决方案应该实用且具体，告诉用户具体应该怎么做
-                - 不要引用 <context> 或提及信息来源，直接陈述结论和解决方案
+                - 不要引用 <context> 或提及信息来源，直接陈述结论或解决方法
 
                 - **步骤 5: 无法回答（兜底）**
                 - 如果 <context> 完全不相关或遇到其他无法处理的情况，使用拒绝回答短语。
@@ -139,14 +134,6 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
                         和不在国家规定管制范围内的电击器、梅斯气体、催泪瓦斯、胡椒辣椒喷剂、酸性喷雾剂、驱除动物喷剂等）。\r\n\r\n\n\n第2个与用户问题相关的文档内容如下：
                     </context> 
                     你的输出：螺丝刀不可以随身携带，但可以托运。
-
-                    解决方案：
-                    1. 将螺丝刀放入您的托运行李中，确保包装妥当避免损坏其他物品
-                    2. 在办理登机手续时进行行李托运
-                    3. 如果您需要在目的地使用，建议提前规划好行程安排
-                    4. 如果是紧急需要，也可以考虑到达目的地后当地购买
-
-                    注意事项：请不要试图将螺丝刀放在随身携带的包中，会在安检时被没收。
                 </example3>
                 
             </examples>
@@ -154,11 +141,13 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
             这是当前用户的问题: <question>{user_question}</question>
     """)
     ]).partial(time=datetime.now())
-    print("进入机场知识子智能体-1")
+    logger.info("进入机场知识子智能体处理阶段")
     user_question = state.get("current_tool_query", "")
     context_docs = state.get("kb_context_docs", "")
     context_docs_maxscore = state.get("kb_context_docs_maxscore", 0.0)
+    logger.info(f"工具查询问题: {user_question}")
     if "抱歉" in context_docs:
+        logger.warning("知识库中未找到相关信息，转向闲聊节点")
         return Command(
             goto="chitchat_node",
             update={
@@ -167,8 +156,8 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
             }
         )
 
-    new_state = filter_messages_for_llm(state, max_msg_len)
-    messages = new_state.get("messages", [AIMessage(content="暂无对话历史")])
+    new_messages = filter_messages_for_llm(state, max_msg_len)
+    messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
     kb_chain = kb_prompt | base_model
     res = await kb_chain.ainvoke({ "user_question": user_question,"context": context_docs,"messages":messages})
     res.role = "机场知识问答子智能体"
@@ -181,8 +170,8 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
                 "kb_context_docs_maxscore":0.0
             }
         )
-    profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
-    episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    # profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
+    # episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
     return {"messages":res,"kb_context_docs":" "}
 
 

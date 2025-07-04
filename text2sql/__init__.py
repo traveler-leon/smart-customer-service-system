@@ -1,17 +1,14 @@
 import asyncio
 from typing import Dict, Any, Optional
 from common.logging import setup_logger, get_logger
+from config.factory import get_logger_config
 
 from .base.factory import AsyncSmartSqlFactory
 from .base.interfaces import AsyncPlugin
 
-# 初始化日志系统
-setup_logger(
-    log_dir="logs/text2sql",
-    log_level="INFO",
-    max_bytes=10 * 1024 * 1024,  # 10MB
-    backup_count=5
-)
+# 获取日志配置并初始化日志系统
+logger_config = get_logger_config("text2sql")
+setup_logger(**logger_config)
 
 # 获取text2sql模块的日志记录器
 logger = get_logger("text2sql")
