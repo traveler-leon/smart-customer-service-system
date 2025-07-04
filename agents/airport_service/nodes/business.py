@@ -1,6 +1,3 @@
-"""
-业务办理节点 - 使用 create_react_agent 实现
-"""
 import sys
 import os
 # 添加项目根目录到系统路径
@@ -11,15 +8,13 @@ from langgraph.config import get_store
 from langgraph.store.base import BaseStore
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import AIMessage
-
-from ..state import AirportMainServiceState, BusinessServiceState
+from ..state import BusinessServiceState
 from ..tools.business import (
     wheelchair_rental_tool
     ,business_handler
 )
-from . import router_model, filter_messages_for_llm, max_msg_len
+from . import structed_model, filter_messages_for_llm, max_msg_len
 from common.logging import get_logger
-
 # 获取业务办理节点专用日志记录器
 logger = get_logger("agents.nodes.business")
 
@@ -43,7 +38,7 @@ business_agent_prompt = """你是深圳宝安国际机场的业务办理专员�
 3. 如需更多信息，主动询问用户
 4. 当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
 </工作原则>
-请根据用户的业务办理需求，选择合适的工具并提供专业的服务指导。""".format(time=datetime.now())
+请根据用户的业务办理需求，选择合适的工具并提供专业的服务指导。""".format(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 
 
@@ -56,7 +51,7 @@ def message_filter(state: BusinessServiceState, config: RunnableConfig):
 
 # 创建业务办理子智能体
 business_agent = create_react_agent(
-    model=router_model,
+    model=structed_model,
     tools=business_tools,
     prompt=business_agent_prompt,
     pre_model_hook=message_filter,

@@ -52,8 +52,6 @@ async def flight_info_query(question: str, tool_call_id: Annotated[str, Injected
         "CA1234航班目前正在飞行中，预计17:30到达目的地，暂无延误。"
     """
     logger.info("进入航班信息查询工具")
-    logger.info(f"用户问题: {question}")
-
     # 定义异步查询函数
     async def perform_query(query):
         try:
@@ -75,7 +73,6 @@ async def flight_info_query(question: str, tool_call_id: Annotated[str, Injected
     return Command(
         update={
             "messages": [ToolMessage(content=result['sql'], tool_call_id=tool_call_id)],
-            "current_query": question,
             "db_context_docs": result
         }
     )

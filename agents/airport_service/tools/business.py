@@ -43,7 +43,7 @@ async def wheelchair_rental_tool(name: str
         request: 轮椅租赁相关请求
     """
     await asyncio.sleep(1)
-    logger.info(f"轮椅租赁服务: ")
+    logger.info(f"进入轮椅租赁服务调用: ")
     logger.info(f"收集到的参数 - 姓名: {name}, 身份证: {id_number}, 电话: {phone_number}, 航班号: {flight_number}, 航班日期: {flight_date}")
     
     # 返回表单结构的JSON字符串
@@ -169,9 +169,6 @@ async def business_handler(query: str, tool_call_id: Annotated[str, InjectedTool
         >>> business_handler("我要租一个轮椅")
     """
     logger.info("进入业务办理工具")
-    logger.info(f"用户问题: {query}")
-    logger.info("准备将请求转到业务子智能体")
-
     return Command(
         update={
             "messages": [
@@ -179,7 +176,6 @@ async def business_handler(query: str, tool_call_id: Annotated[str, InjectedTool
                     content="工具调用结束，已准备转交业务办理子智能体处理",
                     tool_call_id=tool_call_id
                 )
-            ],
-            "current_query": query
+            ]
         }
     )

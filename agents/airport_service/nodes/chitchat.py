@@ -11,16 +11,11 @@ from langgraph.config import get_store
 from langgraph.store.base import BaseStore
 from datetime import datetime
 from ..tools import chitchat_query
-from . import filter_messages,filter_messages_for_llm,profile_executor,memery_delay,max_msg_len,model_config
-from . import base_model
+from . import filter_messages_for_llm,max_msg_len,base_model
 from common.logging import get_logger
 
-# 获取闲聊节点专用日志记录器
 logger = get_logger("agents.nodes.chitchat")
-
 chitchat_tool_node = ToolNode([chitchat_query])
-
-
 
 async def call_dashscope(dialog_his:list):
     url = "https://dashscope.aliyuncs.com/api/v1/apps/01dd90c394de4c468e0626dabef3d79e/completion"
@@ -60,8 +55,8 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     Returns:
         更新后的状态对象，包含闲聊回复
     """
+    logger.info("进入闲聊子智能体:")
     # 获取用户查询
-    current_query = state.get("current_query", "")
     chitchat_prompt = ChatPromptTemplate.from_messages(
     [
         (
@@ -80,9 +75,9 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
             """
         ),
         ("placeholder", "{messages}"),
+        ("human", "{user_query}")
     ]
-    ).partial(time=datetime.now())
-    logger.info("进入闲聊节点，时间：%s", datetime.now())
+    ).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     chain = chitchat_prompt | base_model
     # 获取消息历史
     new_messages = filter_messages_for_llm(state, max_msg_len)
@@ -114,8 +109,8 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     # profile_executor.submit({"messages":state["messages"]+[AIMessage(role="闲聊子智能体",content=response)]},after_seconds=memery_delay)
     # return {"messages":[AIMessage(role="闲聊子智能体",content=response)]}
     
-
-    response = await chain.ainvoke({"messages": messages})
+    user_query = state.get("user_query", "")
+    response = await chain.ainvoke({"messages": messages,"user_query":user_query})
     response.role = "闲聊子智能体"
     # 提取用户画像
     # profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)

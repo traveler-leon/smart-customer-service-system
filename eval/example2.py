@@ -37,12 +37,12 @@ class HzOpenAI(DeepEvalBaseLLM):
 # Replace these with real values
 custom_model = ChatOpenAI(
     model="glm-4-plus",
-    api_key="8a70345b54344f4a8b07659e95c9ea0d.4xz6BnmSdbQbNJT7",
+    api_key="8a70345b54344f4a8b079ea0d.4xz6BnmSdbQbNJT7",
     base_url="https://open.bigmodel.cn/api/paas/v4/",
 )
 chatmodel = HzOpenAI(model=custom_model)
 
-client = OpenAI(api_key="8a70345b54344f4a8b07659e95c9ea0d.4xz6BnmSdbQbNJT7", base_url="https://open.bigmodel.cn/api/paas/v4/")
+client = OpenAI(api_key="8a70345b54344f495c9ea0d.4xz6BnmSdbQbNJT7", base_url="https://open.bigmodel.cn/api/paas/v4/")
 
 
 from typing import List

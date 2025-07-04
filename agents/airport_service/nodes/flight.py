@@ -3,7 +3,6 @@
 """
 import sys
 import os
-import json
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from agents.airport_service.state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
@@ -12,10 +11,9 @@ from agents.airport_service.tools import flight_info_query
 from langgraph.prebuilt import ToolNode
 from sql2bi import SQLData, convert_sql_to_chart
 from langchain_core.messages import AIMessage,RemoveMessage
-from . import filter_messages,filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
+from . import filter_messages_for_llm,max_msg_len,base_model
 from langgraph.store.base import BaseStore
 from langgraph.config import get_store
-from . import base_model
 from datetime import datetime
 from common.logging import get_logger
 
@@ -37,10 +35,7 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     Returns:
         更新后的状态对象，包含航班信息
     """
-
-    # 获取用户查询和SQL结果
-    current_query = state.get("current_query", "")
-    sql_result = state.get("sql_result", "")
+    logger.info("进入航班信息问答子智能体:")
     kb_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
@@ -59,7 +54,7 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
         """
             请使用下面 <flight_data> XML 标签内提供的航班信息来帮助组织你的回答。
             <flight_data>
-            - 根据用户问题: "{user_question}"
+            - 根据用户问题: "{user_query}"
             - 转换生成的SQL语句: {sql}
             - 根据SQL查询获取的相关航班数据结果: {sql_result}
             </flight_data>
@@ -77,7 +72,7 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
             再次强调，如果满足上述任何一个条件，请逐字重复上面指定的拒绝回答短语，不要添加任何其他内容。
             否则，请遵循下面 <instructions> 标签内的指示来回答问题。
             <instructions>
-                - **步骤 1: 判断SQL执行状态和数据类型** - 首先，在 <thinking> 标签中，分析 <flight_data> 中的SQL执行结果：
+                - **步骤 1: 判断SQL执行状态和数据类型** - 首先，分析 <flight_data> 中的SQL执行结果：
                 a) SQL执行错误：如果sql_result包含错误信息（如包含"error"、"错误"、"SQL执行错误"等），跳转到步骤 2
                 b) 查询结果为空：如果sql_result为空列表[]或空字符串，跳转到步骤 3  
                 c) 查询结果正常：包含有效的航班数据，跳转到步骤 4
@@ -116,26 +111,20 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
             </instructions>
             这是当前用户的问题: <question>{user_question}</question>
     """)
-    ]).partial(time=datetime.now())
-    logger.info("进入航班信息查询子智能体")
-    user_question = state.get("current_tool_query", "")
+    ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    user_query = state.get("user_query", "")
     context_docs = state.get("db_context_docs", "")
-    
     # 获取消息历史
     new_messages = filter_messages_for_llm(state, max_msg_len)
     messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
-    
     # 处理不同格式的sql_result
     sql_result = context_docs.get("data", "")
     sql_query = context_docs.get("sql", "")
-    
-    # 现在所有情况都由prompt处理，包括SQL错误和空结果
-    # 直接调用LLM让它根据prompt中的逻辑来处理不同的数据情况
-    
+
     # 数据有效，调用LLM进行处理
     kb_chain = kb_prompt | base_model
     res = await kb_chain.ainvoke({ 
-        "user_question": user_question,
+        "user_query": user_query,
         "sql": sql_query,
         "sql_result": sql_result,
         "messages": messages
@@ -147,29 +136,3 @@ async def provide_flight_info(state: AirportMainServiceState, config: RunnableCo
     # episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
 
     return {"messages":[res]}
-
-
-
-
-async def sql2bi(state: AirportMainServiceState, config: RunnableConfig):
-    logger.info("进入SQL转BI图表子智能体")
-    context_docs = state.get("db_context_docs", "")
-    logger.info(f"数据库上下文文档: {type(context_docs)}")
-
-    # 创建SQLData对象
-    chart_config = {}
-    try:
-        sql_data = SQLData(context_docs["sql"], context_docs["data"])
-        chart_config = convert_sql_to_chart(sql_data)
-        logger.info("SQL数据转换为图表配置成功")
-    except Exception as e:
-        logger.error(f"SQL数据转换为图表配置失败: {e}")
-
-    chart_config_str = json.dumps(chart_config, ensure_ascii=False, indent=2)
-    logger.info(f"图表配置字符串长度: {len(chart_config_str)}")
-
-    return {"messages": AIMessage(content=chart_config_str)}
-
-def filter_chatbot_message(state: AirportMainServiceState, config: RunnableConfig):
-    messages = state.get("messages", [])
-    return {"messages": [RemoveMessage(id=messages[-1].id)]}

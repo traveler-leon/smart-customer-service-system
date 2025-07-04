@@ -43,13 +43,12 @@ async def translate_input(state: AirportMainServiceState, config: RunnableConfig
         config: 可运行配置
     """
     Is_translate = config["configurable"].get("Is_translate",False)
-    logger.info(f"进入输入翻译节点 - 是否需要翻译: {Is_translate}")
+    logger.info(f"进入输入翻译子智能体 - 是否需要翻译: {Is_translate}")
 
     if not Is_translate:
-        logger.info("输入无需翻译，直接返回")
         return state
     else:
-        logger.info("输入需要翻译，开始处理")
+        logger.info("输入内容需要翻译：开始处理")
         input_parser = PydanticOutputParser(pydantic_object=TranslationResult)
         input_translation_prompt = PromptTemplate(
             template=(
@@ -92,13 +91,12 @@ async def translate_output(state: AirportMainServiceState, config: RunnableConfi
         config: 可运行配置
     """
     Is_translate = config["configurable"].get("Is_translate",False)
-    logger.info(f"进入输出翻译节点 - 是否需要翻译: {Is_translate}")
+    logger.info(f"进入输出翻译子智能体 - 是否需要翻译: {Is_translate}")
 
     if not Is_translate:
-        logger.info("输出无需翻译，直接返回")
         return state
     else:
-        logger.info("输出需要翻译，开始处理")
+        logger.info("输出内容需要翻译：开始处理")
         output_translation_prompt = ChatPromptTemplate.from_messages([
             (
                 "system",

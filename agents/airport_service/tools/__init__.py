@@ -12,7 +12,7 @@ logger_config = get_logger_config("agents")
 setup_logger(**logger_config)
 logger = get_logger("agents.tools")
 
-from .airport import airport_knowledge_query,airport_knowledge_query_by_agent
+from .airport import airport_knowledge_query
 from .flight import flight_info_query
 from .chit import chitchat_query
 from .business import business_handler,wheelchair_rental_tool
@@ -21,7 +21,6 @@ logger.info("工具集模块初始化完成")
 
 __all__ = [
     "airport_knowledge_query"
-    , "airport_knowledge_query_by_agent"
     , "flight_info_query"
     , "chitchat_query"
     , "business_handler"

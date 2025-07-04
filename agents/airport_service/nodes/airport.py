@@ -10,8 +10,8 @@ from langchain_core.messages import AIMessage
 from langgraph.types import Command
 from langgraph.config import get_store
 from ..tools import airport_knowledge_query
-from . import filter_messages_for_llm,profile_executor,episode_executor,memery_delay,max_msg_len
-from . import base_model
+from . import filter_messages_for_llm,max_msg_len,KB_SIMILARITY_THRESHOLD
+from . import content_model
 from datetime import datetime
 from common.logging import get_logger
 
@@ -21,11 +21,7 @@ airport_tool_node = ToolNode([airport_knowledge_query])
 
 async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
     store = get_store()
-    logger.info("进入机场知识问答节点")
-    # 获取用户查询和知识库上下文
-    current_query = state.get("current_query", "")
-    kb_context = state.get("kb_context_docs", "")
-    # 生成类似问题
+    logger.info("进入机场知识问答子智能体:")
     kb_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
@@ -138,16 +134,14 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
                 
             </examples>
 
-            这是当前用户的问题: <question>{user_question}</question>
+            这是当前用户的问题: <question>{user_query}</question>
     """)
-    ]).partial(time=datetime.now())
+    ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     logger.info("进入机场知识子智能体处理阶段")
-    user_question = state.get("current_tool_query", "")
+    user_query = state.get("user_query", "")
     context_docs = state.get("kb_context_docs", "")
     context_docs_maxscore = state.get("kb_context_docs_maxscore", 0.0)
-    logger.info(f"工具查询问题: {user_question}")
-    if "抱歉" in context_docs:
-        logger.warning("知识库中未找到相关信息，转向闲聊节点")
+    if "抱歉" in context_docs or not context_docs or context_docs_maxscore < KB_SIMILARITY_THRESHOLD:
         return Command(
             goto="chitchat_node",
             update={
@@ -158,18 +152,9 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
 
     new_messages = filter_messages_for_llm(state, max_msg_len)
     messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
-    kb_chain = kb_prompt | base_model
-    res = await kb_chain.ainvoke({ "user_question": user_question,"context": context_docs,"messages":messages})
+    kb_chain = kb_prompt | content_model
+    res = await kb_chain.ainvoke({ "user_query": user_query,"context": context_docs,"messages":messages})
     res.role = "机场知识问答子智能体"
-
-    if "抱歉" in res.content:
-        return Command(
-            goto="chitchat_node",
-            update={
-                "kb_context_docs":"",
-                "kb_context_docs_maxscore":0.0
-            }
-        )
     # profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
     # episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
     return {"messages":res,"kb_context_docs":" "}

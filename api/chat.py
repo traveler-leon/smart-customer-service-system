@@ -56,12 +56,13 @@ async def chat_stream(user_input: UserInput, request: Request, response: Respons
                 "configurable": {
                     "passenger_id": user_input.cid,
                     "thread_id": user_input.cid,
+                    "user_query": user_input.query_txt,
                     "token": token,
                     "Is_translate": Is_translate,
                     "Is_emotion": Is_emotion
                 }
             }
-            logger.info(f"流用户输入: {user_input.query_txt}")
+            logger.info(f"用户输入: {user_input.query_txt}")
             yield f"data: {json.dumps({'event': 'start'})}\n\n"
             response_data = {
                 "ret_code": "000000",
@@ -173,6 +174,7 @@ async def chat_websocket(websocket: WebSocket):
                     "configurable": {
                         "passenger_id": cid,
                         "thread_id": cid,
+                        "user_query": query_txt,
                         "token": token,
                         "Is_translate": Is_translate,
                         "Is_emotion": Is_emotion
@@ -360,6 +362,7 @@ async def airport_chat(chat_request: AirportChatRequest, request: Request):
                 "configurable": {
                     "passenger_id": chat_request.user_id,
                     "thread_id": chat_request.thread_id,
+                    "user_query": chat_request.query,
                     "token": token,
                     "Is_translate": Is_translate,
                     "Is_emotion": Is_emotion
@@ -462,7 +465,7 @@ async def airport_chat(chat_request: AirportChatRequest, request: Request):
             "Access-Control-Allow-Headers": "Cache-Control"
         }
     ) 
-airport_router = APIRouter(prefix="/api/v1/airport-assistant", tags=["机场智能助手"])
+
 @airport_router.websocket("/chat/ws")
 async def airport_chat_websocket(websocket: WebSocket):
     """
@@ -526,6 +529,7 @@ async def airport_chat_websocket(websocket: WebSocket):
                     "configurable": {
                         "passenger_id": user_id,
                         "thread_id": thread_id,
+                        "user_query": query,
                         "token": token,
                         "Is_translate": Is_translate,
                         "Is_emotion": Is_emotion

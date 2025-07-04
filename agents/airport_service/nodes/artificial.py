@@ -6,7 +6,6 @@ from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from ..state import AirportMainServiceState
 from . import emotion
-from . import base_model,model_config
 from common.logging import get_logger
 
 # 获取情感识别节点专用日志记录器
@@ -116,16 +115,15 @@ def is_exact_repeat(messages: list, threshold: int = 3) -> bool:
 
 # 主判定函数
 def should_transfer(state: AirportMainServiceState):
-    last_msg = state["messages"][-1]
-    user_input = last_msg.content
-
-    if is_explicit_request(user_input):
+    # last_msg = state["messages"][-1]
+    # user_input = last_msg.content
+    user_query = state.get("user_query", "")
+    if is_explicit_request(user_query):
         return True, {}
-
     if is_exact_repeat(state["messages"]):
         return True, {}
     
-    emotion_result = analyze_emotion_with_model(user_input)
+    emotion_result = analyze_emotion_with_model(user_query)
     return  emotion_result["is_negative"], emotion_result
     
 
@@ -139,10 +137,9 @@ async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig,
         store: 存储对象
     """
     Is_emotion = config["configurable"].get("Is_emotion", False)
-    logger.info(f"进入情感识别节点 - 是否需要情感识别: {Is_emotion}")
+    logger.info(f"进入情感识别子智能体 - 是否需要情感识别: {Is_emotion}")
 
     if not Is_emotion:
-        logger.info("无需情感识别，直接返回")
         return state
     else:
         logger.info("开始情感识别处理...")

@@ -1,6 +1,5 @@
 from langchain_core.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from ..nodes import router_model as model
+from ..nodes import structed_model as model
 from common.logging import get_logger
 
 # 获取查询转换专用日志记录器
@@ -38,6 +37,7 @@ async def rewrite_query(original_query):
     2. 改写后的问题必须更加具体、清晰，适合用来检索民航机场相关的知识库内容。
     3. 语言表达要正式、完整，尽可能包含“飞机”、“安检”、“机场”等关键词，便于检索系统理解意图。
     4. 最终只输出改写后的问题，不要输出任何其他内容，包括（改写后的问题的前缀）
+    5.如果用户问题是打招呼或者闲聊，请直接返回原问题，不要过度改写
     </task>
 
     <examples>
@@ -94,6 +94,7 @@ async def generate_step_back_query(original_query):
     2. 要结合你的领域知识，准确判断物品的属性类别。
     3. 回退问题要表达清晰完整，符合机场安检问答逻辑。
     4. 最终只输出回退后的问题，不要输出任何其他内容，包括（回退后的问题的前缀）
+    5.如果用户问题是打招呼或者闲聊，请直接返回原问题，不要过度改写
     </requirements>
 
     <examples>

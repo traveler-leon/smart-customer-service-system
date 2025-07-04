@@ -24,14 +24,10 @@ async def chitchat_query(question: str, tool_call_id: Annotated[str, InjectedToo
         >>> chitchat_query("你好，今天天气怎么样？")
         >>> chitchat_query("深圳宝安国际机场周边有哪些旅游景点？")
     """
-    logger.info("进入闲聊工具")
-    logger.info(f"用户问题: {question}")
-    logger.info("准备转到闲聊子智能体")
-
+    logger.info("进入闲聊工具:")
     return Command(
         update={
             "messages": [ToolMessage(content="工具调用结束,即将转到闲聊子智能体", tool_call_id=tool_call_id)],
-            "current_query": question
         }
     )
 

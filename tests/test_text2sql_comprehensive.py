@@ -16,7 +16,7 @@ class Text2SQLTestCase(unittest.TestCase):
         cls.config = {
             "llm": {
                 "type": "qwen",  # 使用已实现的千问模型
-                "api_key": "sk-2e8c1dd4f75a44bf8114b337a549",  # 替换为您的API密钥
+                "api_key": "sk-2e8c1dd4f7bf8114b337a549",  # 替换为您的API密钥
                 "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",  # 百炼服务的base_url
                 "model": "qwen2.5-72b-instruct"  # 使用千问2.5-72B模型
             },
@@ -49,7 +49,7 @@ class Text2SQLTestCase(unittest.TestCase):
             "language": "zh",
             "embedding": {
                 "type": "qwen",  # 使用已实现的嵌入模型
-                "api_key": "sk-2e8c1dd4f75a44bf8114b337a541",  # 请使用您的实际API密钥
+                "api_key": "sk-2e8c1dd4f4bf8114b337a541",  # 请使用您的实际API密钥
                 "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
                 "embedding_model": "text-embedding-v3"
             }

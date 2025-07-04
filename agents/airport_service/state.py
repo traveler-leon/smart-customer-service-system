@@ -67,13 +67,13 @@ class AirportMainServiceState(MessagesState):
     user_base_info: Annotated[Dict, dict_merge] = {}
     user_profile_info: Optional[UserProfile] = None
     # 当前查询
-    current_tool_query: Optional[str] = None
+    user_query: Optional[str] = None
     translator_result: Optional[TranslationResult] = None
     # 情感识别
     emotion_result:Dict = {}
     # 上下文信息
-    kb_context_docs: str = ""
-    kb_context_docs_maxscore: float = 0.0
+    kb_context_docs: Optional[str] = None
+    kb_context_docs_maxscore: Optional[float] = None
     db_context_docs: Dict = {}
     chart_config: Dict = {}
 

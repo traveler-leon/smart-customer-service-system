@@ -11,11 +11,13 @@ from common.logging import setup_logger, get_logger
 from typing import Dict,List
 from langmem import create_memory_store_manager,ReflectionExecutor
 from agents.airport_service.state import UserProfile,Episode
-
 # 初始化nodes模块日志
 logger_config = get_logger_config("agents")
 setup_logger(**logger_config)
 logger = get_logger("agents.nodes")
+
+_text2kb_config = config_manager.get_text2kb_config()
+KB_SIMILARITY_THRESHOLD = float(_text2kb_config.get("kb_similarity_threshold"))
 
 # 从配置文件获取模型配置
 model_config = config_manager.get_agents_config().get("llm", {})
@@ -25,24 +27,31 @@ memery_delay = 60*30
 
 emotion = config_manager.get_agents_config().get("emotions")
 
-
 # 创建共用模型实例
 if model_config.get("base_model_type") == "qwen":
     from langchain_qwq import ChatQwen
-    base_model = ChatQwen(
+    content_model = ChatQwen(
         model=model_config.get("model"),
         temperature=model_config.get("temperature", 0.7),
         api_key=model_config.get("api_key"),
         base_url=model_config.get("base_url"),
         enable_thinking=True)
 else:
-    base_model = ChatOpenAI(
+    content_model = ChatOpenAI(
         model=model_config.get("model"),
         temperature=model_config.get("temperature", 0.7),
         api_key=model_config.get("api_key"),
         base_url=model_config.get("base_url")
     )
-router_model = ChatOpenAI(
+
+base_model = ChatOpenAI(
+    model=model_config.get("model"),
+    temperature=model_config.get("temperature", 0.7),
+    api_key=model_config.get("api_key"),
+    base_url=model_config.get("base_url")
+)
+
+structed_model = ChatOpenAI(
     model=model_config.get("router_model"),
     temperature=model_config.get("router_temperature", 0.7),
     api_key=model_config.get("router_api_key"),
@@ -130,24 +139,24 @@ def filter_messages_for_llm(state: Dict, nb_messages: int = 10) -> List:
 
 # 知识抽取
 ## 用户画像
-profile_manager = create_memory_store_manager(
-    base_model,
-    namespace=("users", "{passenger_id}", "profile"),  # Isolate profiles by user
-    schemas=[UserProfile],
-    instructions="根据用户对话内容，提取用户画像信息",
-    enable_inserts=False,  # Update existing profile only
-)
-profile_executor = ReflectionExecutor(profile_manager)
+# profile_manager = create_memory_store_manager(
+#     base_model,
+#     namespace=("users", "{passenger_id}", "profile"),  # Isolate profiles by user
+#     schemas=[UserProfile],
+#     instructions="根据用户对话内容，提取用户画像信息",
+#     enable_inserts=False,  # Update existing profile only
+# )
+# profile_executor = ReflectionExecutor(profile_manager)
 
-##历史事件
-episode_manager = create_memory_store_manager(
-    base_model,
-    namespace=("memories", "episodes"),
-    schemas=[Episode],
-    instructions="提取具有代表性的卓越问题解决案例，包括其为何有效的原因。",
-    enable_inserts=True,  
-)
-episode_executor = ReflectionExecutor(episode_manager)
+# ##历史事件
+# episode_manager = create_memory_store_manager(
+#     base_model,
+#     namespace=("memories", "episodes"),
+#     schemas=[Episode],
+#     instructions="提取具有代表性的卓越问题解决案例，包括其为何有效的原因。",
+#     enable_inserts=True,  
+# )
+# episode_executor = ReflectionExecutor(episode_manager)
 
 
 # 导出模块
