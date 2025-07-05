@@ -27,8 +27,8 @@ async def lifespan(app: FastAPI):
     os.makedirs(directories_config.get("logs", "logs"), exist_ok=True)
     
     # 确保上传图片目录存在
-    uploads_dir = os.path.join("static", "uploads")
-    os.makedirs(uploads_dir, exist_ok=True)
+    # uploads_dir = os.path.join("static", "uploads")
+    # os.makedirs(uploads_dir, exist_ok=True)
 
     # 注册自定义图
     graph_config = get_graph_config()
@@ -60,7 +60,7 @@ app.add_middleware(
 )
 
 # 挂载静态文件目录
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 注册API路由
 app.include_router(api_router)

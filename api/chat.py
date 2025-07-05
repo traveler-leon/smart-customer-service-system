@@ -5,7 +5,6 @@ import os
 import base64
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
-from common.image_handler import default_image_handler
 
 from models.schemas import (
     UserInput, AirportChatRequest,
@@ -478,14 +477,6 @@ async def airport_chat_websocket(websocket: WebSocket):
     """
     await websocket.accept()    
     try:
-        # 获取服务器基础URL
-        def get_base_url():
-            server_host = websocket.headers.get("host", "localhost:8081")
-            protocol = "https" if websocket.headers.get("x-forwarded-proto") == "https" else "http"
-            return f"{protocol}://{server_host}/"
-        
-        base_url = get_base_url()
-        
         while True:
             # 接收客户端消息
             try:
@@ -529,30 +520,6 @@ async def airport_chat_websocket(websocket: WebSocket):
                 }
                 await websocket.send_text(json.dumps(error_response, ensure_ascii=False))
                 continue
-            
-            # 处理图片上传（如果有）
-            image_url = None
-            if image_data:
-                try:
-                    # 使用图片处理工具类
-                    result = default_image_handler.process_image(image_data, base_url)
-                    image_url = result['image_url']
-                    logger.info(f"✅ 图片已上传并保存为: {image_url}")
-                    
-                except Exception as e:
-                    logger.error(f"❌ 图片处理失败: {str(e)}", exc_info=True)
-                    event_gen = EventGenerator()
-                    error_event = event_gen.create_error_event(
-                        error_code="image_processing_error",
-                        error_message="图片处理失败，请检查格式或重新上传"
-                    )
-                    error_response = {
-                        "event": "error",
-                        "data": error_event.dict()
-                    }
-                    await websocket.send_text(json.dumps(error_response, ensure_ascii=False))
-                    continue
-            
             # 处理 metadata，提取系统参数
             Is_translate = metadata.get("Is_translate", False)
             Is_emotion = metadata.get("Is_emotion", False)
@@ -585,22 +552,6 @@ async def airport_chat_websocket(websocket: WebSocket):
                     "user_id": user_id
                 }
                 await websocket.send_text(json.dumps(start_response, ensure_ascii=False))
-                
-                # 如果有图片，先发送一个图片接收确认事件
-                # if image_url:
-                #     image_received_event = {
-                #         "event": "image_received",
-                #         "data": {
-                #             "id": f"img-{int(time.time() * 1000)}",
-                #             "sequence": 1,
-                #             "content": {
-                #                 "image_url": image_url,
-                #                 "status": "processed"
-                #             }
-                #         }
-                #     }
-                #     await websocket.send_text(json.dumps(image_received_event, ensure_ascii=False))
-                #     logger.info("✅ 发送图片接收确认事件")
                 
                 # 处理聊天消息并发送事件
                 result_count = 0
