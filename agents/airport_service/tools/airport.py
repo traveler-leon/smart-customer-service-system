@@ -52,7 +52,7 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     """
     logger.info("进入机场知识查询工具:")
     # 并行生成重写查询和后退查询
-    user_query = config.get("configurable").get("user_query", "")
+    user_query = user_question
     rewritten_query_task = rewrite_query(user_query)
     step_back_query_task = generate_step_back_query(user_query)
     

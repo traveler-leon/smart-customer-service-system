@@ -34,7 +34,7 @@ def remove_message(state:AirportMainServiceState,del_nb = 2):
 
 
 
-async def translate_input(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
+async def translate_input(state: AirportMainServiceState, config: RunnableConfig):
     """
     翻译输入节点
     
@@ -64,7 +64,7 @@ async def translate_input(state: AirportMainServiceState, config: RunnableConfig
         chain = input_translation_prompt | bound
 
         last_msg = state["messages"][-1]
-        user_input = last_msg.content
+        user_input = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
         del_msg = remove_message(state,del_nb=2)
 
         try:
@@ -73,16 +73,16 @@ async def translate_input(state: AirportMainServiceState, config: RunnableConfig
             original_text = result["responses"][0].original_text
             translated_text = result["responses"][0].translated_text
 
-            return {"translator_result": TranslationResult(language=language, original_text=original_text, translated_text=translated_text), "messages": del_msg + [HumanMessage(name=last_msg.name,content=translated_text)]}
+            return {"user_query":user_input,"translator_result": TranslationResult(language=language, original_text=original_text, translated_text=translated_text), "messages": del_msg + [HumanMessage(name=last_msg.name,content=translated_text)]}
         except Exception as e:
             print("进入异常")
-            return {"translator_result": TranslationResult(language="Chinese", original_text=user_input, translated_text=user_input), "messages": del_msg + [HumanMessage(name =last_msg.name,content=user_input)]}
+            return {"user_query":user_input,"translator_result": TranslationResult(language="Chinese", original_text=user_input, translated_text=user_input), "messages": del_msg + [HumanMessage(name =last_msg.name,content=user_input)]}
 
 
 
 
 
-async def translate_output(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
+async def translate_output(state: AirportMainServiceState, config: RunnableConfig):
     """
     翻译输出节点
     
@@ -149,7 +149,7 @@ async def translate_output(state: AirportMainServiceState, config: RunnableConfi
             language = state["translator_result"].language
             logger.info("语言类型为：",language)
             chain = output_translation_prompt | base_model
-            user_input = state["messages"][-1].content
+            user_input = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
             logger.info("输出prompt",output_translation_prompt.invoke({"user_input": user_input,"language":language}))
 
             result = await chain.ainvoke({"user_input": user_input,"language":language})

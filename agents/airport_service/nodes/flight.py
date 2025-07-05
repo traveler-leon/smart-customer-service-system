@@ -23,8 +23,7 @@ logger = get_logger("agents.nodes.flight")
 flight_tool_node = ToolNode([flight_info_query])
 
 
-async def provide_flight_info(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
-    store = get_store()
+async def provide_flight_info(state: AirportMainServiceState, config: RunnableConfig):
     """
     提供航班信息的节点函数
 

@@ -57,6 +57,12 @@ structed_model = ChatOpenAI(
     api_key=model_config.get("router_api_key"),
     base_url=model_config.get("router_base_url")
 )
+if model_config.get("image_thinking_model"):
+    image_model = ChatOpenAI(
+        model=model_config.get("image_thinking_model"),
+        api_key=model_config.get("image_thinking_api_key"),
+        base_url=model_config.get("image_thinking_base_url")
+    )
 
 # 将 filter_messages 函数移动到这里
 def filter_messages(state: Dict, nb_messages: int = 10) -> List:
@@ -168,6 +174,7 @@ from . import summary
 from . import translator
 from . import artificial
 from . import business
+from . import images_thinking
 
 logger.info("节点模块初始化完成")
 

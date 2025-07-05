@@ -43,8 +43,7 @@ async def call_dashscope(dialog_his:list):
 
 
 
-async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
-    store = get_store()
+async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig):
     """
     处理闲聊问题的节点函数
 

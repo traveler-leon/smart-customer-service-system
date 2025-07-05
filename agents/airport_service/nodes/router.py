@@ -13,18 +13,15 @@ from langgraph.config import get_store
 from langchain_core.messages import AIMessage
 from . import structed_model
 from common.logging import get_logger
+import asyncio
 
 # 获取路由节点专用日志记录器
 logger = get_logger("agents.nodes.router")
 tool_model = structed_model.bind_tools([airport_knowledge_query, flight_info_query,business_handler])
-async def identify_intent(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
-    # store = get_store()
+async def identify_intent(state: AirportMainServiceState, config: RunnableConfig):
+    await asyncio.sleep(5)
     messages = state.get("messages", [])
-    if messages:
-        user_query = messages[-1].content if hasattr(messages[-1], 'content') else str(messages[-1])
-        logger.info(f"用户查询: {user_query}")
-    else:
-        logger.warning("没有找到用户消息")
+    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
     logger.info(f"进入主路由子智能体：{user_query}")
     airport_assistant_prompt = ChatPromptTemplate.from_messages(
     [

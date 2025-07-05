@@ -2,6 +2,7 @@ import os
 import asyncio
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import warnings
 
@@ -24,6 +25,10 @@ async def lifespan(app: FastAPI):
     # 确保必要目录存在
     directories_config = get_directories_config()
     os.makedirs(directories_config.get("logs", "logs"), exist_ok=True)
+    
+    # 确保上传图片目录存在
+    uploads_dir = os.path.join("static", "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
 
     # 注册自定义图
     graph_config = get_graph_config()
@@ -53,6 +58,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 挂载静态文件目录
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 注册API路由
 app.include_router(api_router)

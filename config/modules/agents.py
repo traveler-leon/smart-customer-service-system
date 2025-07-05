@@ -16,6 +16,9 @@ AGENTS_CONFIG = {
         "router_api_key": os.getenv("ROUTER_LLM_API_KEY"),
         "router_model": os.getenv("ROUTER_LLM_MODEL"),
         "router_temperature": os.getenv("ROUTER_LLM_TEMPERATURE"),
+        "image_thinking_base_url": os.getenv("IMAGE_LLM_BASE_URL",""),
+        "image_thinking_api_key": os.getenv("IMAGE_LLM_API_KEY",""),
+        "image_thinking_model": os.getenv("IMAGE_LLM_MODEL",""),
 
     },
     "store":{

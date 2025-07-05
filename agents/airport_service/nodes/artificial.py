@@ -114,10 +114,9 @@ def is_exact_repeat(messages: list, threshold: int = 3) -> bool:
     return all(content == first_content for content in recent_human_messages)
 
 # 主判定函数
-def should_transfer(state: AirportMainServiceState):
+def should_transfer(state: AirportMainServiceState,user_query:str):
     # last_msg = state["messages"][-1]
     # user_input = last_msg.content
-    user_query = state.get("user_query", "")
     if is_explicit_request(user_query):
         return True, {}
     if is_exact_repeat(state["messages"]):
@@ -137,6 +136,7 @@ async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig,
         store: 存储对象
     """
     Is_emotion = config["configurable"].get("Is_emotion", False)
+    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
     logger.info(f"进入情感识别子智能体 - 是否需要情感识别: {Is_emotion}")
 
     if not Is_emotion:
@@ -144,6 +144,6 @@ async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig,
     else:
         logger.info("开始情感识别处理...")
         # 判断是否需要转人工,如果should_transfer_result为True，要转人工，后续再实现
-        should_transfer_result, reason = should_transfer(state)
+        should_transfer_result, reason = should_transfer(state,user_query)
         logger.info(f"情感识别完成 - 是否需要转人工: {should_transfer_result}")
-        return {"emotion_result": reason}
+        return {"emotion_result": reason,"user_query":user_query}

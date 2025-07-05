@@ -3,7 +3,7 @@
 """
 from langgraph.graph import StateGraph, START, END
 from .state import AirportMainServiceState
-from .nodes import airport, router, flight, chitchat, translator, artificial, business
+from .nodes import airport, router, flight, chitchat, translator, artificial, business,images_thinking
 from langgraph.pregel import RetryPolicy
 
 def build_airport_service_graph():
@@ -15,13 +15,12 @@ def build_airport_service_graph():
     """
     # 创建图
     graph = StateGraph(AirportMainServiceState)
-    
-    # 添加节点
     # 翻译节点
     graph.add_node("translate_input_node", translator.translate_input, retry=RetryPolicy(max_attempts=3))
     graph.add_node("translate_output_node", translator.translate_output, retry=RetryPolicy(max_attempts=3))
     # 情感识别节点
     graph.add_node("emotion_node", artificial.detect_emotion, retry=RetryPolicy(max_attempts=3))
+    graph.add_node("images_thinking_node", images_thinking.images_thinking, retry=RetryPolicy(max_attempts=3))
     
     # 核心处理节点
     graph.add_node("router", router.identify_intent, retry=RetryPolicy(max_attempts=5))
@@ -37,9 +36,9 @@ def build_airport_service_graph():
     # 添加边 - 首先进行输入翻译
     graph.add_edge(START, "emotion_node")
     graph.add_edge("emotion_node", "translate_input_node")
-    
+    graph.add_edge("translate_input_node", "images_thinking_node")
     # 从输入翻译到路由
-    graph.add_edge("translate_input_node", "router")
+    graph.add_edge("images_thinking_node", "router")
     
     # 路由到具体工具节点
     graph.add_conditional_edges(

@@ -1,8 +1,6 @@
 """
 机场客服多智能体系统
 """
-from langchain_openai import ChatOpenAI
-from config.utils import config_manager
 from config.factory import get_logger_config
 from common.logging import setup_logger, get_logger
 from .main_graph import build_airport_service_graph

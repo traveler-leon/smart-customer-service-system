@@ -19,8 +19,7 @@ from common.logging import get_logger
 logger = get_logger("agents.nodes.airport")
 airport_tool_node = ToolNode([airport_knowledge_query])
 
-async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
-    store = get_store()
+async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig):
     logger.info("进入机场知识问答子智能体:")
     kb_prompt = ChatPromptTemplate.from_messages([
         (

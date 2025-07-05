@@ -1,8 +1,11 @@
 import json
 import asyncio
 import time
+import os
+import base64
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
+from common.image_handler import default_image_handler
 
 from models.schemas import (
     UserInput, AirportChatRequest,
@@ -471,9 +474,18 @@ async def airport_chat_websocket(websocket: WebSocket):
     """
     机场智能客服 WebSocket 聊天接口
     与 HTTP SSE 接口功能完全一致，支持相同的事件类型和响应格式
+    增加了图片上传功能支持
     """
     await websocket.accept()    
     try:
+        # 获取服务器基础URL
+        def get_base_url():
+            server_host = websocket.headers.get("host", "localhost:8081")
+            protocol = "https" if websocket.headers.get("x-forwarded-proto") == "https" else "http"
+            return f"{protocol}://{server_host}/"
+        
+        base_url = get_base_url()
+        
         while True:
             # 接收客户端消息
             try:
@@ -498,16 +510,18 @@ async def airport_chat_websocket(websocket: WebSocket):
             # 提取并验证必要字段
             thread_id = message_data.get("thread_id")
             user_id = message_data.get("user_id") 
-            query = message_data.get("query")
+            query = message_data.get("query", "")
+            image_data = message_data.get("image", None)
             metadata = message_data.get("metadata", {})
             token = message_data.get("token", "")
-                        
-            if not thread_id or not user_id or not query:
+            
+            # 检查是否提供了query或image中的至少一项
+            if not thread_id or not user_id or (not query and not image_data):
                 logger.warning("❌ WebSocket 请求缺少必要字段")
                 event_gen = EventGenerator()
                 error_event = event_gen.create_error_event(
                     error_code="missing_fields",
-                    error_message="必要字段缺失：thread_id, user_id, query"
+                    error_message="必要字段缺失：thread_id, user_id, 以及query或image至少需要一项"
                 )
                 error_response = {
                     "event": "error",
@@ -515,6 +529,29 @@ async def airport_chat_websocket(websocket: WebSocket):
                 }
                 await websocket.send_text(json.dumps(error_response, ensure_ascii=False))
                 continue
+            
+            # 处理图片上传（如果有）
+            image_url = None
+            if image_data:
+                try:
+                    # 使用图片处理工具类
+                    result = default_image_handler.process_image(image_data, base_url)
+                    image_url = result['image_url']
+                    logger.info(f"✅ 图片已上传并保存为: {image_url}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ 图片处理失败: {str(e)}", exc_info=True)
+                    event_gen = EventGenerator()
+                    error_event = event_gen.create_error_event(
+                        error_code="image_processing_error",
+                        error_message="图片处理失败，请检查格式或重新上传"
+                    )
+                    error_response = {
+                        "event": "error",
+                        "data": error_event.dict()
+                    }
+                    await websocket.send_text(json.dumps(error_response, ensure_ascii=False))
+                    continue
             
             # 处理 metadata，提取系统参数
             Is_translate = metadata.get("Is_translate", False)
@@ -530,20 +567,41 @@ async def airport_chat_websocket(websocket: WebSocket):
                         "passenger_id": user_id,
                         "thread_id": thread_id,
                         "user_query": query,
+                        # "image_url": image_url,  # 添加图片URL
+                        "image_data": image_data,
                         "token": token,
                         "Is_translate": Is_translate,
                         "Is_emotion": Is_emotion
                     }
                 }
+                
                 # 确定输出节点
                 output_nodes = ["airport_assistant_node", "flight_assistant_node", "chitchat_node", "business_assistant_node"]           
+                
                 # 发送开始事件（与原始接口保持一致）
                 start_response = {
                     "event": "start",
                     "thread_id": thread_id,
                     "user_id": user_id
                 }
-                await websocket.send_text(json.dumps(start_response, ensure_ascii=False))                
+                await websocket.send_text(json.dumps(start_response, ensure_ascii=False))
+                
+                # 如果有图片，先发送一个图片接收确认事件
+                # if image_url:
+                #     image_received_event = {
+                #         "event": "image_received",
+                #         "data": {
+                #             "id": f"img-{int(time.time() * 1000)}",
+                #             "sequence": 1,
+                #             "content": {
+                #                 "image_url": image_url,
+                #                 "status": "processed"
+                #             }
+                #         }
+                #     }
+                #     await websocket.send_text(json.dumps(image_received_event, ensure_ascii=False))
+                #     logger.info("✅ 发送图片接收确认事件")
+                
                 # 处理聊天消息并发送事件
                 result_count = 0
                 async for node, result in graph_manager.process_chat_message(
