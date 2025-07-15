@@ -1,20 +1,19 @@
 """
 路由节点
 """
-from ..state import AirportMainServiceState
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
+from agents.airport_service.state import QuestionRecommendState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
-from . import filter_messages_for_llm
-from . import max_msg_len
+from agents.airport_service.core import filter_messages_for_llm, max_msg_len,image_model
 from langchain_core.messages import AIMessage,RemoveMessage,HumanMessage
-from . import image_model
 from common.logging import get_logger
 
 # 获取路由节点专用日志记录器
-logger = get_logger("agents.nodes.images_thinking")
-
-
-def remove_message(state:AirportMainServiceState,del_nb = 2):
+logger = get_logger("agents.problems-recommend-nodes.images_thinking")
+def remove_message(state:QuestionRecommendState,del_nb = 2):
     """
     删除尾部的几条消息
     """
@@ -29,12 +28,11 @@ def remove_message(state:AirportMainServiceState,del_nb = 2):
         return []
 
 
-async def images_thinking(state: AirportMainServiceState, config: RunnableConfig):
-    user_query = config["configurable"].get("user_query", "")
+async def images_thinking(state: QuestionRecommendState, config: RunnableConfig):
+    user_query = state.get("user_query") if state.get("user_query") else config["configurable"].get("user_query", "")
     image_data = config["configurable"].get("image_data", None)
     logger.info(f"进入图像理解子智能体：{user_query}")
     if not image_data:
-        logger.info("图片数据不存在：无需处理")
         return state
     image_assistant_prompt = ChatPromptTemplate.from_messages(
     [
@@ -55,8 +53,7 @@ async def images_thinking(state: AirportMainServiceState, config: RunnableConfig
             3. 生成一个新的、更加清晰和具体的问题，这个问题应该更适合后续的知识库检索。
             4. 新问题应该包含从图片中识别出的具体物品名称、属性或场景信息。
             5. 语言表达要正式、完整，尽可能包含"飞机"、"安检"、"机场"等关键词，便于检索系统理解意图。
-            6. 最终只输出新生成的问题，不要输出任何其他内容。
-            7. 如果图片内容与民航机场服务无关，请礼貌地引导用户询问相关问题。
+            6. 最终只输出新生成的问题，不要输出任何其他内容。问题必须是中文。
             </task>
 
             <examples>
@@ -88,7 +85,7 @@ async def images_thinking(state: AirportMainServiceState, config: RunnableConfig
         },
         {
         "type":"text",
-        "text": "用户初始问题：{user_query}。请你结合图片信息和用户原始问题，重新生成一个新的问题。",
+        "text": "用户初始问题：{user_query}。请你结合图片信息和用户原始问题，重新生成一个新的问题。问题必须是中文。",
         }   
         ])
     ])
@@ -100,5 +97,6 @@ async def images_thinking(state: AirportMainServiceState, config: RunnableConfig
     image_type = image_data['content_type'].split('/')[-1]
     response = await chain.ainvoke({"messages": messages,"image_type":image_type,"image_data":image_data['data'],"user_query":user_query})
     logger.info(f"图片思考结果: {response.content}")
-    del_msg = remove_message(state,del_nb=1)
-    return {"messages":del_msg + [HumanMessage(content=response.content)],"user_query":response.content}
+    # del_msg = remove_message(state,del_nb=1)
+    # return {"messages":del_msg + [HumanMessage(content=response.content)],"user_query":response.content}
+    return {"user_query":response.content}

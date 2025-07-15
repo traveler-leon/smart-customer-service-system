@@ -1,20 +1,24 @@
 """
 闲聊节点
 """
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
 import httpx
-from ..state import AirportMainServiceState
+from agents.airport_service.state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage
 from langgraph.prebuilt import ToolNode
 from langgraph.config import get_store
 from langgraph.store.base import BaseStore
+from langgraph.types import Command
 from datetime import datetime
-from ..tools import chitchat_query
-from . import filter_messages_for_llm,max_msg_len,base_model
+from agents.airport_service.tools import chitchat_query
+from agents.airport_service.core import filter_messages_for_llm, max_msg_len,base_model
 from common.logging import get_logger
 
-logger = get_logger("agents.nodes.chitchat")
+logger = get_logger("agents.main-nodes.chitchat")
 chitchat_tool_node = ToolNode([chitchat_query])
 
 async def call_dashscope(dialog_his:list):
@@ -71,6 +75,7 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
             
             请注意：
             - 保持对话轻松愉快，增强旅客体验
+            - 最终的回答内容的语言类型必须是：{language}。
             """
         ),
         ("placeholder", "{messages}"),
@@ -108,9 +113,15 @@ async def handle_chitchat(state: AirportMainServiceState, config: RunnableConfig
     # profile_executor.submit({"messages":state["messages"]+[AIMessage(role="闲聊子智能体",content=response)]},after_seconds=memery_delay)
     # return {"messages":[AIMessage(role="闲聊子智能体",content=response)]}
     
-    user_query = state.get("user_query", "")
-    response = await chain.ainvoke({"messages": messages,"user_query":user_query})
-    response.role = "闲聊子智能体"
+    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
+    translator_result = state.get("translator_result")
+    language = translator_result.language if translator_result else "中文"
+    response = await chain.ainvoke({"messages": messages,"user_query":user_query,"language":language})
+    response.name = "闲聊子智能体"
+    logger.info(f"闲聊子智能体输出：{response}")
     # 提取用户画像
     # profile_executor.submit({"messages":state["messages"]+[response]},after_seconds=memery_delay)
-    return {"messages":[response]} 
+    return Command(
+        update={"messages": [response]},
+        goto="translate_output_node"
+    )

@@ -55,12 +55,10 @@ async def flight_info_query(question: str, tool_call_id: Annotated[str, Injected
     # 定义异步查询函数
     async def perform_query(query):
         try:
-            logger.info("开始执行航班信息查询")
             # 获取缓存的text2sql实例，避免重复初始化
             smart_sql = await get_text2sql_instance()
             # 调用ask方法获取结果
             result = await smart_sql.ask(query)
-            logger.info("航班信息查询成功")
             return result
         except Exception as e:
             error_msg = f"查询航班信息时出错: {str(e)}"

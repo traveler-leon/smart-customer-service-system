@@ -1,27 +1,9 @@
-﻿from pydantic import BaseModel, Field
+﻿from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Dict, Any, Union, List
-
-class UserInput(BaseModel):
-    cid: str
-    msgid: str
-    query_txt: str
-    partnerid: Optional[str] = None
-    multi_params: Optional[Union[str, Dict[str, Any]]] = None
 
 class SummaryRequest(BaseModel):
     cid: str
     msgid: str
-
-class APIResponseItem(BaseModel):
-    cid: str
-    msgid: str
-    answer_txt: Union[str, Dict[str, Any]]  # 允许字符串或字典
-    answer_txt_type: str
-
-class APIResponse(BaseModel):
-    ret_code: str
-    ret_msg: str
-    item: APIResponseItem
 
 class HumanAgentSummaryRequest(BaseModel):
     cid: str
@@ -62,14 +44,6 @@ class ClearDataResponse(BaseModel):
     cleared_collections: List[str] = Field([], description="已清除的集合列表")
 
 # 机场聊天接口协议相关模型
-class AirportChatRequest(BaseModel):
-    """机场聊天请求模型"""
-    thread_id: str = Field(..., description="会话标识，LangGraph利用此ID管理会话状态")
-    user_id: str = Field(..., description="用户唯一标识，用于用户画像关联")
-    query: str = Field(..., description="用户当前输入内容")
-    stream: bool = Field(True, description="是否流式返回")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="可选的上下文信息，支持任意键值对")
-
 class EventContent(BaseModel):
     """事件内容基础模型"""
     pass
@@ -85,42 +59,6 @@ class DataEventContent(EventContent):
     data: Union[List[Dict[str, Any]], Dict[str, Any]] = Field(..., description="数据内容")
     sql: Optional[str] = Field(None, description="SQL查询语句")
     data_summary: Optional[str] = Field(None, description="数据摘要")
-
-class ChartInfo(BaseModel):
-    """图表信息"""
-    chart_type: str = Field(..., description="图表类型")
-    chart_subtype: str = Field(..., description="图表子类型")
-    chart_name: str = Field(..., description="图表名称")
-
-class AlternativeChart(BaseModel):
-    """备选图表"""
-    type: str = Field(..., description="图表类型")
-    subtype: str = Field(..., description="图表子类型")
-    name: str = Field(..., description="图表名称")
-
-class VisualizationConfig(BaseModel):
-    """可视化配置"""
-    colors: Optional[List[str]] = Field(None, description="颜色配置")
-    legend_position: Optional[str] = Field(None, description="图例位置")
-    x_axis_label: Optional[str] = Field(None, description="X轴标签")
-    y_axis_label: Optional[str] = Field(None, description="Y轴标签")
-
-class SqlInfo(BaseModel):
-    """SQL信息"""
-    sql: str = Field(..., description="SQL查询语句")
-    data_summary: str = Field(..., description="数据摘要")
-
-class VisualizationEventContent(EventContent):
-    """可视化事件内容"""
-    visualization_type: str = Field(..., description="可视化类型")
-    title: str = Field(..., description="标题")
-    description: Optional[str] = Field(None, description="描述")
-    data_reference: Optional[str] = Field(None, description="数据引用ID")
-    chart_info: ChartInfo = Field(..., description="图表信息")
-    config: Optional[VisualizationConfig] = Field(None, description="可视化配置")
-    echarts_option: Dict[str, Any] = Field(..., description="ECharts配置选项")
-    sql_info: Optional[SqlInfo] = Field(None, description="SQL信息")
-    alternative_charts: Optional[List[AlternativeChart]] = Field(None, description="备选图表")
 
 class FormField(BaseModel):
     """表单字段"""
@@ -147,6 +85,17 @@ class FormEventContent(EventContent):
     fields: List[FormField] = Field(..., description="表单字段")
     buttons: List[FormButton] = Field(..., description="表单按钮")
 
+class FlightInfo(BaseModel):
+    """航班信息"""
+    flight_number: str = Field(..., description="航班号")
+    subscribe_supported: bool = Field(..., description="是否支持订阅")
+
+class FlightListEventContent(EventContent):
+    """航班列表事件内容"""
+    title: str = Field(..., description="列表标题或提示信息")
+    flights: List[FlightInfo] = Field(..., description="航班对象数组")
+    action_hint: Optional[str] = Field(None, description="展示在前端的提示语")
+
 class EndEventContent(EventContent):
     """结束事件内容"""
     suggestions: Optional[List[str]] = Field(None, description="建议操作")
@@ -161,4 +110,75 @@ class ChatEvent(BaseModel):
     """聊天事件模型"""
     id: str = Field(..., description="事件唯一标识")
     sequence: int = Field(..., description="事件序号")
-    content: Union[TextEventContent, DataEventContent, VisualizationEventContent, FormEventContent, EndEventContent, ErrorEventContent] = Field(..., description="事件内容")
+    content: Union[TextEventContent, DataEventContent, FormEventContent, FlightListEventContent, EndEventContent, ErrorEventContent] = Field(..., description="事件内容")
+
+
+
+# 图片信息模型
+class ImageData(BaseModel):
+    """图片数据模型"""
+    filename: str = Field(..., description="图片文件名")
+    content_type: str = Field(..., description="图片MIME类型")
+    data: str = Field(..., description="图片数据（base64编码）")
+
+# 问题推荐接口相关模型
+class QuestionRecommendRequest(BaseModel):
+    """问题推荐请求模型"""
+    thread_id: str = Field(..., description="会话标识")
+    user_id: str = Field(..., description="用户唯一标识")
+    query: Optional[str] = Field(None, description="用户当前输入内容")
+    image: Optional[ImageData] = Field(None, description="可选的图片数据")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="可选的上下文信息")
+    
+    @model_validator(mode='after')
+    def validate_query_or_image(self):
+        if not self.query and not self.image:
+            raise ValueError('query和image至少需要提供一个')
+        return self
+
+class RecommendedQuestion(BaseModel):
+    """推荐问题模型"""
+    question: str = Field(..., description="推荐的问题文本")
+    confidence: Optional[float] = Field(None, description="推荐置信度")
+    category: Optional[str] = Field(None, description="问题分类")
+
+class QuestionRecommendResponse(BaseModel):
+    """问题推荐响应模型"""
+    ret_code: str = Field(..., description="返回码")
+    ret_msg: str = Field(..., description="返回消息")
+    item: Dict[str, Any] = Field(..., description="响应数据")
+
+class QuestionRecommendItem(BaseModel):
+    """问题推荐响应项模型"""
+    thread_id: str = Field(..., description="会话标识")
+    user_id: str = Field(..., description="用户标识")
+    recommended_questions: List[str] = Field(..., description="推荐的问题列表")
+    processing_time: Optional[str] = Field(None, description="处理时间")
+
+# 商业推荐接口相关模型
+class BusinessRecommendRequest(BaseModel):
+    """商业推荐请求模型"""
+    thread_id: str = Field(..., description="会话标识")
+    user_id: str = Field(..., description="用户唯一标识")
+    query: Optional[str] = Field(None, description="用户当前输入内容")
+    image: Optional[ImageData] = Field(None, description="可选的图片数据")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="可选的上下文信息")
+    
+    @model_validator(mode='after')
+    def validate_query_or_image(self):
+        if not self.query and not self.image:
+            raise ValueError('query和image至少需要提供一个')
+        return self
+
+class BusinessRecommendResponse(BaseModel):
+    """商业推荐响应模型"""
+    ret_code: str = Field(..., description="返回码")
+    ret_msg: str = Field(..., description="返回消息")
+    item: Dict[str, Any] = Field(..., description="响应数据")
+
+class BusinessRecommendItem(BaseModel):
+    """商业推荐响应项模型"""
+    thread_id: str = Field(..., description="会话标识")
+    user_id: str = Field(..., description="用户标识")
+    recommended_business: List[str] = Field(..., description="推荐的业务列表")
+    processing_time: Optional[str] = Field(None, description="处理时间")

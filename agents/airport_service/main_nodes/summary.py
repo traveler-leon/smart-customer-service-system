@@ -1,12 +1,15 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
 from langmem.short_term import SummarizationNode, RunningSummary
 from langchain_core.prompts import ChatPromptTemplate
 
 from langgraph.graph import MessagesState
-from . import base_model
+from agents.airport_service.core import base_model
 from common.logging import get_logger
 
 # 获取摘要节点专用日志记录器
-logger = get_logger("agents.nodes.summary")
+logger = get_logger("agents.main-nodes.summary")
 
 
 

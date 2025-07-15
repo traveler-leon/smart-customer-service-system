@@ -1,17 +1,18 @@
 """
 路由节点
 """
-from ..state import AirportMainServiceState
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
+from agents.airport_service.state import AirportMainServiceState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 from langgraph.store.base import BaseStore
-from ..tools import airport_knowledge_query, flight_info_query,chitchat_query,business_handler
-from . import filter_messages_for_llm
-from . import max_msg_len
+from agents.airport_service.tools import airport_knowledge_query, flight_info_query,business_handler
+from agents.airport_service.core import filter_messages_for_llm, max_msg_len,structed_model
 from langgraph.config import get_store
 from langchain_core.messages import AIMessage
-from . import structed_model
 from common.logging import get_logger
 import asyncio
 
@@ -20,7 +21,6 @@ logger = get_logger("agents.nodes.router")
 tool_model = structed_model.bind_tools([airport_knowledge_query, flight_info_query,business_handler])
 async def identify_intent(state: AirportMainServiceState, config: RunnableConfig):
     await asyncio.sleep(5)
-    messages = state.get("messages", [])
     user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
     logger.info(f"进入主路由子智能体：{user_query}")
     airport_assistant_prompt = ChatPromptTemplate.from_messages(
@@ -90,7 +90,7 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
     # 调用链获取响应
     response = await chain.ainvoke({"messages": messages})
-    response.role = "主路由智能体"
+    response.name = "主路由智能体"
     
     # 返回更新后的状态
     return {"messages": [response],"user_query":user_query}

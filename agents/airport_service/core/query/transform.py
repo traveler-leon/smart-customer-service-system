@@ -1,5 +1,5 @@
 from langchain_core.prompts import PromptTemplate
-from ..nodes import structed_model as model
+from ..models import structed_model as model
 from common.logging import get_logger
 
 # 获取查询转换专用日志记录器
@@ -26,16 +26,16 @@ async def rewrite_query(original_query):
     - 用户通常是在准备乘坐飞机。
     - 用户的问题主要与以下主题相关：安检规定、随身携带物品、托运行李、违禁物品、登机流程、证件要求、航班变动、值机时间等。
     - 用户的问题经常比较模糊或口语化，例如：
-    - “水能带吗？”
-    - “打火机能过安检吗？”
-    - “改签怎么弄？”
-    - “飞机上能用充电宝吗？”
+    - "水能带吗？"
+    - "打火机能过安检吗？"
+    - "改签怎么弄？"
+    - "飞机上能用充电宝吗？"
     </background_info>
 
     <task>
     1. 不要回答问题，只改写问题。
     2. 改写后的问题必须更加具体、清晰，适合用来检索民航机场相关的知识库内容。
-    3. 语言表达要正式、完整，尽可能包含“飞机”、“安检”、“机场”等关键词，便于检索系统理解意图。
+    3. 语言表达要正式、完整，尽可能包含"飞机"、"安检"、"机场"等关键词，便于检索系统理解意图。
     4. 最终只输出改写后的问题，不要输出任何其他内容，包括（改写后的问题的前缀）
     5.如果用户问题是打招呼或者闲聊，请直接返回原问题，不要过度改写
     </task>
@@ -122,5 +122,4 @@ async def generate_step_back_query(original_query):
         return step_back_query
     except Exception as e:
         logger.error(f"回退问题生成失败: {e}")
-        return ''  # 出错时返回空字符串
-
+        return ''  # 出错时返回空字符串 

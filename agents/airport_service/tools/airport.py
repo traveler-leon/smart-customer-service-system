@@ -14,7 +14,7 @@ from typing import Annotated, NotRequired
 from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableConfig
 from config.utils import config_manager
-from ..utils import rewrite_query,generate_step_back_query,rerank_results
+from agents.airport_service.core import rewrite_query,generate_step_back_query,rerank_results
 from common.logging import get_logger
 logger = get_logger("agents.tools.airport")
 
@@ -125,5 +125,5 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
 if __name__ == "__main__":
     pass
     # 测试时提供一个虚拟的tool_call_id
-    # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "坐飞机可以带刀吗？", "tool_call_id": "test_call_id"})))
+    print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "坐飞机可以带刀吗？", "tool_call_id": "test_call_id"})))
     # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "我有个充电宝，可以带上飞机吗?", "tool_call_id": "test_call_id"})))

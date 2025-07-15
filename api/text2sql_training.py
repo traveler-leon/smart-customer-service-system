@@ -13,11 +13,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, UploadFile, File, Request, Response
 from fastapi.responses import JSONResponse
 
-from models.schemas import (
-    TrainingRequest, TrainingResponse, 
-    ClearDataRequest, ClearDataResponse,
-    TrainingDataItem
-)
+from models import TrainingRequest, TrainingResponse, ClearDataRequest, ClearDataResponse, TrainingDataItem
 from text2sql import create_text2sql
 from config.utils import config_manager
 from common.logging import get_logger

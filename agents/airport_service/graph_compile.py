@@ -7,7 +7,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 from psycopg_pool import AsyncConnectionPool
 from config.utils import config_manager
-from .nodes.summary import summarize_conversation
+from .main_nodes.summary import summarize_conversation
 
 import platform
 if platform.system() == 'Windows':
@@ -107,8 +107,33 @@ class GraphManager:
             except Exception as e:
                 print(f"Error in graph execution: {e}")
                 raise
-    # 对话   
-    async def process_chat_message(self, message: str, thread_id: Dict, graph_id: str,output_node:List):
+    # 流式输出接口   
+    async def process_chat_message_stream(self, message: str, thread_id: Dict, graph_id: str,output_node:List):
+        # async with self.get_chat_app(graph_id) as chat_app:
+        #     async for result, metadata in chat_app.astream(
+        #         {"messages": ("human", message)}, 
+        #         thread_id,
+        #         stream_mode="messages"
+        #     ):
+        #         if result.content and metadata["langgraph_node"] in output_node:
+        #             yield metadata["langgraph_node"],result.content
+        
+        async with self.get_chat_app(graph_id) as chat_app:
+            async for msg_type, metadata in chat_app.astream(
+                {"messages": ("human", message)}, 
+                thread_id,
+                stream_mode=["messages","custom"]
+            ):
+                if msg_type=="messages" and metadata[0].content and metadata[1]["langgraph_node"] in output_node:
+                    yield msg_type,metadata[1]["langgraph_node"],metadata[0].content
+                elif msg_type=="custom" and metadata["node_name"] in output_node:
+                    print("============")
+                    print(msg_type)
+                    print(metadata)
+                    print(type(metadata))
+                    print("*********")
+                    yield msg_type,metadata["node_name"],metadata["data"]
+    async def process_chat_message(self, message: str, thread_id: Dict, graph_id: str):
         """处理聊天消息
         
         Args:
@@ -117,13 +142,11 @@ class GraphManager:
             graph_id: 要使用的图的ID，默认为"default"
         """
         async with self.get_chat_app(graph_id) as chat_app:
-            async for result, metadata in chat_app.astream(
+            result= await chat_app.ainvoke(
                 {"messages": ("human", message)}, 
-                thread_id,
-                stream_mode="messages"
-            ):
-                if result.content and metadata["langgraph_node"] in output_node:
-                    yield metadata["langgraph_node"],result.content
+                thread_id
+            )
+            return result["messages"][-1].content
 
     # 对话摘要
     async def summarize_conversation(self,  thread_id: Dict, graph_id: str):

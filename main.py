@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import warnings
 
-from agents.airport_service import graph_manager, build_airport_service_graph
+from agents.airport_service import graph_manager, build_airport_service_graph,build_question_recommend_graph,build_business_recommend_graph
 from common.logging import setup_logger, get_logger
 from config.factory import get_logger_config, get_app_config, get_directories_config, get_graph_config
 from api.router import api_router  # 导入API路由器
@@ -31,9 +31,15 @@ async def lifespan(app: FastAPI):
     # os.makedirs(uploads_dir, exist_ok=True)
 
     # 注册自定义图
-    graph_config = get_graph_config()
-    graph_name = graph_config.get("name", "airport_service_graph")
-    graph_manager.register_graph(graph_name, build_airport_service_graph())
+    # graph_config = get_graph_config()
+    # graph_name = graph_config.get("name", "airport_service_graph")
+    graph_manager.register_graph("airport_service_graph", build_airport_service_graph())
+
+    # graph_name = graph_config.get("name", "question_recommend_graph")
+    graph_manager.register_graph("question_recommend_graph", build_question_recommend_graph())
+    
+    # 注册商业推荐图
+    graph_manager.register_graph("business_recommend_graph", build_business_recommend_graph())
     logger.info("Application started")
     yield
     # 关闭事件
@@ -69,8 +75,9 @@ app.include_router(api_router)
 def view_graph():
     try:
         graph = build_airport_service_graph()
+        # graph = build_business_recommend_graph()
         graph_image = graph.compile().get_graph().draw_mermaid_png()
-        with open("main_graph1.png", "wb") as f:
+        with open("main_grap2.png", "wb") as f:
             f.write(graph_image)
     except Exception as e:
         logger.error(f"Error generating graph: {e}")

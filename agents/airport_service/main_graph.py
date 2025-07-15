@@ -3,7 +3,7 @@
 """
 from langgraph.graph import StateGraph, START, END
 from .state import AirportMainServiceState
-from .nodes import airport, router, flight, chitchat, translator, artificial, business,images_thinking
+from .main_nodes import airport, router, flight, chitchat, translator, artificial, business,images_thinking,human
 from langgraph.pregel import RetryPolicy
 
 def build_airport_service_graph():
@@ -20,6 +20,7 @@ def build_airport_service_graph():
     graph.add_node("translate_output_node", translator.translate_output, retry=RetryPolicy(max_attempts=3))
     # 情感识别节点
     graph.add_node("emotion_node", artificial.detect_emotion, retry=RetryPolicy(max_attempts=3))
+    graph.add_node("transfer_to_human", human.transfer_to_human, retry=RetryPolicy(max_attempts=3))
     graph.add_node("images_thinking_node", images_thinking.images_thinking, retry=RetryPolicy(max_attempts=3))
     
     # 核心处理节点
@@ -34,9 +35,17 @@ def build_airport_service_graph():
     graph.add_node("business_assistant_node", business.business_agent, retry=RetryPolicy(max_attempts=5))
     
     # 添加边 - 首先进行输入翻译
-    graph.add_edge(START, "emotion_node")
-    graph.add_edge("emotion_node", "translate_input_node")
-    graph.add_edge("translate_input_node", "images_thinking_node")
+    graph.add_edge(START, "translate_input_node")
+    graph.add_edge("translate_input_node", "emotion_node")
+    graph.add_conditional_edges(
+        "emotion_node",
+        human.route_to_next,
+        {
+            "transfer_to_human": "transfer_to_human",
+            "images_thinking_node": "images_thinking_node"
+        }
+    )
+    # graph.add_edge("translate_input_node", "images_thinking_node")
     # 从输入翻译到路由
     graph.add_edge("images_thinking_node", "router")
     
@@ -56,10 +65,13 @@ def build_airport_service_graph():
     graph.add_edge("flight_tool_node", "flight_assistant_node")
     graph.add_edge("flight_assistant_node", "translate_output_node")
     # graph.add_edge("chitchat_tool_node", "chitchat_node")
-    graph.add_edge("chitchat_node", "translate_output_node")
+    # graph.add_edge("chitchat_node", "translate_output_node")
     graph.add_edge("business_tool_node", "business_assistant_node")
-    graph.add_edge("business_assistant_node", "translate_output_node")
+    graph.add_edge("business_assistant_node", END)
+
+    graph.add_edge("transfer_to_human", 'translate_output_node')
     graph.add_edge("translate_output_node", END)
+    
 
     # 返回未编译的图对象
     return graph

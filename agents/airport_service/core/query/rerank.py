@@ -61,4 +61,4 @@ async def rerank_results(results, user_question,reranker_model=None,reranker_add
                     
     except Exception as e:
         logger.error(f"重排序过程发生错误: {str(e)}")
-        return results[:top_k],0.0
+        return results[:top_k],0.0 

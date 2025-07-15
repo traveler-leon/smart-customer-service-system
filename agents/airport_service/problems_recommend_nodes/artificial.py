@@ -1,15 +1,19 @@
 import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
+from langchain_core.messages import AIMessage
 import torch
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from ..state import AirportMainServiceState
-from . import emotion
+from agents.airport_service.state import QuestionRecommendState
+from agents.airport_service.core import emotion
 from common.logging import get_logger
 
 # 获取情感识别节点专用日志记录器
-logger = get_logger("agents.nodes.artificial")
+logger = get_logger("agents.problems-recommend-nodes.artificial")
 
 # 全局变量存储情感分析器
 _emotion_classifier = None
@@ -26,7 +30,6 @@ def initialize_emotion_classifier():
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         logger.info(f"情感分析模型使用设备: {device}")
         # 加载tokenizer和模型
-        logger.info(f"开始加载情感分析模型: {emotion['model_path']}")
         tokenizer = AutoTokenizer.from_pretrained(emotion["model_path"])
         model = AutoModelForSequenceClassification.from_pretrained(emotion["model_path"]).to(device)
         
@@ -38,11 +41,11 @@ def initialize_emotion_classifier():
             device=0 if torch.cuda.is_available() else -1
         )
         
-        print("情感分析模型初始化成功")
+        logger.info("情感分析模型初始化成功")
         return _emotion_classifier
         
     except Exception as e:
-        print(f"情感分析模型初始化失败: {e}")
+        logger.error(f"情感分析模型初始化失败: {e}")
         # 使用简单的关键词方法作为备选
         return None
 
@@ -62,18 +65,14 @@ def analyze_emotion_with_model(text: str)->dict:
         # 返回情感分数和是否为负面情绪
         is_negative = emotion_score <= 1  # Very Negative 或 Negative
         return {
-            "emotion_score": emotion_score,
-            "emotion_label": emotion_label,
-            "confidence": confidence,
+            "reason": "用户情绪已经非常的负面，需要转人工",
             "is_negative": is_negative
         }
         
     except Exception as e:
-        print(f"情感分析出错: {e}")
+        logger.error(f"情感分析出错: {e}")
         return {
-            "emotion_score": 2,
-            "emotion_label": "Neutral",
-            "confidence": 0.5,
+            "reason": "用户情绪中性，不需要转人工",
             "is_negative": False
         }
 
@@ -84,49 +83,30 @@ def is_explicit_request(text:str)->bool:
 
 # 2. 同一问题重复3次（全局统计）
 def is_exact_repeat(messages: list, threshold: int = 3) -> bool:
-    """
-    检查最近的threshold个HumanMessage内容是否完全相同
-    
-    Args:
-        messages: 消息列表，包含HumanMessage和AIMessage
-        threshold: 需要检查的最近消息数量，默认为3
-    
-    Returns:
-        bool: 如果最近的threshold个HumanMessage内容完全相同则返回True，否则返回False
-    """
-    # 倒序遍历消息列表，提取最近的HumanMessage
     recent_human_messages = []
     
     for message in reversed(messages):
-        # 检查是否为HumanMessage类型
         if hasattr(message, '__class__') and message.__class__.__name__ == 'HumanMessage':
             recent_human_messages.append(message.content)
-            # 如果已经收集到足够数量的HumanMessage，停止收集
             if len(recent_human_messages) >= threshold:
                 break
-    
-    # 如果HumanMessage数量不足threshold个，返回False
     if len(recent_human_messages) < threshold:
         return False
-    
-    # 检查最近的threshold个HumanMessage内容是否完全相同
     first_content = recent_human_messages[0]
     return all(content == first_content for content in recent_human_messages)
 
 # 主判定函数
-def should_transfer(state: AirportMainServiceState,user_query:str):
-    # last_msg = state["messages"][-1]
-    # user_input = last_msg.content
+def should_transfer(state: QuestionRecommendState,user_query:str):
     if is_explicit_request(user_query):
-        return True, {}
+        return {"reason": "用户明确输入请求转人工", "is_negative": True}
     if is_exact_repeat(state["messages"]):
-        return True, {}
+        return {"reason": "用户重复输入相同问题3 次，需要转人工", "is_negative": True}
     
     emotion_result = analyze_emotion_with_model(user_query)
-    return  emotion_result["is_negative"], emotion_result
+    return  emotion_result
     
 
-async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig, store: BaseStore):
+async def detect_emotion(state: QuestionRecommendState, config: RunnableConfig, store: BaseStore):
     """
     情感识别节点
     
@@ -136,14 +116,12 @@ async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig,
         store: 存储对象
     """
     Is_emotion = config["configurable"].get("Is_emotion", False)
-    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
-    logger.info(f"进入情感识别子智能体 - 是否需要情感识别: {Is_emotion}")
+    user_query = state.get("user_query") if state.get("user_query") else config["configurable"].get("user_query", "")
+    logger.info(f"进入情感识别子智能体 - 是否需要情感识别: {Is_emotion},识别内容: {user_query}")
 
     if not Is_emotion:
         return state
     else:
-        logger.info("开始情感识别处理...")
-        # 判断是否需要转人工,如果should_transfer_result为True，要转人工，后续再实现
-        should_transfer_result, reason = should_transfer(state,user_query)
-        logger.info(f"情感识别完成 - 是否需要转人工: {should_transfer_result}")
-        return {"emotion_result": reason,"user_query":user_query}
+        should_transfer_result = should_transfer(state,user_query)
+        logger.info(f"情感识别结果: {should_transfer_result}")
+        return {"emotion_result": should_transfer_result,"user_query":user_query}

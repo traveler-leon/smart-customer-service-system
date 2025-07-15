@@ -2,7 +2,6 @@
 状态定义模块
 """
 from typing import Dict, List, TypedDict, Annotated, Optional
-from langchain_core.messages import BaseMessage
 from langgraph.graph import MessagesState
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from pydantic import BaseModel, Field
@@ -27,7 +26,6 @@ class UserProfile(BaseModel):
 
 class Episode(BaseModel):  
     """从智能体的视角记录一个事件。借助事后视角来保存记忆，记录智能体在事件中的关键内部思考过程，以便其随着时间学习和成长。"""
-
     observation: str = Field(
         ..., 
         description="上下文与情境——发生了什么"
@@ -79,3 +77,35 @@ class AirportMainServiceState(MessagesState):
 
 class BusinessServiceState(AgentState):
     pass
+
+class BusinessRecommendState(MessagesState):
+    """机场客服系统状态定义"""
+    # 用户信息
+    user_base_info: Annotated[Dict, dict_merge] = {}
+    user_profile_info: Optional[UserProfile] = None
+    # 当前查询
+    user_query: Optional[str] = None
+    translator_result: Optional[TranslationResult] = None
+    # 情感识别
+    emotion_result:Dict = {}
+    # 上下文信息
+    kb_context_docs: Optional[str] = None
+    kb_context_docs_maxscore: Optional[float] = None
+    db_context_docs: Dict = {}
+    chart_config: Dict = {}
+
+class QuestionRecommendState(MessagesState):
+    """机场客服系统状态定义"""
+    # 用户信息
+    user_base_info: Annotated[Dict, dict_merge] = {}
+    user_profile_info: Optional[UserProfile] = None
+    # 当前查询
+    user_query: Optional[str] = None
+    translator_result: Optional[TranslationResult] = None
+    # 情感识别
+    emotion_result:Dict = {}
+    # 上下文信息
+    kb_context_docs: Optional[str] = None
+    kb_context_docs_maxscore: Optional[float] = None
+    db_context_docs: Dict = {}
+    chart_config: Dict = {}

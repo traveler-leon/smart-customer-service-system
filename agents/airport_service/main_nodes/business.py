@@ -1,22 +1,21 @@
 import sys
 import os
-# 添加项目根目录到系统路径
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
 from datetime import datetime
 from langgraph.prebuilt import ToolNode, create_react_agent
 from langgraph.config import get_store
 from langgraph.store.base import BaseStore
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import AIMessage
-from ..state import BusinessServiceState
-from ..tools.business import (
+from agents.airport_service.state import BusinessServiceState
+from agents.airport_service.tools.business import (
     wheelchair_rental_tool
     ,business_handler
 )
-from . import structed_model, filter_messages_for_llm, max_msg_len
+from agents.airport_service.core import filter_messages_for_llm, max_msg_len,structed_model
 from common.logging import get_logger
 # 获取业务办理节点专用日志记录器
-logger = get_logger("agents.nodes.business")
+logger = get_logger("agents.main-nodes.business")
 
 # 用于主路由节点
 router_bussiness_tools = ToolNode([
