@@ -72,17 +72,48 @@
 
 
 ## 🚀产品功能展示
-## 🚀产品功能展示
+### 静态知识库问答能力（RAG）：多轮问答支持+多模态支持+实时语音支持
 
 <p align="center">
-  <img src="./images/demo1.png" alt="案例截图 1" width="200"/>
-  <img src="./images/demo2.png" alt="案例截图 2" width="200"/>
-  <img src="./images/demo3.jpg" alt="案例截图 3" width="200"/>
+  <img src="./images/base2.png" alt="案例截图 1" width="200"/>
+  <img src="./images/base1.png" alt="案例截图 2" width="200"/>
+  <img src="./images/base3.jpg" alt="案例截图 3" width="200"/>
 </p>
 
+### 动态实时数据库问答能力（Text2sql）：可智能识别涉及到的航班信息，并弹出订阅按钮，与后端订阅功能打通
+
+<p align="center">
+  <img src="./images/flight1.png" alt="案例截图 1" width="200"/>
+  <img src="./images/flight2.png" alt="案例截图 2" width="200"/>
+  <img src="./images/flight3.png" alt="案例截图 3" width="200"/>
+</p>
+
+### 业务办理能力（动态参数收集，调用后台 api）
+
+<p align="center">
+  <img src="./images/business1.jpg" alt="案例截图 1" width="200"/>
+  <img src="./images/business2.jpg" alt="案例截图 2" width="200"/>
+</p>
+
+### 情感识别能力（规则触发、关键词触发、情感触发）
+
+<p align="center">
+  <img src="./images/emotion3.jpg" alt="案例截图 1" width="200"/>
+  <img src="./images/emotion2.png" alt="案例截图 2" width="200"/>
+  <img src="./images/emotion1.png" alt="案例截图 2" width="200"/>
+</p>
+
+### 多语言能力（支持多语种，包括小语种）
+
+<p align="center">
+  <img src="./images/mutillanguage.png" alt="案例截图 1" width="200"/>
+</p>
 
 ## 下一步计划 (Next Steps)
-
+添加评测功能，产品上线及运营，用户的每一次真实咨询，都是对系统的测试
+1. 添加端到端的评测功能
+2. 添加组件级别的评测功能
+3. 重构记忆模块。响应最新的 Context Engineering技术，重构记忆模块（主要重构长期记忆和用户画像。）
 
 ## 🚀 快速开始
 
