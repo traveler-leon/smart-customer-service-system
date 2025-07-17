@@ -85,22 +85,46 @@ We're not just building a "chatbot"; we're creating an intelligent hub that solv
 ### Specific Features & Experience
 
 1.  **Proactive Interaction**: When a user's query is ambiguous, the system actively asks clarifying questions, simulating a human-like conversation to guide the user to a more precise answer.
-2.  **Closed-Loop Optimization**: The system continuously learns through its powerful memory module, feeding valuable insights back into the knowledge base for self-improvement.
-3.  **Multi-language Support**: A built-in multi-language module ensures accurate communication across various languages.
-4.  **Security & Compliance**: An integrated security module reviews interactions to ensure all content is safe and appropriate.
-5.  **Multimodal Emotion Detection**: The system detects user emotions in real-time to adjust its tone and, if necessary, trigger a handoff to a human agent.
+2.  **Intelligent Recommendations & Intent Guidance**: We recognize that user intent can sometimes be unclear. To address this, the system features an **intelligent recommendation module** ("Guess you want to ask," "Guess you want to do," "Guess you want to buy"). When the user's intent isn't fully clear, the system proactively suggests relevant questions, services, or products based on the current conversation and our internal knowledge base. This not only speeds up problem resolution but also significantly improves user experience and increases the system's fault tolerance.
+3.  **Closed-Loop Optimization**: The system continuously learns through its powerful memory module, feeding valuable insights back into the knowledge base for self-improvement.
+4.  **Multi-language Support**: A built-in multi-language module ensures accurate communication across various languages.
+5.  **Security & Compliance**: An integrated security module reviews interactions to ensure all content is safe and appropriate.
+6.  **Multimodal Emotion Detection**: The system detects user emotions in real-time to adjust its tone and, if necessary, trigger a handoff to a human agent.
 
 
 ## 🚀 Product Showcase
 
-| Feature Module | Demo |
-| :--- | :--- |
-| **Basic RAG Q&A** <br/> (Multi-turn + Multimodal + Real-time Voice) | <img src="./images/base2.png" alt="Screenshot 1" width="200"/> <img src="./images/base1.png" alt="Screenshot 2" width="200"/> <img src="./images/base3.jpg" alt="Screenshot 3" width="200"/> |
-| **Text2SQL** <br/> (Flight Info Query + Subscription) | <img src="./images/flight3.png" alt="Screenshot 1" width="200"/> <img src="./images/flight2.png" alt="Screenshot 2" width="200"/> <img src="./images/flight1.png" alt="Screenshot 3" width="200"/> |
-| **Service Automation** <br/> (Dynamic Slot Filling + Backend API Calls) | <img src="./images/business1.jpg" alt="Screenshot 1" width="200"/> <img src="./images/business2.jpg" alt="Screenshot 2" width="200"/> |
-| **Emotion Detection** <br/> (Triggered by rules, keywords, or models) | <img src="./images/emotion3.jpg" alt="Screenshot 1" width="200"/> <img src="./images/emotion2.png" alt="Screenshot 2" width="200"/> <img src="./images/emotion1.png" alt="Screenshot 3" width="200"/> |
-| **Multi-Language Capability** <br/> (Supports major and minor languages) | <img src="./images/mutillanguage.png" alt="Screenshot 1" width="300"/> |
+### Basic RAG Q&A (Multi-turn + Multimodal + Real-time Voice)
+<p align="center">
+  <img src="./images/base2.png" alt="Screenshot 1" width="260"/>
+  <img src="./images/base1.png" alt="Screenshot 2" width="260"/>
+  <img src="./images/base3.jpg" alt="Screenshot 3" width="260"/>
+</p>
 
+### Text2SQL (Flight Info Query + Subscription)
+<p align="center">
+  <img src="./images/flight3.png" alt="Screenshot 1" width="260"/>
+  <img src="./images/flight2.png" alt="Screenshot 2" width="260"/>
+  <img src="./images/flight1.png" alt="Screenshot 3" width="260"/>
+</p>
+
+### Service Automation (Dynamic Slot Filling + Backend API Calls)
+<p align="center">
+  <img src="./images/business1.jpg" alt="Screenshot 1" width="300"/>
+  <img src="./images/business2.jpg" alt="Screenshot 2" width="300"/>
+</p>
+
+### Emotion Detection (Triggered by rules, keywords, or models)
+<p align="center">
+  <img src="./images/emotion3.jpg" alt="Screenshot 1" width="260"/>
+  <img src="./images/emotion2.png" alt="Screenshot 2" width="260"/>
+  <img src="./images/emotion1.png" alt="Screenshot 3" width="260"/>
+</p>
+
+### Multi-Language Capability (Supports major and minor languages)
+<p align="center">
+  <img src="./images/mutillanguage.png" alt="Screenshot 1" width="400"/>
+</p>
 
 ## 🎯 Next Steps
 

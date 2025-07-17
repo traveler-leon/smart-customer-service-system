@@ -85,22 +85,46 @@
 ### 具体功能与体验
 
 1.  **主动式交互**：当用户问题不够明确时，系统会主动追问和澄清，模拟真人客服的沟通方式，引导用户获得更精准的答案。
-2.  **闭环优化系统**：通过强大的记忆模块持续学习，并将有价值的信息反哺知识库，实现系统能力的自增强。
-3.  **多语言支持**：内置多语言模块，在支持多种语言问答的同时，保证信息传达的准确性。
-4.  **安全与合规**：内置安全模块，对交互内容进行审查，确保安全合规。
-5.  **多模态情感识别**：实时检测用户情绪，动态调整回答语气，并在必要时触发人工介入机制。
+2.  **智能推荐与意图引导**：我们认识到用户意图有时是模糊的。为此，系统内置了**智能推荐模块**（“猜你想问”、“猜你想办”、“猜你想买”）。当无法完全确定用户意图时，系统会基于当前对话和知识库，主动推荐相关问题、业务或商品，从而在提升问题解决效率的同时，极大地改善了用户体验并增加了系统的容错能力。
+3.  **闭环优化系统**：通过强大的记忆模块持续学习，并将有价值的信息反哺知识库，实现系统能力的自增强。
+4.  **多语言支持**：内置多语言模块，在支持多种语言问答的同时，保证信息传达的准确性。
+5.  **安全与合规**：内置安全模块，对交互内容进行审查，确保安全合规。
+6.  **多模态情感识别**：实时检测用户情绪，动态调整回答语气，并在必要时触发人工介入机制。
 
 
 ## 🚀 产品功能展示
 
-| 功能模块 | 效果展示 |
-| :--- | :--- |
-| **基础 RAG 问答** <br/> (多轮对话 + 多模态 + 实时语音) | <img src="./images/base2.png" alt="案例截图 1" width="200"/> <img src="./images/base1.png" alt="案例截图 2" width="200"/> <img src="./images/base3.jpg" alt="案例截图 3" width="200"/> |
-| **Text2SQL** <br/> (航班信息查询 + 订阅) | <img src="./images/flight3.png" alt="案例截图 1" width="200"/> <img src="./images/flight2.png" alt="案例截图 2" width="200"/> <img src="./images/flight1.png" alt="案例截图 3" width="200"/> |
-| **业务办理** <br/> (动态参数收集 + 后端 API 调用) | <img src="./images/business1.jpg" alt="案例截图 1" width="200"/> <img src="./images/business2.jpg" alt="案例截图 2" width="200"/> |
-| **情感识别** <br/> (规则 + 关键词 + 情感模型触发) | <img src="./images/emotion3.jpg" alt="案例截图 1" width="200"/> <img src="./images/emotion2.png" alt="案例截图 2" width="200"/> <img src="./images/emotion1.png" alt="案例截图 2" width="200"/> |
-| **多语言能力** <br/> (支持主流及小语种) | <img src="./images/mutillanguage.png" alt="案例截图 1" width="300"/> |
+### 基础 RAG 问答 (多轮对话 + 多模态 + 实时语音)
+<p align="center">
+  <img src="./images/base2.png" alt="案例截图 1" width="260"/>
+  <img src="./images/base1.png" alt="案例截图 2" width="260"/>
+  <img src="./images/base3.jpg" alt="案例截图 3" width="260"/>
+</p>
 
+### Text2SQL (航班信息查询 + 订阅)
+<p align="center">
+  <img src="./images/flight3.png" alt="案例截图 1" width="260"/>
+  <img src="./images/flight2.png" alt="案例截图 2" width="260"/>
+  <img src="./images/flight1.png" alt="案例截图 3" width="260"/>
+</p>
+
+### 业务办理 (动态参数收集 + 后端 API 调用)
+<p align="center">
+  <img src="./images/business1.jpg" alt="案例截图 1" width="300"/>
+  <img src="./images/business2.jpg" alt="案例截图 2" width="300"/>
+</p>
+
+### 情感识别 (规则 + 关键词 + 情感模型触发)
+<p align="center">
+  <img src="./images/emotion3.jpg" alt="案例截图 1" width="260"/>
+  <img src="./images/emotion2.png" alt="案例截图 2" width="260"/>
+  <img src="./images/emotion1.png" alt="案例截图 2" width="260"/>
+</p>
+
+### 多语言能力 (支持主流及小语种)
+<p align="center">
+  <img src="./images/mutillanguage.png" alt="案例截图 1" width="400"/>
+</p>
 
 ## 🎯 下一步计划 (Next Steps)
 
