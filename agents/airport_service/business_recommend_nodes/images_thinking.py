@@ -10,6 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from agents.airport_service.core import filter_messages_for_llm, max_msg_len,image_model
 from langchain_core.messages import AIMessage,RemoveMessage,HumanMessage
 from common.logging import get_logger
+from agents.airport_service.prompts import business_recommend_prompts
 
 # 获取路由节点专用日志记录器
 logger = get_logger("agents.nodes.images_thinking")
@@ -34,49 +35,8 @@ async def images_thinking(state: BusinessRecommendState, config: RunnableConfig)
     logger.info(f"进入图像理解子智能体：{user_query}")
     if not image_data:
         return state
-    image_assistant_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """你是民航机场的一名智能客服系统，你擅长理解用户想问的问题并结合图片信息进行分析。
-
-            <background_info>
-            - 用户通常是在准备乘坐飞机，或者在机场遇到问题需要帮助。
-            - 用户的问题主要与以下主题相关：安检规定、随身携带物品、托运行李、违禁物品、登机流程、证件要求、航班变动、值机时间等。
-            - 用户经常会上传图片来询问某个物品是否可以带上飞机，或者询问机场设施的使用方法。
-            - 用户的问题经常比较模糊或口语化，需要结合图片信息来理解真实意图。
-            </background_info>
-
-            <task>
-            1. 仔细分析用户上传的图片内容，识别图片中的物品、文字、场景等关键信息。
-            2. 结合用户的原始问题和图片信息，理解用户的真实意图。
-            3. 生成一个新的、更加清晰和具体的问题，这个问题应该更适合后续的知识库检索。
-            4. 新问题应该包含从图片中识别出的具体物品名称、属性或场景信息。
-            5. 语言表达要正式、完整，尽可能包含"飞机"、"安检"、"机场"等关键词，便于检索系统理解意图。
-            6. 最终只输出新生成的问题，不要输出任何其他内容。问题必须是中文。
-            </task>
-
-            <examples>
-            <example1>
-            用户问题：这个能带吗？
-            图片内容：一瓶洗发水,容量100ml
-            生成问题：我有一瓶洗发水，容量100ml，能带上飞机吗？
-            </example1>
-
-            <example2>
-            用户问题：怎么用？
-            图片内容：机场自助值机设备
-            生成问题：如何使用机场自助值机设备进行值机操作？
-            </example2>
-
-            <example3>
-            用户问题：能过安检吗？
-            图片内容：一个充电宝,容量100mA
-            生成问题：容量100mA的充电宝是否可以随身携带通过机场安检？
-            </example3>
-            </examples>
-            """
-        ),
+    image_assistant_prompt = ChatPromptTemplate.from_messages([
+        ("system", business_recommend_prompts.IMAGE_UNDERSTANDING_SYSTEM_PROMPT),
         ("placeholder", "{messages}"),
         ("human",[
             {

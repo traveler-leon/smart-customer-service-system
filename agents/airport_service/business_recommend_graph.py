@@ -4,7 +4,7 @@
 from langgraph.graph import StateGraph, START, END
 from .state import BusinessRecommendState
 from .business_recommend_nodes import translator, artificial,images_thinking,business_recommend
-from langgraph.pregel import RetryPolicy
+from langgraph.types import RetryPolicy
 
 def build_business_recommend_graph():
     """
@@ -16,13 +16,13 @@ def build_business_recommend_graph():
     # 创建图
     graph = StateGraph(BusinessRecommendState)
     # 翻译节点
-    graph.add_node("translate_input_node", translator.translate_input, retry=RetryPolicy(max_attempts=3))
-    graph.add_node("translate_output_node", translator.translate_output, retry=RetryPolicy(max_attempts=3))
+    graph.add_node("translate_input_node", translator.translate_input, retry_policy=RetryPolicy(max_attempts=3))
+    graph.add_node("translate_output_node", translator.translate_output, retry_policy=RetryPolicy(max_attempts=3))
     # 情感识别节点
-    graph.add_node("emotion_node", artificial.detect_emotion, retry=RetryPolicy(max_attempts=3))
-    graph.add_node("images_thinking_node", images_thinking.images_thinking, retry=RetryPolicy(max_attempts=3))
+    graph.add_node("emotion_node", artificial.detect_emotion, retry_policy=RetryPolicy(max_attempts=3))
+    graph.add_node("images_thinking_node", images_thinking.images_thinking, retry_policy=RetryPolicy(max_attempts=3))
     # 核心处理节点
-    graph.add_node("business_recommend_node", business_recommend.provide_business_recommend, retry=RetryPolicy(max_attempts=5))
+    graph.add_node("business_recommend_node", business_recommend.provide_business_recommend, retry_policy=RetryPolicy(max_attempts=5))
     # 添加边 - 首先进行输入翻译
     graph.add_edge(START, "translate_input_node")
     graph.add_edge("translate_input_node", "emotion_node")

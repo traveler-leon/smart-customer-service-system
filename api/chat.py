@@ -158,7 +158,7 @@ async def airport_chat_websocket(websocket: WebSocket):
                 # 构建线程配置
                 threads = {
                     "configurable": {
-                        "passenger_id": user_id,
+                        "user_id": user_id,
                         "thread_id": thread_id,
                         "user_query": query,
                         # "image_url": image_url,  # 添加图片URL
@@ -253,6 +253,15 @@ async def airport_chat_websocket(websocket: WebSocket):
                         except json.JSONDecodeError:
                             # JSON解析失败，按普通文本处理
                             text_event = event_gen.create_text_event(result)
+                    elif node=="transfer_to_human":
+                        text_event = event_gen.create_text_event(result)
+                        text_response = {
+                            "event": "transfer_to_human",
+                            "data": text_event.model_dump()
+                        }
+                        await websocket.send_text(json.dumps(text_response, ensure_ascii=False))
+                        logger.info("✅ WebSocket 发送了转人工事件")
+                        continue
                     else:
                         # 其他节点 - 默认文本事件
                         text_event = event_gen.create_text_event(result)

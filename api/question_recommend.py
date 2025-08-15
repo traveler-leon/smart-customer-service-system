@@ -47,7 +47,7 @@ async def get_question_recommendations(request: QuestionRecommendRequest, http_r
         # 构建线程配置
         threads = {
             "configurable": {
-                "passenger_id": request.user_id,
+                "user_id": request.user_id,
                 "thread_id": request.thread_id,
                 "user_query": request.query or "",
                 "image_data": image_data,

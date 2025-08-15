@@ -4,7 +4,8 @@
 from langgraph.graph import StateGraph, START, END
 from .state import AirportMainServiceState
 from .main_nodes import airport, router, flight, chitchat, translator, artificial, business,images_thinking,human
-from langgraph.pregel import RetryPolicy
+from langgraph.types import RetryPolicy
+
 
 def build_airport_service_graph():
     """
@@ -16,23 +17,23 @@ def build_airport_service_graph():
     # 创建图
     graph = StateGraph(AirportMainServiceState)
     # 翻译节点
-    graph.add_node("translate_input_node", translator.translate_input, retry=RetryPolicy(max_attempts=3))
-    graph.add_node("translate_output_node", translator.translate_output, retry=RetryPolicy(max_attempts=3))
+    graph.add_node("translate_input_node", translator.translate_input, retry_policy=RetryPolicy(max_attempts=3))
+    graph.add_node("translate_output_node", translator.translate_output, retry_policy=RetryPolicy(max_attempts=3))
     # 情感识别节点
-    graph.add_node("emotion_node", artificial.detect_emotion, retry=RetryPolicy(max_attempts=3))
-    graph.add_node("transfer_to_human", human.transfer_to_human, retry=RetryPolicy(max_attempts=3))
-    graph.add_node("images_thinking_node", images_thinking.images_thinking, retry=RetryPolicy(max_attempts=3))
+    graph.add_node("emotion_node", artificial.detect_emotion, retry_policy=RetryPolicy(max_attempts=3))
+    graph.add_node("transfer_to_human", human.transfer_to_human, retry_policy=RetryPolicy(max_attempts=3))
+    graph.add_node("images_thinking_node", images_thinking.images_thinking, retry_policy=RetryPolicy(max_attempts=3))
     
     # 核心处理节点
-    graph.add_node("router", router.identify_intent, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("flight_tool_node", flight.flight_tool_node, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("flight_assistant_node", flight.provide_flight_info, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("airport_tool_node", airport.airport_tool_node, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("airport_assistant_node", airport.provide_airport_knowledge, retry=RetryPolicy(max_attempts=5))
+    graph.add_node("router", router.identify_intent, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("flight_tool_node", flight.flight_tool_node, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("flight_assistant_node", flight.provide_flight_info, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("airport_tool_node", airport.airport_tool_node, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("airport_assistant_node", airport.provide_airport_knowledge, retry_policy=RetryPolicy(max_attempts=5))
     # graph.add_node("chitchat_tool_node", chitchat.chitchat_tool_node, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("chitchat_node", chitchat.handle_chitchat, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("business_tool_node", business.router_bussiness_tools, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("business_assistant_node", business.business_agent, retry=RetryPolicy(max_attempts=5))
+    graph.add_node("chitchat_node", chitchat.handle_chitchat, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("business_tool_node", business.router_bussiness_tools, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("business_assistant_node", business.business_agent, retry_policy=RetryPolicy(max_attempts=5))
     
     # 添加边 - 首先进行输入翻译
     graph.add_edge(START, "translate_input_node")

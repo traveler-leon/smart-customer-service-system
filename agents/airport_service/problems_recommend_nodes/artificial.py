@@ -15,7 +15,6 @@ from common.logging import get_logger
 # 获取情感识别节点专用日志记录器
 logger = get_logger("agents.problems-recommend-nodes.artificial")
 
-# 全局变量存储情感分析器
 _emotion_classifier = None
 _emotion_mapping = {"Very Negative": 0, "Negative": 1, "Neutral": 2, "Positive": 3, "Very Positive": 4}
 
@@ -26,14 +25,11 @@ def initialize_emotion_classifier():
     if _emotion_classifier is not None:
         return _emotion_classifier
     try:
-        # 检查CUDA是否可用
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         logger.info(f"情感分析模型使用设备: {device}")
-        # 加载tokenizer和模型
         tokenizer = AutoTokenizer.from_pretrained(emotion["model_path"])
         model = AutoModelForSequenceClassification.from_pretrained(emotion["model_path"]).to(device)
         
-        # 初始化情感分析 pipeline
         _emotion_classifier = pipeline(
             "text-classification",
             model=model,
@@ -46,7 +42,6 @@ def initialize_emotion_classifier():
         
     except Exception as e:
         logger.error(f"情感分析模型初始化失败: {e}")
-        # 使用简单的关键词方法作为备选
         return None
 
 def analyze_emotion_with_model(text: str)->dict:
@@ -62,7 +57,6 @@ def analyze_emotion_with_model(text: str)->dict:
         confidence = result[0]['score']
         emotion_score = _emotion_mapping.get(emotion_label, 2)  # 默认为中性
                 
-        # 返回情感分数和是否为负面情绪
         is_negative = emotion_score <= 1  # Very Negative 或 Negative
         return {
             "reason": "用户情绪已经非常的负面，需要转人工",
@@ -81,7 +75,7 @@ def is_explicit_request(text:str)->bool:
     keywords = ["人工", "人工客服", "转人工", "转坐席", "客服", "工作人员", "服务人员"]
     return any(k in text for k in keywords)
 
-# 2. 同一问题重复3次（全局统计）
+# 2. 同一问题重复n次（全局统计）
 def is_exact_repeat(messages: list, threshold: int = 3) -> bool:
     recent_human_messages = []
     

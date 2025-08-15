@@ -9,3 +9,9 @@ from . import business
 from . import images_thinking
 from . import human
 
+
+application_name = "机场主智能客服"
+
+__all__ = [
+    "application_name"
+]

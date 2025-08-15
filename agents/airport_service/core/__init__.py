@@ -1,6 +1,6 @@
 from .models import content_model, base_model, structed_model
 from .utils import (
-    filter_messages, 
+    filter_messages_for_agent, 
     filter_messages_for_llm,
     extract_flight_numbers_from_result,
     KB_SIMILARITY_THRESHOLD,
@@ -17,8 +17,8 @@ __all__ = [
     "base_model",
     "structed_model",
     "image_model",
-    "filter_messages",
     "filter_messages_for_llm",
+    "filter_messages_for_agent",
     "extract_flight_numbers_from_result",
     "KB_SIMILARITY_THRESHOLD",
     "max_msg_len",

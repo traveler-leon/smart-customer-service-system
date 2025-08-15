@@ -2,7 +2,7 @@
 text2kb - 知识库检索模块
 """
 
-from .retrieval import retrieve_from_kb,retrieve_from_kb_by_agent
+from .retrieval import retrieve_from_kb
 
 # 确保导入时不会引起循环导入
 try:
@@ -21,6 +21,5 @@ except ImportError:
     pass
 
 __all__ = [
-    'retrieve_from_kb',
-    'retrieve_from_kb_by_agent'
+    'retrieve_from_kb'
 ] 

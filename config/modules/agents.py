@@ -21,14 +21,20 @@ AGENTS_CONFIG = {
         "image_thinking_model": os.getenv("IMAGE_LLM_MODEL",""),
 
     },
-    "store":{
-        "host": os.getenv("DB_HOST"),
-        "port": os.getenv("DB_PORT"),
-        "user": os.getenv("DB_USER"),
-        "password": os.getenv("DB_PASSWORD"),
-        "database": os.getenv("DB_DATABASE"),
-        "min_size": int(os.getenv("DB_POOL_MIN_SIZE", "5")),
-        "max_size": int(os.getenv("DB_POOL_MAX_SIZE", "20"))
+    "checkpoint-store": {
+        "host": os.getenv("REDIS_HOST", "localhost"),
+        "port": int(os.getenv("REDIS_PORT", "6379")),
+        "password": os.getenv("REDIS_PASSWORD",""),
+        "db": int(os.getenv("REDIS_DB", "0")),
+        
+        # 连接池优化配置
+        "max_connections": int(os.getenv("REDIS_MAX_CONNECTIONS", "50")),  # 增加到50  
+        # TTL 过期时间配置（秒）
+        "checkpoint_ttl": int(os.getenv("REDIS_CHECKPOINT_TTL", "7200")),  # checkpoint过期时间，默认2小时
+        "store_ttl": int(os.getenv("REDIS_STORE_TTL", "86400")),          # store过期时间，默认24小时
+        "session_ttl": int(os.getenv("REDIS_SESSION_TTL", "1800")),       # 会话过期时间，默认30分钟
+        
+        # 注意：TTL清理由LangGraph内置管理，无需额外配置
     },
     "emotions":{
         'model_path':os.getenv("EMOTION_MODEL","tabularisai/multilingual-sentiment-analysis")

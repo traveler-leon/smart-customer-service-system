@@ -122,8 +122,8 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
         )
 
 
-if __name__ == "__main__":
-    pass
-    # 测试时提供一个虚拟的tool_call_id
-    print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "坐飞机可以带刀吗？", "tool_call_id": "test_call_id"})))
-    # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "我有个充电宝，可以带上飞机吗?", "tool_call_id": "test_call_id"})))
+# if __name__ == "__main__":
+#     pass
+#     # 测试时提供一个虚拟的tool_call_id
+#     print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "坐飞机可以带刀吗？", "tool_call_id": "test_call_id"})))
+#     # print(asyncio.run(airport_knowledge_query.ainvoke({"user_question": "我有个充电宝，可以带上飞机吗?", "tool_call_id": "test_call_id"})))

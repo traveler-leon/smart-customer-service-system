@@ -45,3 +45,4 @@ if model_config.get("image_thinking_model"):
         api_key=model_config.get("image_thinking_api_key"),
         base_url=model_config.get("image_thinking_base_url")
     ) 
+

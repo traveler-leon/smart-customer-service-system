@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import warnings
 
 from agents.airport_service import graph_manager, build_airport_service_graph,build_question_recommend_graph,build_business_recommend_graph
+from agents.airport_service.context_engineering.scheduler import start_memory_scheduler, stop_memory_scheduler
 from common.logging import setup_logger, get_logger
 from config.factory import get_logger_config, get_app_config, get_directories_config, get_graph_config
 from api.router import api_router  # 导入API路由器
@@ -31,18 +32,38 @@ async def lifespan(app: FastAPI):
     # os.makedirs(uploads_dir, exist_ok=True)
 
     # 注册自定义图
-    # graph_config = get_graph_config()
-    # graph_name = graph_config.get("name", "airport_service_graph")
-    graph_manager.register_graph("airport_service_graph", build_airport_service_graph())
-
-    # graph_name = graph_config.get("name", "question_recommend_graph")
-    graph_manager.register_graph("question_recommend_graph", build_question_recommend_graph())
+    try:
+        logger.info("开始注册图...")
+        graph_manager.register_graph("airport_service_graph", build_airport_service_graph())
+        logger.info("成功注册 airport_service_graph")
+        
+        graph_manager.register_graph("question_recommend_graph", build_question_recommend_graph())
+        logger.info("成功注册 question_recommend_graph")
+        
+        graph_manager.register_graph("business_recommend_graph", build_business_recommend_graph())
+        logger.info("成功注册 business_recommend_graph")
+        
+        logger.info(f"所有图注册完成，当前已注册的图：{list(graph_manager._registered_graphs.keys())}")
+    except Exception as e:
+        logger.error(f"图注册失败：{e}", exc_info=True)
+        raise
     
-    # 注册商业推荐图
-    graph_manager.register_graph("business_recommend_graph", build_business_recommend_graph())
+    # 启动记忆管理调度器
+    try:
+        start_memory_scheduler()
+        logger.info("记忆管理调度器已启动")
+    except Exception as e:
+        logger.error(f"启动记忆管理调度器失败：{e}", exc_info=True)
+    
     logger.info("Application started")
     yield
     # 关闭事件
+    try:
+        stop_memory_scheduler()
+        logger.info("记忆管理调度器已停止")
+    except Exception as e:
+        logger.error(f"停止记忆管理调度器失败：{e}", exc_info=True)
+    
     logger.info("Application shutting down")
 
 # 获取应用配置
@@ -66,7 +87,7 @@ app.add_middleware(
 )
 
 # 挂载静态文件目录
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 注册API路由
 app.include_router(api_router)
@@ -84,7 +105,7 @@ def view_graph():
 
 if __name__ == "__main__":
     import uvicorn
-    view_graph()
+    # view_graph()
     host = app_config.get("host", "0.0.0.0")
     port = app_config.get("port", 8081)
-    uvicorn.run("main:app", host=host, port=port)
+    uvicorn.run(app, host=host, port=port)  # 直接传递app对象而不是字符串

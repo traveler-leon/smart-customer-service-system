@@ -15,6 +15,7 @@ from trustcall import create_extractor
 from agents.airport_service.core import filter_messages_for_llm,structed_model
 from datetime import datetime
 from common.logging import get_logger
+from agents.airport_service.prompts import business_recommend_prompts
 
 # 获取机场知识节点专用日志记录器
 logger = get_logger("agents.business-recommend-nodes.business_recommend")
@@ -36,19 +37,9 @@ def replace_outer_single_quotes(lst):
 async def provide_business_recommend(state: BusinessRecommendState, config: RunnableConfig):
     logger.info("进入业务推荐子智能体:")
     business_recommend_prompt = ChatPromptTemplate.from_messages([
-        (
-            "system",
-            """你是民航机场的虚拟客服助手，名为"宝安小飞"。
-            请根据用户的初始问题、以及对话历史，罗列出用户可能想要办理的机场提供的业务，罗列 3-5条。
-            注意：生成的内容的语言类型必须和<question>中的用户问题的语言类型一致。
-            """
-        ),
+        ("system", business_recommend_prompts.BUSINESS_RECOMMEND_SYSTEM_PROMPT),
         ("placeholder", "{messages}"),
-        ("human", 
-        """
-        这是当前用户的问题: <question>{user_query}</question>
-        当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
-    """)
+        ("human", business_recommend_prompts.BUSINESS_RECOMMEND_HUMAN_PROMPT)
     ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     extractor = create_extractor(

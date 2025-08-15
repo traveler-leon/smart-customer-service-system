@@ -23,7 +23,7 @@ setup_logger(**logger_config)
 # 从 core 模块导入共用组件
 from .core import (
     content_model, base_model, structed_model,
-    filter_messages, filter_messages_for_llm, 
+    filter_messages_for_agent, filter_messages_for_llm, 
     max_msg_len, max_tokens, memery_delay,
     KB_SIMILARITY_THRESHOLD, emotion
 )

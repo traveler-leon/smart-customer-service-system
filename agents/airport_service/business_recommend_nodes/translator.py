@@ -13,6 +13,7 @@ from trustcall import create_extractor
 from langchain_core.messages import RemoveMessage,HumanMessage,AIMessage
 from agents.airport_service.core import structed_model
 from common.logging import get_logger
+from agents.airport_service.prompts import business_recommend_prompts
 
 # 获取翻译节点专用日志记录器
 logger = get_logger("agents.business-recommend-nodes.translator")
@@ -49,13 +50,7 @@ async def translate_input(state: AirportMainServiceState, config: RunnableConfig
     else:
         input_parser = PydanticOutputParser(pydantic_object=TranslationResult)
         input_translation_prompt = PromptTemplate(
-            template=(
-                "你是一个高精度的语言检测和翻译助手。\n"
-                "请根据用户输入，检测语言类型，保留用户的原始内容，并将内容翻译成中文。\n"
-                "如果用户输入已经是中文，也需要翻译，只是保持语言类型为中文，翻译后结果也是中文就可以。\n"
-                "{format_instructions}\n"
-                "用户输入：{user_input}"
-            ),
+            template=business_recommend_prompts.INPUT_TRANSLATION_PROMPT,
             input_variables=["user_input"],
             partial_variables={"format_instructions": input_parser.get_format_instructions()},
         )
@@ -93,48 +88,7 @@ async def translate_output(state: AirportMainServiceState, config: RunnableConfi
         return {"user_query":None}
     else:
         output_translation_prompt = ChatPromptTemplate.from_messages([
-            (
-                "system",
-                """你是一个高精度的多语言翻译助手，负责将中文翻译成目标语言 {language}。  
-                    <instructions>  
-                    1. **语言判断**  
-                    - 如果目标语言是中文，则直接返回原文，不做翻译；  
-                    - 若为其他语言，则进行高质量翻译，确保表达自然流畅。  
-
-                    2. **注意事项**  
-                    - 翻译须保持原文意思、语气、风格一致；  
-                    - 专业术语必须准确；  
-                    - 除了翻译结果，不要输出任何多余内容。
-                 </instructions>  
-
-                    <examples>  
-                    - **中文 → 英文**  
-                    输入：  
-                    > 您好，我需要办理登机手续。  
-                    输出：  
-                    > Hello, I need to check in for my flight.  
-
-                    - **中文 → 法文**  
-                    输入：  
-                    > 您好，候机室在哪里？  
-                    输出：  
-                    > Bonjour, où se trouve la salle d’attente ?  
-
-                    - **中文 → 日文**  
-                    输入：  
-                    > 我想确认一下航班延误的情况。  
-                    输出：  
-                    > フライトの遅延について確認したいのですが。  
-
-                    - **中文 → 中文**  
-                    输入：  
-                    > 我想确认一下航班延误的情况。  
-                    输出：  
-                    > 我想确认一下航班延误的情况。  
-                    </examples>
-
-                """
-            ),
+            ("system", business_recommend_prompts.TRANSLATION_SYSTEM_PROMPT),
             ("human", "-** 中文 -> {language} **-\n输入:\n>{user_input}\n输出:\n>")
         ])
 

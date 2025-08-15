@@ -16,6 +16,7 @@ from trustcall import create_extractor
 from agents.airport_service.core import filter_messages_for_llm,structed_model
 from datetime import datetime
 from common.logging import get_logger
+from agents.airport_service.prompts import question_recommend_prompts
 
 # 获取机场知识节点专用日志记录器
 logger = get_logger("agents.problems-recommend-nodes.question_recommend")
@@ -36,26 +37,9 @@ def replace_outer_single_quotes(lst):
 async def provide_question_recommend(state: QuestionRecommendState, config: RunnableConfig):
     logger.info("进入问题推荐子智能体:")
     question_recommend_prompt = ChatPromptTemplate.from_messages([
-        (
-            "system",
-            """你是民航机场的虚拟客服助手，名为"宝安小飞"。
-            请根据用户的初始问题、知识库<context>中的内容、以及对话历史，抽取出用户下一步可能问的5个问题。抽取出的问题列表必须是知识库支持回答的。
-            注意：
-                1.生成的内容的语言类型必须和<question>中的用户问题的语言类型一致。
-                2.生成的内容必须符合知识库中的内容。
-                3.生产的问题必须以第一人称回答。
-            """
-        ),
+        ("system", question_recommend_prompts.QUESTION_RECOMMEND_SYSTEM_PROMPT),
         ("placeholder", "{messages}"),
-        ("human", 
-        """
-            知识库内容。
-            <context> 
-            {context}
-            </context> 
-            这是当前用户的问题: <question>{user_query}</question>
-            当前时间是: {time}，如果用户询问涉及时间的信息请考虑此因素。
-    """)
+        ("human", question_recommend_prompts.QUESTION_RECOMMEND_HUMAN_PROMPT)
     ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     extractor = create_extractor(
