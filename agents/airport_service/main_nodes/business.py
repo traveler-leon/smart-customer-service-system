@@ -14,7 +14,7 @@ from agents.airport_service.tools.business import (
 )
 from agents.airport_service.core import filter_messages_for_agent, max_msg_len,structed_model
 from common.logging import get_logger
-from agents.airport_service.prompts import main_graph_prompts
+from agents.airport_service.context_engineering.prompts import main_graph_prompts
 # 获取业务办理节点专用日志记录器
 logger = get_logger("agents.main-nodes.business")
 

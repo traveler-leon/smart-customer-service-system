@@ -11,37 +11,26 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.messages import AIMessage
 from agents.airport_service.tools import airport_knowledge_query
 from agents.airport_service.core import filter_messages_for_agent, max_msg_len, KB_SIMILARITY_THRESHOLD,content_model
-from agents.airport_service.prompts import main_graph_prompts
-from agents.airport_service.context_engineering.agent_memory import memory_enabled_agent,get_relevant_conversation_memories
+from agents.airport_service.context_engineering.prompts import main_graph_prompts
+from agents.airport_service.context_engineering.agent_memory import memory_enabled_agent
 from datetime import datetime
 from common.logging import get_logger
 
-# from agents.airport_service.main_nodes import application_name
-# 获取机场知识节点专用日志记录器
 logger = get_logger("agents.main-nodes.airport")
 airport_tool_node = ToolNode([airport_knowledge_query])
 
-application_id = "机场主智能客服"
-agent_id = "机场知识问答子智能体"
 
-@memory_enabled_agent(application_id=application_id, agent_id=agent_id)
+@memory_enabled_agent(application_id="机场主智能客服", agent_id="机场知识问答子智能体")
 async def provide_airport_knowledge(state: AirportMainServiceState, config: RunnableConfig):
     logger.info("进入机场知识问答子智能体:")
     
-    # 获取用户信息
-    user_id = config["configurable"].get("user_id")
     user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
     
     # 准备上下文信息
     context_docs = state.get("kb_context_docs", "")
     translator_result = state.get("translator_result")
     language = translator_result.language if translator_result else "中文"
-    
-    # relevant_conversation_memories = await get_relevant_conversation_memories(
-    #     user_query=user_query,
-    #     application_name=application_name,
-    #     agent_name=agent_name,
-    # )
+    conversation_memories = state.get("conversation_memories", "")
     
     kb_prompt = ChatPromptTemplate.from_messages([
         ("system", main_graph_prompts.AIRPORT_KNOWLEDGE_SYSTEM_PROMPT),
@@ -70,8 +59,6 @@ async def provide_airport_knowledge(state: AirportMainServiceState, config: Runn
         "language":language
     })
     res.name = "机场知识问答子智能体"
-    # profile_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
-    # episode_executor.submit({"messages":state["messages"]+[res]},after_seconds=memery_delay)
     return {"messages":[res],"kb_context_docs":" "}
 
 

@@ -194,6 +194,7 @@ async def get_relevant_conversation_memories(
                 memory_item = {
                     "query": result.get('query', ''),
                     "response": result.get('response', ''),
+                    "created_at": result.get('created_at', ''),
                 }
                 relevant_memories.append(memory_item)
         

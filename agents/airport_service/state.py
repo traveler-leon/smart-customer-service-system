@@ -108,4 +108,4 @@ class QuestionRecommendState(MessagesState):
     kb_context_docs: Optional[str] = None
     kb_context_docs_maxscore: Optional[float] = None
     db_context_docs: Dict = {}
-    chart_config: Dict = {}
+    conversation_memories: Optional[str] = None

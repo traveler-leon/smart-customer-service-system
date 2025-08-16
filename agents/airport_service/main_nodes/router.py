@@ -11,7 +11,7 @@ from datetime import datetime
 from langgraph.store.base import BaseStore
 from agents.airport_service.tools import airport_knowledge_query, flight_info_query,business_handler
 from agents.airport_service.core import filter_messages_for_agent, max_msg_len,structed_model
-from agents.airport_service.prompts import main_graph_prompts
+from agents.airport_service.context_engineering.prompts import main_graph_prompts
 from langgraph.config import get_store
 from langchain_core.messages import AIMessage
 from common.logging import get_logger

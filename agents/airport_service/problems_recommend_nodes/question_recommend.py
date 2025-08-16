@@ -16,7 +16,7 @@ from trustcall import create_extractor
 from agents.airport_service.core import filter_messages_for_llm,structed_model
 from datetime import datetime
 from common.logging import get_logger
-from agents.airport_service.prompts import question_recommend_prompts
+from agents.airport_service.context_engineering.prompts import question_recommend_prompts
 
 # 获取机场知识节点专用日志记录器
 logger = get_logger("agents.problems-recommend-nodes.question_recommend")

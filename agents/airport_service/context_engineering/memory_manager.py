@@ -932,16 +932,7 @@ class MemoryManager:
             top_memories = scored_memories[:limit]
             
             logger.info(f"智能记忆筛选完成: 候选数量={len(results)}, 有效数量={len(scored_memories)}, TopK={len(top_memories)}")
-            
-            # 记录得分统计
-            if top_memories:
-                avg_composite = sum(m['composite_score'] for m in top_memories) / len(top_memories)
-                avg_similarity = sum(m['similarity_score'] for m in top_memories) / len(top_memories)
-                avg_time = sum(m['time_score'] for m in top_memories) / len(top_memories)
-                avg_quality = sum(m['quality_score'] for m in top_memories) / len(top_memories)
-                
-                logger.debug(f"TopK平均得分 - 综合:{avg_composite:.3f}, 相似度:{avg_similarity:.3f}, 时间:{avg_time:.3f}, 质量:{avg_quality:.3f}")
-            
+
             return top_memories
             
         except Exception as e:

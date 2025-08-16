@@ -10,7 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from agents.airport_service.core import filter_messages_for_llm, max_msg_len,image_model
 from langchain_core.messages import AIMessage,RemoveMessage,HumanMessage
 from common.logging import get_logger
-from agents.airport_service.prompts import business_recommend_prompts
+from agents.airport_service.context_engineering.prompts import business_recommend_prompts
 
 # 获取路由节点专用日志记录器
 logger = get_logger("agents.nodes.images_thinking")
