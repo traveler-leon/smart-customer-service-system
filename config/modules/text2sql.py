@@ -7,7 +7,6 @@ import os
 TEXT2SQL_CONFIG = {
     # LLM配置
     "llm": {
-        "type": os.environ.get("LLM_TYPE"),
         "api_key": os.environ.get("LLM_API_KEY"),
         "base_url": os.environ.get("LLM_BASE_URL"),
         "model": os.environ.get("LLM_MODEL"),
@@ -17,7 +16,6 @@ TEXT2SQL_CONFIG = {
     
     # 嵌入模型配置
     "embedding": {
-        "type": os.environ.get("EMBEDDING_TYPE"),
         "api_key": os.environ.get("EMBEDDING_API_KEY"),
         "base_url": os.environ.get("EMBEDDING_BASE_URL"),
         "embedding_model": os.environ.get("EMBEDDING_MODEL"),
