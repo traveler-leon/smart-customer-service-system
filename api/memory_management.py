@@ -618,7 +618,7 @@ async def user_feedback_conversation(request: UserFeedbackRequest):
     
     try:
         # 验证反馈类型
-        if request.user_approved not in [0, 1]:
+        if request.user_approved not in [-1, 1]:
             return {
                 "ret_code": "400001",
                 "ret_msg": "无效的反馈类型，必须是 0（点踩）或 1（点赞）",

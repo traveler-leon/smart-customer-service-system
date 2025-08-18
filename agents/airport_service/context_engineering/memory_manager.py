@@ -1008,7 +1008,7 @@ class MemoryManager:
             llm = ChatOpenAI(
                 model="glm-4.5",
                 temperature=0.1,
-                api_key="6617719eb7df4c53a8693a7b670003c6.asoHZRafhFNhiA6o",
+                api_key="6617719eb7df4c53a800asoHZRafhFNhiA6o",
                 base_url="https://open.bigmodel.cn/api/paas/v4/"
             )
             
