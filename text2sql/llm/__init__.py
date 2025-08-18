@@ -1,7 +1,8 @@
-from .qwen import QwenLLM
-from .siliconflow import SiliconflowLLM
-from .glm import GlmLLM
-from .deepseek import DeepseekLLM
+from .generic import (
+    GenericLLM,
+)
 
-__all__ = ["QwenLLM", "SiliconflowLLM","GlmLLM","DeepseekLLM"]
+__all__ = [
+    "GenericLLM",
+]
 

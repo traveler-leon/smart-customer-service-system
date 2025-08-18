@@ -15,6 +15,8 @@ from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableConfig
 from config.utils import config_manager
 from agents.airport_service.core import rewrite_query,generate_step_back_query,rerank_results
+from agents.airport_service.context_engineering.agent_memory import get_relevant_conversation_memories
+
 from common.logging import get_logger
 logger = get_logger("agents.tools.airport")
 
@@ -26,8 +28,8 @@ KB_SIMILARITY_THRESHOLD = float(_text2kb_config.get("kb_similarity_threshold"))
 KB_VECTOR_SIMILARITY_WEIGHT = float(_text2kb_config.get("kb_vector_similarity_weight"))
 KB_TOP_K = int(_text2kb_config.get("kb_topK"))
 KB_KEY_WORDS = bool(_text2kb_config.get("kb_key_words"))
-RERANKER_MODEL = _text2kb_config.get("reranker_model")
-RERANKER_ADDRESS = _text2kb_config.get("reranker_address")
+RERANKER_MODEL = _text2kb_config.get("reranker_model",None)
+RERANKER_ADDRESS = _text2kb_config.get("reranker_address",None)
 
 @tool
 async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,InjectedToolCallId],config:RunnableConfig) -> str:
@@ -55,19 +57,39 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     user_query = user_question
     rewritten_query_task = rewrite_query(user_query)
     step_back_query_task = generate_step_back_query(user_query)
-    
+    all_user_relevant_conversation_memories = get_relevant_conversation_memories(
+        user_query=user_query,
+        application_name="机场主智能客服",
+        agent_name="机场知识问答子智能体",
+        score_limit=0.85,
+        limit=2
+    )   
     # 等待两个查询生成完成
-    rewritten_query, step_back_query = await asyncio.gather(
+    rewritten_query, step_back_query, all_user_relevant_conversation_memories = await asyncio.gather(
         rewritten_query_task, 
         step_back_query_task, 
+        all_user_relevant_conversation_memories,
         return_exceptions=True
     )
+    conversation_memories = []
+    if all_user_relevant_conversation_memories:
+        tmp = {}
+        for memory in all_user_relevant_conversation_memories:
+            tmp.clear()
+            if memory["user_id"]==config["configurable"].get("user_id"):
+                tmp["user_id"] = "yourself"
+            else:
+                tmp["user_id"] = "other"
+            tmp["query"] = memory["query"]
+            tmp["response"] = memory["response"]
+            tmp["created_at"] = memory["created_at"]
+            conversation_memories.append(tmp)
+        
+
     # 构建查询列表
     query_list = [user_question]  # 原始用户问题
-    if rewritten_query and not isinstance(rewritten_query, Exception):
-        query_list.append(rewritten_query)
-    if step_back_query and not isinstance(step_back_query, Exception):
-        query_list.append(step_back_query)
+    query_list.append(rewritten_query) if rewritten_query and not isinstance(rewritten_query, Exception) else None
+    query_list.append(step_back_query) if step_back_query and not isinstance(step_back_query, Exception) else None
 
     # 并行执行所有查询的检索
     retrieval_tasks = [
@@ -81,8 +103,6 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
                         key_words=KB_KEY_WORDS)
         for query in query_list
     ]
-    
-    # 等待所有检索完成
     all_results_list = await asyncio.gather(*retrieval_tasks, return_exceptions=True)
     # 合并所有检索结果
     all_results = []
@@ -102,22 +122,21 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     max_score = 0.0
     text = "抱歉，在知识库中没有找到与问题相关的信息。"
     # 重排模型。
-    if len(results) > 0:
-        reranked_results,max_score = await rerank_results(results, user_question,RERANKER_MODEL,RERANKER_ADDRESS,KB_TOP_K)
-    format_doc = []
-    if len(results) > 0:
-        for i,doc in enumerate(reranked_results):
-            format_doc.append(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}")
-        text = "\n\n".join(format_doc)
+    if len(results) > 0 and RERANKER_MODEL and RERANKER_ADDRESS:
+        results,max_score = await rerank_results(results, user_question,RERANKER_MODEL,RERANKER_ADDRESS,KB_TOP_K)
+        text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+    else:
+        text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
 
     logger.info(f"查询列表: {query_list}")
-    logger.info(f"检索结果数量: {len(reranked_results) if 'reranked_results' in locals() else 0}")
+    logger.info(f"检索结果数量: {len(results) if 'results' in locals() else 0}")
     logger.debug(f"最终返回结果: {text}")
     return Command(
             update={
                 'messages':[ToolMessage(content="知识检索结束",tool_call_id=tool_call_id)],
                 'kb_context_docs':text,
-                'kb_context_docs_maxscore':max_score
+                'kb_context_docs_maxscore':max_score,
+                'conversation_memories':json.dumps(conversation_memories)
             },
         )
 

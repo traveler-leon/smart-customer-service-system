@@ -16,7 +16,7 @@ from langgraph.types import Command
 from datetime import datetime
 from agents.airport_service.tools import chitchat_query
 from agents.airport_service.core import filter_messages_for_agent, max_msg_len,base_model
-from agents.airport_service.prompts import main_graph_prompts
+from agents.airport_service.context_engineering.prompts import main_graph_prompts
 from agents.airport_service.context_engineering.agent_memory import memory_enabled_agent, AgentMemoryMixin
 from common.logging import get_logger
 

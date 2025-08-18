@@ -13,7 +13,7 @@ from trustcall import create_extractor
 from langchain_core.messages import RemoveMessage,HumanMessage,AIMessage
 from agents.airport_service.core import structed_model
 from common.logging import get_logger
-from agents.airport_service.prompts import question_recommend_prompts
+from agents.airport_service.context_engineering.prompts import question_recommend_prompts
 
 # 获取翻译节点专用日志记录器
 logger = get_logger("agents.problems-recommend-nodes.translator")

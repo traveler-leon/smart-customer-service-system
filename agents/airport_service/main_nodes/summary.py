@@ -7,7 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import MessagesState
 from agents.airport_service.core import base_model
 from common.logging import get_logger
-from agents.airport_service.prompts import main_graph_prompts
+from agents.airport_service.context_engineering.prompts import main_graph_prompts
 
 # 获取摘要节点专用日志记录器
 logger = get_logger("agents.main-nodes.summary")
