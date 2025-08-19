@@ -56,5 +56,6 @@ image_model = ChatOpenAI(
 emb_model = OpenAIEmbeddings(
     model=emb_model_config.get("embedding_model"),
     openai_api_key=emb_model_config.get("api_key"),
-    openai_api_base=emb_model_config.get("base_url")
+    openai_api_base=emb_model_config.get("base_url"),
+    dimensions=emb_model_config.get("dimensions")
 )
