@@ -28,8 +28,9 @@ KB_SIMILARITY_THRESHOLD = float(_text2kb_config.get("kb_similarity_threshold"))
 KB_VECTOR_SIMILARITY_WEIGHT = float(_text2kb_config.get("kb_vector_similarity_weight"))
 KB_TOP_K = int(_text2kb_config.get("kb_topK"))
 KB_KEY_WORDS = bool(_text2kb_config.get("kb_key_words"))
-RERANKER_MODEL = _text2kb_config.get("reranker_model",None)
-RERANKER_ADDRESS = _text2kb_config.get("reranker_address",None)
+RERANKER_MODEL = _text2kb_config.get("reranker_model")
+RERANKER_ADDRESS = _text2kb_config.get("reranker_address")
+RERANKER_API_KEY = _text2kb_config.get("reranker_api_key")
 
 @tool
 async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,InjectedToolCallId],config:RunnableConfig) -> str:
@@ -123,7 +124,7 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     text = "抱歉，在知识库中没有找到与问题相关的信息。"
     # 重排模型。
     if len(results) > 0 and RERANKER_MODEL and RERANKER_ADDRESS:
-        results,max_score = await rerank_results(results, user_question,RERANKER_MODEL,RERANKER_ADDRESS,KB_TOP_K)
+        results,max_score = await rerank_results(results, user_question,RERANKER_MODEL,RERANKER_ADDRESS,RERANKER_API_KEY,KB_TOP_K)
         text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
     else:
         text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))

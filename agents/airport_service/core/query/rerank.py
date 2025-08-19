@@ -6,13 +6,13 @@ from common.logging import get_logger
 logger = get_logger("agents.utils.rerank")
 
 
-async def rerank_results(results, user_question,reranker_model=None,reranker_address=None,top_k=5):
+async def rerank_results(results, user_question,reranker_model=None,reranker_address=None,api_key=None,top_k=5):
     """
     异步重排序函数，使用 HTTP API 调用重排序模型
     """
     logger.info(f"开始重排序 - 文档数量: {len(results)}, 查询: {user_question}")
 
-    if not reranker_address or not reranker_model:
+    if not reranker_address or not reranker_model or not api_key:
         logger.warning("重排序模型配置缺失，跳过重排序")
         return results
 
@@ -25,18 +25,15 @@ async def rerank_results(results, user_question,reranker_model=None,reranker_add
         "query": user_question,
         "documents": documents
     }
-    
-    # 构建 API URL
-    api_url = f"http://{reranker_address}/v1/rerank"
-    
     try:
         async with aiohttp.ClientSession() as session:
             headers = {
+                'Authorization': f'Bearer {api_key}',
                 'accept': 'application/json',
                 'Content-Type': 'application/json'
             }
             
-            async with session.post(api_url, json=payload, headers=headers) as response:
+            async with session.post(reranker_address, json=payload, headers=headers) as response:
                 if response.status == 200:
                     result_data = await response.json()
                     logger.info("重排序API调用成功")
