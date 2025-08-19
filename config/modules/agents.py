@@ -5,21 +5,28 @@ import os
 
 AGENTS_CONFIG = {
     "llm": {
-        "base_model_type": os.getenv("LLM_TYPE"),
         "base_url": os.getenv("LLM_BASE_URL"),
         "api_key": os.getenv("LLM_API_KEY"),
         "model": os.getenv("LLM_MODEL"),
+        "enable_thinking": os.getenv("LLM_ENABLE_THINKING"),
         "temperature": os.getenv("LLM_TEMPERATURE"),
         "max_history_turns": int(os.getenv("LLM_MAX_HISTORY_TURNS", "10")),
         "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "1000")),
-        "router_base_url": os.getenv("ROUTER_LLM_BASE_URL"),
-        "router_api_key": os.getenv("ROUTER_LLM_API_KEY"),
-        "router_model": os.getenv("ROUTER_LLM_MODEL"),
-        "router_temperature": os.getenv("ROUTER_LLM_TEMPERATURE"),
-        "image_thinking_base_url": os.getenv("IMAGE_LLM_BASE_URL",""),
-        "image_thinking_api_key": os.getenv("IMAGE_LLM_API_KEY",""),
-        "image_thinking_model": os.getenv("IMAGE_LLM_MODEL",""),
+        "router_base_url": os.getenv("ROUTER_LLM_BASE_URL",os.getenv("LLM_BASE_URL")),
+        "router_api_key": os.getenv("ROUTER_LLM_API_KEY",os.getenv("LLM_API_KEY")),
+        "router_model": os.getenv("ROUTER_LLM_MODEL",os.getenv("LLM_MODEL")),
+        "router_temperature": os.getenv("ROUTER_LLM_TEMPERATURE",os.getenv("LLM_TEMPERATURE")),
+        "image_thinking_base_url": os.getenv("IMAGE_LLM_BASE_URL",os.getenv("LLM_BASE_URL")),
+        "image_thinking_api_key": os.getenv("IMAGE_LLM_API_KEY",os.getenv("LLM_API_KEY")),
+        "image_thinking_model": os.getenv("IMAGE_LLM_MODEL",os.getenv("LLM_MODEL")),
 
+    },
+    "embedding": {
+        "api_key": os.getenv("EMBEDDING_API_KEY",os.getenv("LLM_API_KEY")),
+        "base_url": os.getenv("EMBEDDING_BASE_URL",os.getenv("LLM_BASE_URL")),
+        "embedding_model": os.getenv("EMBEDDING_MODEL","bge-large-zh-v1.5"),
+        "dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", 1024)),
+        "max_tokens": int(os.getenv("EMBEDDING_MAX_TOKENS", 512))
     },
     "checkpoint-store": {
         "host": os.getenv("REDIS_HOST", "localhost"),

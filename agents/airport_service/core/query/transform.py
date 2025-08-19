@@ -1,7 +1,7 @@
 from langchain_core.prompts import PromptTemplate
 from ..models import structed_model as model
 from common.logging import get_logger
-from agents.airport_service.prompts import query_transform_prompts
+from agents.airport_service.context_engineering.prompts import query_transform_prompts
 
 logger = get_logger("agents.utils.query_transform")
 

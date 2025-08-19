@@ -58,9 +58,9 @@ async def airport_knowledge_query(user_question:str,tool_call_id:Annotated[str,I
     rewritten_query_task = rewrite_query(user_query)
     step_back_query_task = generate_step_back_query(user_query)
     all_user_relevant_conversation_memories = get_relevant_conversation_memories(
-        user_query=user_query,
-        application_name="机场主智能客服",
-        agent_name="机场知识问答子智能体",
+        query=user_query,
+        application_id="机场主智能客服",
+        agent_id="机场知识问答子智能体",
         score_limit=0.85,
         limit=2
     )   

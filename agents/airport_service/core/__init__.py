@@ -1,4 +1,4 @@
-from .models import content_model, base_model, structed_model
+from .models import content_model, base_model, structed_model, emb_model
 from .utils import (
     filter_messages_for_agent, 
     filter_messages_for_llm,
@@ -17,6 +17,7 @@ __all__ = [
     "base_model",
     "structed_model",
     "image_model",
+    "emb_model",
     "filter_messages_for_llm",
     "filter_messages_for_agent",
     "extract_flight_numbers_from_result",

@@ -7,53 +7,53 @@ import os
 TEXT2SQL_CONFIG = {
     # LLM配置
     "llm": {
-        "api_key": os.environ.get("LLM_API_KEY"),
-        "base_url": os.environ.get("LLM_BASE_URL"),
-        "model": os.environ.get("LLM_MODEL"),
-        "temperature": float(os.environ.get("LLM_TEMPERATURE", "0.7")),
-        "max_tokens": int(os.environ.get("LLM_MAX_TOKENS", 20000))
+        "api_key": os.getenv("LLM_API_KEY"),
+        "base_url": os.getenv("LLM_BASE_URL"),
+        "model": os.getenv("LLM_MODEL"),
+        "temperature": float(os.getenv("LLM_TEMPERATURE", "0.7")),
+        "max_tokens": int(os.getenv("LLM_MAX_TOKENS", 20000))
     },
     
     # 嵌入模型配置
     "embedding": {
-        "api_key": os.environ.get("EMBEDDING_API_KEY"),
-        "base_url": os.environ.get("EMBEDDING_BASE_URL"),
-        "embedding_model": os.environ.get("EMBEDDING_MODEL"),
-        "dimensions": int(os.environ.get("EMBEDDING_DIMENSIONS", 1024)),
-        "max_tokens": int(os.environ.get("EMBEDDING_MAX_TOKENS", 512))
+        "api_key": os.getenv("EMBEDDING_API_KEY",os.getenv("LLM_API_KEY")),
+        "base_url": os.getenv("EMBEDDING_BASE_URL",os.getenv("LLM_BASE_URL")),
+        "embedding_model": os.getenv("EMBEDDING_MODEL"),
+        "dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", 1024)),
+        "max_tokens": int(os.getenv("EMBEDDING_MAX_TOKENS", 512))
     },
     
     # 数据库配置
     "db": {
-        "type": os.environ.get("DB_TYPE", "postgresql"),
-        "database": os.environ.get("DB_DATABASE", "hzwl"),
-        "host": os.environ.get("DB_HOST", "192.168.0.200"),
-        "port": int(os.environ.get("DB_PORT", "5432")),
-        "user": os.environ.get("DB_USER"),
-        "password": os.environ.get("DB_PASSWORD"),
-        "min_size": int(os.environ.get("DB_MIN_SIZE", "2")),
-        "max_size": int(os.environ.get("DB_MAX_SIZE", "5"))
+        "type": os.getenv("DB_TYPE", "postgresql"),
+        "database": os.getenv("DB_DATABASE", "hzwl"),
+        "host": os.getenv("DB_HOST", "192.168.0.200"),
+        "port": int(os.getenv("DB_PORT", "5432")),
+        "user": os.getenv("DB_USER"),
+        "password": os.getenv("DB_PASSWORD"),
+        "min_size": int(os.getenv("DB_MIN_SIZE", "2")),
+        "max_size": int(os.getenv("DB_MAX_SIZE", "5"))
     },
     
     # 向量数据库配置
     "storage": {
-        "type": os.environ.get("STORAGE_TYPE", "chromadb"),
-        "host": os.environ.get("CHROMA_HOST"),
-        "port": int(os.environ.get("CHROMA_PORT", "8000")),
-        "n_results": int(os.environ.get("CHROMA_N_RESULTS", "5")),
+        "type": os.getenv("STORAGE_TYPE", "chromadb"),
+        "host": os.getenv("CHROMA_HOST"),
+        "port": int(os.getenv("CHROMA_PORT", "8000")),
+        "n_results": int(os.getenv("CHROMA_N_RESULTS", "5")),
         "hnsw_config": {
-            "M": int(os.environ.get("CHROMA_M", "16")),
-            "construction_ef": int(os.environ.get("CHROMA_CONSTRUCTION_EF", "100")),
-            "search_ef": int(os.environ.get("CHROMA_SEARCH_EF", "50")),
-            "space": os.environ.get("CHROMA_SPACE", "cosine")
+            "M": int(os.getenv("CHROMA_M", "16")),
+            "construction_ef": int(os.getenv("CHROMA_CONSTRUCTION_EF", "100")),
+            "search_ef": int(os.getenv("CHROMA_SEARCH_EF", "50")),
+            "space": os.getenv("CHROMA_SPACE", "cosine")
         }
     },
         # 缓存配置
     "cache": {
-        "type": os.environ.get("CACHE_TYPE", "memory"),
-        "max_size": int(os.environ.get("CACHE_MAX_SIZE", "100")),
-        "ttl": int(os.environ.get("CACHE_TTL", "600"))  # 10分钟
+        "type": os.getenv("CACHE_TYPE", "memory"),
+        "max_size": int(os.getenv("CACHE_MAX_SIZE", "100")),
+        "ttl": int(os.getenv("CACHE_TTL", "600"))  # 10分钟
     },
-    "dialect": os.environ.get("DIALECT", "PostgreSQL"),
-    "language": os.environ.get("LANGUAGE", "zh")
+    "dialect": os.getenv("DIALECT", "PostgreSQL"),
+    "language": os.getenv("LANGUAGE", "zh")
 }

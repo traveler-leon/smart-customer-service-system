@@ -41,7 +41,6 @@ class GenericEmbedding(AsyncEmbeddingProvider):
         self.api_key = config.get("api_key", os.getenv("OPENAI_API_KEY"))
         self.dimensions = config.get("dimensions", 1536)
         self.max_tokens = config.get("max_tokens", 512)
-        self.api_version = config.get("api_version", None)  # 用于Azure OpenAI
         self.client = None
         
         # 创建logger
@@ -59,10 +58,6 @@ class GenericEmbedding(AsyncEmbeddingProvider):
                 "api_key": self.api_key,
                 "base_url": self.base_url
             }
-            
-            # 对于Azure OpenAI，添加api_version
-            if self.api_version:
-                client_params["api_version"] = self.api_version
                 
             self.client = AsyncOpenAI(**client_params)
             self.logger.debug(f"{self.provider_name}异步客户端已初始化")

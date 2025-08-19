@@ -20,7 +20,7 @@ from mem0.vector_stores.configs import VectorStoreConfig
 from mem0.llms.configs import LlmConfig
 from mem0.embeddings.configs import EmbedderConfig
 from langchain_openai import ChatOpenAI
-from agents.airport_service.core import structed_model
+from agents.airport_service.core import structed_model, emb_model
 from config.utils import config_manager
 from common.logging import get_logger
 
@@ -166,9 +166,6 @@ class MemoryManager:
             # 从配置获取向量存储参数
             chroma_config = config_manager.get_text2sql_config().get("storage", {})
             
-            # 从原有配置文件获取嵌入模型 (复用现有的)
-            from .memery.emb import embedder
-            
             # 对话记忆配置
             conversation_config = MemoryConfig(
                 llm=LlmConfig(provider="langchain", config={"model": structed_model}),
@@ -182,7 +179,7 @@ class MemoryManager:
                 ),
                 embedder=EmbedderConfig(
                     provider="langchain",
-                    config={"model": embedder}
+                    config={"model": emb_model}
                 ),
                 version="v1.1"
             )
@@ -201,7 +198,7 @@ class MemoryManager:
                 ),
                 embedder=EmbedderConfig(
                     provider="langchain",
-                    config={"model": embedder}
+                    config={"model": emb_model}
                 ),
                 version="v1.1"
             )

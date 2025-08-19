@@ -170,7 +170,6 @@ def memory_enabled_agent(application_id: str, agent_id: str):
 
 
 async def get_relevant_conversation_memories(
-    self,
     query: str,
     user_id: Optional[str] = None,
     application_id: Optional[str] = None,
@@ -201,7 +200,7 @@ async def get_relevant_conversation_memories(
         return relevant_memories
         
     except Exception as e:
-        logger.error(f"获取相关记忆失败: {self.agent_name} - {e}")
+        logger.error(f"获取相关记忆失败: {agent_id} - {e}")
         return []
 
 
