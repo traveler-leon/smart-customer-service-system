@@ -166,7 +166,7 @@ Our ultimate goal is to create an intelligent system capable of self-evolution a
 
 ```bash
 # Run the FastAPI application
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uv run main.py
 ```
 
 ## 🤝 Contributing
