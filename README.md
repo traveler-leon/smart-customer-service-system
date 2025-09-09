@@ -166,7 +166,7 @@
 
 ```bash
 # 运行 FastAPI 应用
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uv run main.py
 ```
 
 ## 🤝 贡献指南
