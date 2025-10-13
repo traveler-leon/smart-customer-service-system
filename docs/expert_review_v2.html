@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专家审核系统 v2.0 - 智能客服系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            background: #fafbfc;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .results-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .results-header {
+            background: #f8f9fa;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .results-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .results-count {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .batch-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .selected-info {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .batch-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .results-table th {
+            background: #f8f9fa;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .results-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f3f4;
+            vertical-align: top;
+        }
+
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .results-table tr.selected {
+            background: #e3f2fd;
+        }
+
+        .conversation-row {
+            transition: all 0.2s ease;
+        }
+
+        .conversation-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .meta-item {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .meta-item strong {
+            color: #495057;
+        }
+
+        .conversation-content {
+            max-width: 300px;
+        }
+
+        .query-text, .response-text {
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            border-left: 3px solid #dee2e6;
+        }
+
+        .query-text {
+            border-left-color: #3498db;
+        }
+
+        .response-text {
+            border-left-color: #27ae60;
+        }
+
+        .text-ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .review-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 200px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-large {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .score-input {
+            width: 70px;
+            padding: 0.4rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .correction-input {
+            width: 100%;
+            min-height: 60px;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 0.85rem;
+            font-family: inherit;
+        }
+
+        .notes-input {
+            width: 100%;
+            padding: 0.4rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 4px;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .page-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .page-btn:hover {
+            background: #e9ecef;
+        }
+
+        .page-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .search-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .search-section, .results-section {
+                padding: 1rem;
+            }
+            
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-table {
+                font-size: 0.8rem;
+            }
+            
+            .results-table th,
+            .results-table td {
+                padding: 0.5rem;
+            }
+        }
+
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 专家审核系统 v2.0</h1>
+        <p>智能对话质量审核与管理平台</p>
+    </div>
+
+    <div class="container">
+        <!-- 查询搜索区域 -->
+        <div class="search-section">
+            <div class="search-title">
+                🔍 查询条件
+            </div>
+            
+            <div class="search-grid">
+                <div class="form-group">
+                    <label for="userId">用户ID</label>
+                    <input type="text" id="userId" placeholder="输入用户ID进行筛选">
+                </div>
+                
+                <div class="form-group">
+                    <label for="agentId">智能体ID</label>
+                    <input type="text" id="agentId" placeholder="输入智能体ID进行筛选">
+                </div>
+                
+                <div class="form-group">
+                    <label for="runId">会话ID</label>
+                    <input type="text" id="runId" placeholder="输入会话ID进行筛选">
+                </div>
+                
+                <div class="form-group">
+                    <label for="applicationId">应用ID</label>
+                    <input type="text" id="applicationId" placeholder="输入应用ID进行筛选">
+                </div>
+                
+                <div class="form-group">
+                    <label for="expertVerified">审核状态</label>
+                    <select id="expertVerified">
+                        <option value="">全部状态</option>
+                        <option value="false">待审核</option>
+                        <option value="true">已审核</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="startDate">开始日期</label>
+                    <input type="date" id="startDate">
+                </div>
+                
+                <div class="form-group">
+                    <label for="endDate">结束日期</label>
+                    <input type="date" id="endDate">
+                </div>
+                
+                <div class="form-group">
+                    <label for="limit">返回数量</label>
+                    <select id="limit">
+                        <option value="50">50条</option>
+                        <option value="100">100条</option>
+                        <option value="200">200条</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="search-actions">
+                <button class="btn btn-secondary" onclick="clearFilters()">
+                    🗑️ 清空条件
+                </button>
+                <button class="btn btn-primary" onclick="searchConversations()">
+                    🔍 开始查询
+                </button>
+            </div>
+        </div>
+
+        <!-- 查询结果区域 -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <div>
+                    <div class="results-title">📋 查询结果</div>
+                    <div class="results-count" id="resultsCount">共 0 条记录</div>
+                </div>
+                
+                <div class="batch-actions">
+                    <div class="selected-info">
+                        已选择 <span id="selectedCount">0</span> 条记录
+                    </div>
+                    <div class="batch-controls">
+                        <label>批量评分:</label>
+                        <input type="number" id="batchScore" class="score-input" min="0" max="1" step="0.1" value="0.9">
+                        <button class="btn btn-success btn-sm" onclick="batchApprove()">
+                            ✅ 批量通过
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="batchReject()">
+                            ❌ 批量拒绝
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">选择</th>
+                            <th width="15%">基本信息</th>
+                            <th width="35%">对话内容</th>
+                            <th width="10%">当前状态</th>
+                            <th width="35%">审核操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <!-- 动态内容 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <!-- 分页控件 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let conversations = [];
+        let selectedConversations = new Set();
+        let currentPage = 1;
+        let itemsPerPage = 20;
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认日期范围（最近30天）
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+        });
+
+        // 清空搜索条件
+        function clearFilters() {
+            document.getElementById('userId').value = '';
+            document.getElementById('agentId').value = '';
+            document.getElementById('runId').value = '';
+            document.getElementById('applicationId').value = '';
+            document.getElementById('expertVerified').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('limit').value = '50';
+        }
+
+        // 执行搜索
+        async function searchConversations() {
+            const params = new URLSearchParams();
+            
+            // 收集搜索条件
+            const userId = document.getElementById('userId').value.trim();
+            const agentId = document.getElementById('agentId').value.trim();
+            const runId = document.getElementById('runId').value.trim();
+            const applicationId = document.getElementById('applicationId').value.trim();
+            const expertVerified = document.getElementById('expertVerified').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const limit = document.getElementById('limit').value;
+
+            // 构建查询参数
+            if (userId) params.append('user_id', userId);
+            if (agentId) params.append('agent_id', agentId);
+            if (runId) params.append('run_id', runId);
+            if (applicationId) params.append('application_id', applicationId);
+            if (expertVerified) params.append('expert_verified', expertVerified);
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (limit) params.append('limit', limit);
+
+            try {
+                showLoading();
+                
+                const response = await fetch(`/memory/v1/conversations/history?${params}`);
+                
+                // 检查HTTP状态
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('API响应数据:', data); // 调试信息
+
+                if (data.ret_code === '000000') {
+                    conversations = data.data.conversations || [];
+                    console.log('解析到的对话数据:', conversations); // 调试信息
+                    currentPage = 1;
+                    selectedConversations.clear();
+                    renderResults();
+                    showResults();
+                } else {
+                    showError(`查询失败: ${data.ret_msg}`);
+                }
+            } catch (error) {
+                console.error('查询失败详细信息:', error);
+                showError(`网络错误: ${error.message}，请稍后重试`);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.style.display = 'block';
+            
+            // 只替换表格内容，保留DOM结构
+            const tableBody = document.getElementById('resultsTableBody');
+            const resultsCount = document.getElementById('resultsCount');
+            const pagination = document.getElementById('pagination');
+            
+            if (resultsCount) resultsCount.textContent = '查询中...';
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="loading">🔍 正在查询中...</td>
+                    </tr>
+                `;
+            }
+            if (pagination) pagination.innerHTML = '';
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.style.display = 'block';
+            
+            // 只替换表格内容，保留DOM结构
+            const tableBody = document.getElementById('resultsTableBody');
+            const resultsCount = document.getElementById('resultsCount');
+            const pagination = document.getElementById('pagination');
+            
+            if (resultsCount) resultsCount.textContent = '查询失败';
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="error">❌ ${message}</td>
+                    </tr>
+                `;
+            }
+            if (pagination) pagination.innerHTML = '';
+        }
+
+        // 显示结果区域
+        function showResults() {
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        // 渲染查询结果
+        function renderResults() {
+            try {
+                const tableBody = document.getElementById('resultsTableBody');
+                const resultsCount = document.getElementById('resultsCount');
+                
+                // 检查DOM元素是否存在
+                if (!tableBody) {
+                    console.error('找不到resultsTableBody元素');
+                    return;
+                }
+                
+                // 更新计数
+                if (resultsCount) {
+                    resultsCount.textContent = `共 ${conversations.length} 条记录`;
+                } else {
+                    console.warn('找不到resultsCount元素');
+                }
+                
+                if (conversations.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <h3>🔍 没有找到符合条件的记录</h3>
+                                <p>请尝试调整查询条件或扩大时间范围</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // 分页处理
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pageConversations = conversations.slice(startIndex, endIndex);
+
+                // 渲染表格行
+                const rowsHTML = pageConversations.map(conv => {
+                    try {
+                        return createConversationRow(conv);
+                    } catch (rowError) {
+                        console.error('渲染对话行失败:', rowError, conv);
+                        return `<tr><td colspan="5" style="color: red;">渲染此记录时出错: ${conv.memory_id || 'unknown'}</td></tr>`;
+                    }
+                }).join('');
+                
+                tableBody.innerHTML = rowsHTML;
+                
+                // 渲染分页控件
+                renderPagination();
+                
+                // 更新选择计数
+                updateSelectedCount();
+            } catch (error) {
+                console.error('renderResults函数出错:', error);
+                showError(`数据渲染失败: ${error.message}`);
+            }
+        }
+
+        // 创建对话行
+        function createConversationRow(conv) {
+            const memoryId = conv.memory_id || conv.id || 'unknown';
+            const isSelected = selectedConversations.has(memoryId);
+            const isApproved = conv.expert_verified || false;
+            
+            // 安全的字符串处理函数
+            const safeText = (text) => {
+                if (text === null || text === undefined) return 'N/A';
+                return String(text).replace(/`/g, '\\`').replace(/\$/g, '\\$');
+            };
+            
+            return `
+                <tr class="conversation-row ${isSelected ? 'selected' : ''}" data-memory-id="${memoryId}">
+                    <td>
+                        <input type="checkbox" class="checkbox-large" 
+                               onchange="toggleSelection('${memoryId}')" 
+                               ${isSelected ? 'checked' : ''}
+                               ${isApproved ? 'disabled' : ''}>
+                    </td>
+                    <td>
+                        <div class="conversation-meta">
+                            <div class="meta-item"><strong>记忆ID:</strong> ${safeText(memoryId)}</div>
+                            <div class="meta-item"><strong>用户ID:</strong> ${safeText(conv.user_id)}</div>
+                            <div class="meta-item"><strong>会话ID:</strong> ${safeText(conv.run_id || conv.thread_id)}</div>
+                            <div class="meta-item"><strong>智能体:</strong> ${safeText(conv.agent_id || conv.agent_name)}</div>
+                            <div class="meta-item"><strong>应用ID:</strong> ${safeText(conv.application_id)}</div>
+                            <div class="meta-item"><strong>时间:</strong> ${formatDateTime(conv.created_at)}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="conversation-content">
+                            <div class="query-text">
+                                <strong>用户询问:</strong><br>
+                                <div class="tooltip">
+                                    <div class="text-ellipsis">${safeText(conv.query)}</div>
+                                    <span class="tooltiptext">${safeText(conv.query)}</span>
+                                </div>
+                            </div>
+                            <div class="response-text">
+                                <strong>系统回复:</strong><br>
+                                <div class="tooltip">
+                                    <div class="text-ellipsis">${safeText(conv.response)}</div>
+                                    <span class="tooltiptext">${safeText(conv.response)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        ${isApproved ? 
+                            `<div class="status-badge status-approved">
+                                ✅ 已审核<br>
+                                <small>评分: ${safeText(conv.quality_score)}</small>
+                            </div>` :
+                            `<div class="status-badge status-pending">⏳ 待审核</div>`
+                        }
+                    </td>
+                    <td>
+                        ${isApproved ? 
+                            `<div style="color: #6c757d; font-size: 0.9rem;">
+                                审核时间: ${formatDateTime(conv.updated_at)}<br>
+                                ${conv.review_notes ? `备注: ${safeText(conv.review_notes)}` : ''}
+                            </div>` :
+                            createReviewControls(memoryId, conv)
+                        }
+                    </td>
+                </tr>
+            `;
+        }
+
+        // 创建审核控件
+        function createReviewControls(memoryId, conv) {
+            return `
+                <div class="review-controls">
+                    <div class="control-row">
+                        <label style="font-size: 0.85rem;">质量评分:</label>
+                        <input type="number" class="score-input" id="score_${memoryId}" 
+                               min="0" max="1" step="0.1" value="0.9">
+                    </div>
+                    
+                    <div class="control-row" style="margin-top: 0.5rem;">
+                        <label style="font-size: 0.85rem;">回复纠正:</label>
+                    </div>
+                    <textarea class="correction-input" id="correction_${memoryId}" 
+                              placeholder="如需修正回复内容，请在此输入..."></textarea>
+                    
+                    <div class="control-row" style="margin-top: 0.5rem;">
+                        <input type="text" class="notes-input" id="notes_${memoryId}" 
+                               placeholder="审核备注（可选）">
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-success btn-sm" onclick="approveConversation('${memoryId}')">
+                            ✅ 通过
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectConversation('${memoryId}')">
+                            ❌ 拒绝
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleString('zh-CN');
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        // 切换选择状态
+        function toggleSelection(memoryId) {
+            if (selectedConversations.has(memoryId)) {
+                selectedConversations.delete(memoryId);
+            } else {
+                selectedConversations.add(memoryId);
+            }
+            
+            // 更新行样式
+            const row = document.querySelector(`tr[data-memory-id="${memoryId}"]`);
+            if (row) {
+                row.classList.toggle('selected', selectedConversations.has(memoryId));
+            }
+            
+            updateSelectedCount();
+        }
+
+        // 更新选择计数
+        function updateSelectedCount() {
+            const selectedCountElement = document.getElementById('selectedCount');
+            if (selectedCountElement) {
+                selectedCountElement.textContent = selectedConversations.size;
+            } else {
+                console.warn('找不到selectedCount元素');
+            }
+        }
+
+        // 根据memory_id获取对话数据
+        function getConversationByMemoryId(memoryId) {
+            return conversations.find(conv => {
+                const id = conv.memory_id || conv.id;
+                return id === memoryId;
+            });
+        }
+
+        // 单个审核通过
+        async function approveConversation(memoryId) {
+            const scoreInput = document.getElementById(`score_${memoryId}`);
+            const correctionInput = document.getElementById(`correction_${memoryId}`);
+            const notesInput = document.getElementById(`notes_${memoryId}`);
+            
+            const qualityScore = parseFloat(scoreInput.value);
+            if (isNaN(qualityScore) || qualityScore < 0 || qualityScore > 1) {
+                alert('请输入有效的质量评分 (0-1)');
+                return;
+            }
+
+            // 从对话数据中获取原始用户查询
+            const conversation = getConversationByMemoryId(memoryId);
+            if (!conversation) {
+                alert('❌ 无法找到对话数据');
+                return;
+            }
+
+            try {
+                const response = await fetch('/memory/v1/conversations/expert-review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        memory_id: memoryId,
+                        query: conversation.query || '',
+                        expert_approved: true,
+                        quality_score: qualityScore,
+                        corrected_response: correctionInput.value.trim() || null,
+                        review_notes: notesInput.value.trim() || null,
+                        expert_id: 'system'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.ret_code === '000000') {
+                    alert('✅ 审核通过成功！');
+                    searchConversations(); // 重新加载数据
+                } else {
+                    alert(`❌ 审核失败: ${data.ret_msg}`);
+                }
+            } catch (error) {
+                console.error('审核失败:', error);
+                alert('❌ 网络错误，请稍后重试');
+            }
+        }
+
+        // 单个审核拒绝
+        async function rejectConversation(memoryId) {
+            const notesInput = document.getElementById(`notes_${memoryId}`);
+            
+            // 从对话数据中获取原始用户查询
+            const conversation = getConversationByMemoryId(memoryId);
+            if (!conversation) {
+                alert('❌ 无法找到对话数据');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/memory/v1/conversations/expert-review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        memory_id: memoryId,
+                        query: conversation.query || '',
+                        expert_approved: false,
+                        quality_score: 0.0,
+                        corrected_response: null,
+                        review_notes: notesInput.value.trim() || '专家拒绝通过',
+                        expert_id: 'system'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.ret_code === '000000') {
+                    alert('❌ 审核拒绝成功！');
+                    searchConversations(); // 重新加载数据
+                } else {
+                    alert(`❌ 审核失败: ${data.ret_msg}`);
+                }
+            } catch (error) {
+                console.error('审核失败:', error);
+                alert('❌ 网络错误，请稍后重试');
+            }
+        }
+
+        // 批量审核通过
+        async function batchApprove() {
+            if (selectedConversations.size === 0) {
+                alert('请先选择要审核的对话');
+                return;
+            }
+
+            const batchScore = parseFloat(document.getElementById('batchScore').value);
+            if (isNaN(batchScore) || batchScore < 0 || batchScore > 1) {
+                alert('请输入有效的批量评分 (0-1)');
+                return;
+            }
+
+            if (!confirm(`确定要批量通过 ${selectedConversations.size} 条记录吗？`)) {
+                return;
+            }
+
+            try {
+                const reviewItems = Array.from(selectedConversations).map(memoryId => {
+                    const conversation = getConversationByMemoryId(memoryId);
+                    return {
+                        memory_id: memoryId,
+                        query: conversation ? conversation.query || '' : '',
+                        expert_approved: true,
+                        quality_score: batchScore,
+                        corrected_response: null,
+                        review_notes: '批量审核通过',
+                        expert_id: 'system'
+                    };
+                });
+
+                const response = await fetch('/memory/v1/conversations/batch-expert-review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        review_items: reviewItems
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.ret_code === '000000') {
+                    alert(`✅ 批量审核完成！成功: ${data.data.update_success}, 失败: ${data.data.update_failed}`);
+                    selectedConversations.clear();
+                    searchConversations(); // 重新加载数据
+                } else {
+                    alert(`❌ 批量审核失败: ${data.ret_msg}`);
+                }
+            } catch (error) {
+                console.error('批量审核失败:', error);
+                alert('❌ 网络错误，请稍后重试');
+            }
+        }
+
+        // 批量审核拒绝
+        async function batchReject() {
+            if (selectedConversations.size === 0) {
+                alert('请先选择要审核的对话');
+                return;
+            }
+
+            if (!confirm(`确定要批量拒绝 ${selectedConversations.size} 条记录吗？`)) {
+                return;
+            }
+
+            try {
+                const reviewItems = Array.from(selectedConversations).map(memoryId => {
+                    const conversation = getConversationByMemoryId(memoryId);
+                    return {
+                        memory_id: memoryId,
+                        query: conversation ? conversation.query || '' : '',
+                        expert_approved: false,
+                        quality_score: 0.0,
+                        corrected_response: null,
+                        review_notes: '批量审核拒绝',
+                        expert_id: 'system'
+                    };
+                });
+
+                const response = await fetch('/memory/v1/conversations/batch-expert-review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        review_items: reviewItems
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.ret_code === '000000') {
+                    alert(`❌ 批量拒绝完成！成功: ${data.data.update_success}, 失败: ${data.data.update_failed}`);
+                    selectedConversations.clear();
+                    searchConversations(); // 重新加载数据
+                } else {
+                    alert(`❌ 批量拒绝失败: ${data.ret_msg}`);
+                }
+            } catch (error) {
+                console.error('批量拒绝失败:', error);
+                alert('❌ 网络错误，请稍后重试');
+            }
+        }
+
+        // 渲染分页控件
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(conversations.length / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // 上一页
+            paginationHTML += `
+                <button class="page-btn" onclick="changePage(${currentPage - 1})" 
+                        ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
+            `;
+            
+            // 页码
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="page-btn active">${i}</button>`;
+                } else if (Math.abs(i - currentPage) <= 2 || i === 1 || i === totalPages) {
+                    paginationHTML += `<button class="page-btn" onclick="changePage(${i})">${i}</button>`;
+                } else if (Math.abs(i - currentPage) === 3) {
+                    paginationHTML += '<span>...</span>';
+                }
+            }
+            
+            // 下一页
+            paginationHTML += `
+                <button class="page-btn" onclick="changePage(${currentPage + 1})" 
+                        ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
+            `;
+            
+            pagination.innerHTML = paginationHTML;
+        }
+
+        // 切换页面
+        function changePage(page) {
+            const totalPages = Math.ceil(conversations.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            renderResults();
+        }
+    </script>
+</body>
+</html>
