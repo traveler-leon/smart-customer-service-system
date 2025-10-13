@@ -3,13 +3,13 @@
 # 网站基本信息
 title: "智能客服系统文档"
 description: "基于大语言模型的机场客户服务解决方案"
-url: "https://your-username.github.io"
+url: "https://traveler-leon.github.io"
 baseurl: "/smart-customer-service-system"
 
 # 作者信息
 author:
   name: "开发团队"
-  email: "team@example.com"
+  email: "leon1399@163.com"
 
 # 构建设置
 markdown: kramdown
@@ -52,18 +52,20 @@ locale: zh_CN
 
 # 社交链接
 social:
-  github: "your-username/smart-customer-service-system"
+  github: "traveler-leon/smart-customer-service-system"
 
 # 导航菜单
 navigation:
   - title: "首页"
     url: "/"
+  - title: "核心优势"
+    url: "/features.html"
+  - title: "评估体系"
+    url: "/evaluation.html"
+  - title: "专家审核"
+    url: "/expert-review.html"
   - title: "用户画像"
     url: "/user-profile.html"
-  - title: "API 文档"
-    url: "/api-docs.html"
-  - title: "系统架构"
-    url: "/architecture.html"
   - title: "智能记忆"
     url: "/memory-filter.html"
 
@@ -83,7 +85,7 @@ features:
     icon: "🏗️"
 
 # 版权信息
-copyright: "© 2024 智能客服系统. 版权所有."
+copyright: "© 2024 xtron. 版权所有."
 
 # Google Analytics (可选)
 # google_analytics: "G-XXXXXXXXXX"
