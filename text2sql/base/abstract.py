@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional, Union
 
 import pandas as pd
 from common.logging import get_logger
-from .interfaces import AsyncLLMProvider, AsyncVectorStore, AsyncDBConnector, AsyncMiddleware, AsyncEmbeddingProvider
+from .interfaces import AsyncLLMProvider, AsyncVectorStore, AsyncDBConnector, AsyncEmbeddingProvider
 import time
 from datetime import datetime, date
 from decimal import Decimal
@@ -19,14 +19,12 @@ class AsyncSmartSqlBase:
                  embedding_provider: Optional[AsyncEmbeddingProvider] = None,
                  vector_store: Optional[AsyncVectorStore] = None,
                  db_connector: Optional[AsyncDBConnector] = None,
-                 middlewares: List[AsyncMiddleware] = None,
                  config: Dict[str, Any] = None):
         
         self.llm_provider = llm_provider
         self.embedding_provider = embedding_provider
         self.vector_store = vector_store
         self.db_connector = db_connector
-        self.middlewares = middlewares or []
         self.config = config or {}
         self.dialect = self.config.get("dialect", "SQL")
         self.language = self.config.get("language", None)
@@ -62,21 +60,6 @@ class AsyncSmartSqlBase:
         """异步生成SQL查询"""
         logger.info(f"开始生成SQL，问题：{question}")
         
-        # 应用请求中间件
-        request = {'question': question, 'kwargs': kwargs}
-        for middleware in self.middlewares:
-            request = await middleware.process_request(request)
-        
-        # 检查中间件是否返回了缓存结果
-        if '__cached_result' in request:
-            cached_result = request['__cached_result']
-            # 返回SQL和缓存状态
-            if isinstance(cached_result, dict) and 'sql' in cached_result:
-                return cached_result['sql'], True  # True表示来自缓存
-            return cached_result, True
-        
-        question = request['question']
-        kwargs = request['kwargs']
         
         try:
             # 并行获取相关信息
@@ -144,31 +127,8 @@ class AsyncSmartSqlBase:
             sql = await self._extract_sql(llm_response)
             logger.info(f"提取的最终SQL: {sql}")
             
-            # 准备响应对象，包含原始问题和参数以便中间件处理
-            response = sql
-            
-            # 为中间件添加必要信息
-            if isinstance(response, dict):
-                response['__original_question'] = question
-                response['__original_kwargs'] = kwargs
-            elif isinstance(response, str):
-                # 如果是字符串结果，我们需要包装它
-                response = {
-                    'sql': response,
-                    '__original_question': question,
-                    '__original_kwargs': kwargs
-                }
-            
-            # 应用响应中间件
-            for middleware in self.middlewares:
-                response = await middleware.process_response(response)
-            
-            # 如果结果被包装成了字典，但原始期望是字符串，需要解包
-            if isinstance(response, dict) and 'sql' in response and not isinstance(sql, dict):
-                return response['sql'], False
-            
-            # 返回生成的SQL和缓存状态(非缓存)
-            return sql, False
+            # 返回生成的SQL
+            return sql,ddl_list
         except Exception as e:
             # 异步处理异常
             logger.error(f"SQL生成失败: {str(e)}", exc_info=True)
@@ -234,11 +194,14 @@ class AsyncSmartSqlBase:
 
 <constraints>
 1. 严格使用提供的数据库上下文中的表名和列名，不要创造不存在的元素
+2. 只能生成查询语句，不能生成插入、更新、删除语句
 2. 确保 SQL 语法符合指定的 {dialect} 方言规范
 3. 优先选择查询所需的最少列，避免不必要的 SELECT *
 4. 生成的查询必须是单一的、完整的、可执行的 SQL 语句
 5. 充分利用提供的示例和历史对话信息
 6. 确保查询逻辑准确反映用户的真实意图
+7. 如果用户查询具体的航班号，生成的 sql 中除了把航班号作为条件外，还需要把航班号作为查询字段。
+8. 如果用户当前提供的信息不足以生成SQL，一定不要强行生成SQL（特别不能生成查询所有航班明细的 sql）。而是返回空字符串。
 </constraints>
 
 <output_format>
@@ -372,15 +335,13 @@ SELECT column1, column2 FROM table_name WHERE condition;
         return tmp.copy()
 
     async def ask(self, question: str, **kwargs) -> Dict[str, Any]:
-        # 标记是否使用了缓存结果
-        used_cache = False
-        
         try:
-            # 使用generate_sql获取SQL (可能来自缓存)
-            sql, used_cache = await self.generate_sql(question=question, **kwargs)
+            # 使用generate_sql获取SQL
+            sql,ddl_list = await self.generate_sql(question=question, **kwargs)
             
             sql_result = {
                 'sql': sql,
+                'ddl': ddl_list,
                 'data': None,
                 'error': None
             }
@@ -396,12 +357,6 @@ SELECT column1, column2 FROM table_name WHERE condition;
             
             # 检查SQL执行结果
             if isinstance(result, dict) and result.get('error'):
-                # SQL执行错误，如果是缓存结果则清除
-                if used_cache:
-                    # 调用缓存清理方法
-                    await self._clear_cache_for_question(question)
-                    logger.warning(f"清除问题的错误SQL缓存: {question}")
-                
                 sql_result['data'] = result
             else:
                 # 在这里应用序列化函数
@@ -412,6 +367,7 @@ SELECT column1, column2 FROM table_name WHERE condition;
             return {
                 'error': str(e),
                 'sql': None,
+                'ddl': None,
                 'data': None,
             }
 
@@ -480,11 +436,6 @@ SELECT column1, column2 FROM table_name WHERE condition;
         
         return results
 
-    async def _clear_cache_for_question(self, question: str):
-        """清除指定问题的缓存"""
-        for middleware in self.middlewares:
-            if hasattr(middleware, 'clear_cache'):
-                await middleware.clear_cache(question)
 
     def get_prompt_config_example(self):
         """获取 prompt 配置示例，帮助用户理解如何自定义 prompt"""
@@ -507,6 +458,7 @@ SELECT column1, column2 FROM table_name WHERE condition;
 1. 优先理解业务需求背后的真实意图
 2. 生成高效、可读性强的 SQL 查询
 3. 确保数据准确性和查询性能
+4. 尽量查出航班号字段信息。
 4. 遵循企业数据安全和隐私规范
 </guidelines>
 

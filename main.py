@@ -8,8 +8,9 @@ import warnings
 
 from agents.airport_service import graph_manager, build_airport_service_graph,build_question_recommend_graph,build_business_recommend_graph
 from agents.airport_service.context_engineering.scheduler import start_memory_scheduler, stop_memory_scheduler
+from agents.airport_service.context_engineering.memory_manager import memory_manager
 from common.logging import setup_logger, get_logger
-from config.factory import get_logger_config, get_app_config, get_directories_config, get_graph_config
+from config.factory import get_logger_config, get_app_config, get_directories_config
 from api.router import api_router  # 导入API路由器
 
 warnings.filterwarnings("ignore")
@@ -49,20 +50,20 @@ async def lifespan(app: FastAPI):
         raise
     
     # 启动记忆管理调度器
-    try:
-        start_memory_scheduler()
-        logger.info("记忆管理调度器已启动")
-    except Exception as e:
-        logger.error(f"启动记忆管理调度器失败：{e}", exc_info=True)
+    # try:
+    #     start_memory_scheduler()
+    #     logger.info("记忆管理调度器已启动")
+    # except Exception as e:
+    #     logger.error(f"启动记忆管理调度器失败：{e}", exc_info=True)
     
     logger.info("Application started")
     yield
     # 关闭事件
-    try:
-        stop_memory_scheduler()
-        logger.info("记忆管理调度器已停止")
-    except Exception as e:
-        logger.error(f"停止记忆管理调度器失败：{e}", exc_info=True)
+    # try:
+    #     stop_memory_scheduler()
+    #     logger.info("记忆管理调度器已停止")
+    # except Exception as e:
+    #     logger.error(f"停止记忆管理调度器失败：{e}", exc_info=True)
     
     logger.info("Application shutting down")
 

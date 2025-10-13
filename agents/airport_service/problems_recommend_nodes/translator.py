@@ -7,7 +7,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
-from langgraph.store.base import BaseStore
 from agents.airport_service.state import AirportMainServiceState, TranslationResult
 from trustcall import create_extractor
 from langchain_core.messages import RemoveMessage,HumanMessage,AIMessage

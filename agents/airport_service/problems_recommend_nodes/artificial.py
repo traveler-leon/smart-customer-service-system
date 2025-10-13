@@ -3,8 +3,6 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from langchain_core.runnables import RunnableConfig
-from langgraph.store.base import BaseStore
-from langchain_core.messages import AIMessage
 import torch
 from transformers import pipeline
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -100,7 +98,7 @@ def should_transfer(state: QuestionRecommendState,user_query:str):
     return  emotion_result
     
 
-async def detect_emotion(state: QuestionRecommendState, config: RunnableConfig, store: BaseStore):
+async def detect_emotion(state: QuestionRecommendState, config: RunnableConfig ):
     """
     情感识别节点
     

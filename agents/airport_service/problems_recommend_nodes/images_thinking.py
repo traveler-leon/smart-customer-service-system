@@ -8,7 +8,7 @@ from agents.airport_service.state import QuestionRecommendState
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from agents.airport_service.core import filter_messages_for_llm, max_msg_len,image_model
-from langchain_core.messages import AIMessage,RemoveMessage,HumanMessage
+from langchain_core.messages import AIMessage,RemoveMessage
 from common.logging import get_logger
 from agents.airport_service.context_engineering.prompts import question_recommend_prompts
 

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA接口测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            background: white;
+            margin-bottom: 20px;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 4px 8px rgba(116, 185, 255, 0.3);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .qa-list {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fafafa;
+        }
+
+        .qa-item {
+            background: white;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .qa-item h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .qa-item p {
+            margin-bottom: 5px;
+        }
+
+        .qa-item .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .delete-btn:hover {
+            background: #ee5a52;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats h3 {
+            margin-bottom: 10px;
+        }
+
+        .count {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>QA接口测试页面</h1>
+            <p>测试专家QA的增删改查功能</p>
+        </div>
+
+        <div class="stats">
+            <h3>当前QA统计</h3>
+            <div class="count" id="qaCount">-</div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <!-- 添加QA部分 -->
+                <div class="section">
+                    <h2>📝 添加QA对</h2>
+                    <div class="form-group">
+                        <label for="question">问题 *</label>
+                        <textarea id="question" placeholder="请输入问题内容"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="answer">答案 *</label>
+                        <textarea id="answer" placeholder="请输入答案内容"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="expertId">专家ID</label>
+                        <input type="text" id="expertId" placeholder="例如: expert_001">
+                    </div>
+                    <div class="form-group">
+                        <label for="tags">标签 (用逗号分隔)</label>
+                        <input type="text" id="tags" placeholder="例如: 值机,登机,服务">
+                    </div>
+                    <div class="form-group">
+                        <label for="images">图片链接 (用逗号分隔)</label>
+                        <input type="text" id="images" placeholder="例如: http://example.com/image1.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="services">服务 (用逗号分隔)</label>
+                        <input type="text" id="services" placeholder="例如: 机场服务,客户服务">
+                    </div>
+                    <button class="btn" onclick="addQA()">添加QA对</button>
+                    <button class="btn btn-secondary" onclick="clearAddForm()">清空表单</button>
+                    <div id="addResult" class="result" style="display: none;"></div>
+                </div>
+
+                <!-- 批量添加QA部分 -->
+                <div class="section">
+                    <h2>📋 批量添加QA对</h2>
+                    <div class="form-group">
+                        <label for="batchQA">批量QA (JSON格式)</label>
+                        <textarea id="batchQA" placeholder='[{"question":"问题1","answer":"答案1","tags":["标签1"],"images":[],"services":[],"extra_fields":{"expert_id":"expert_001"}}]' style="min-height: 150px;"></textarea>
+                    </div>
+                    <button class="btn" onclick="addBatchQA()">批量添加</button>
+                    <button class="btn btn-secondary" onclick="fillSampleBatch()">填充示例数据</button>
+                    <div id="batchResult" class="result" style="display: none;"></div>
+                </div>
+            </div>
+
+            <div class="col">
+                <!-- 获取所有QA部分 -->
+                <div class="section">
+                    <h2>📚 所有QA列表</h2>
+                    <button class="btn" onclick="getAllQA()">刷新QA列表</button>
+                    <button class="btn btn-secondary" onclick="exportQA()">导出为JSON</button>
+                    <div class="loading" id="loading">正在加载...</div>
+                    <div id="qaList" class="qa-list" style="display: none;"></div>
+                    <div id="getAllResult" class="result" style="display: none;"></div>
+                </div>
+
+                <!-- 系统信息部分 -->
+                <div class="section">
+                    <h2>🔧 系统信息</h2>
+                    <button class="btn btn-secondary" onclick="getSystemInfo()">获取系统信息</button>
+                    <button class="btn btn-secondary" onclick="pingSystem()">健康检查</button>
+                    <div id="systemResult" class="result" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/text2qa';
+        let allQAData = [];
+
+        // 页面加载时自动获取QA列表
+        window.onload = function() {
+            getAllQA();
+            getSystemInfo();
+        };
+
+        // 添加单个QA
+        async function addQA() {
+            const question = document.getElementById('question').value.trim();
+            const answer = document.getElementById('answer').value.trim();
+            
+            if (!question || !answer) {
+                showResult('addResult', '请填写问题和答案', 'error');
+                return;
+            }
+
+            const expertId = document.getElementById('expertId').value.trim();
+            const tags = document.getElementById('tags').value.trim().split(',').filter(t => t.trim()).map(t => t.trim());
+            const images = document.getElementById('images').value.trim().split(',').filter(i => i.trim()).map(i => i.trim());
+            const services = document.getElementById('services').value.trim().split(',').filter(s => s.trim()).map(s => s.trim());
+
+            const qaData = {
+                question: question,
+                answer: answer,
+                tags: tags,
+                images: images,
+                services: services,
+                extra_fields: {
+                    expert_id: expertId || '',
+                    application_id: '主智能客服'
+                }
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/qa`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(qaData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('addResult', `添加成功！\n专家记忆ID: ${result.data.expert_memory_id}\nRedis ID: ${result.data.redis_qa_id}`, 'success');
+                    clearAddForm();
+                    getAllQA(); // 刷新列表
+                } else {
+                    showResult('addResult', `添加失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('addResult', `请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 批量添加QA
+        async function addBatchQA() {
+            const batchText = document.getElementById('batchQA').value.trim();
+            
+            if (!batchText) {
+                showResult('batchResult', '请输入批量QA数据', 'error');
+                return;
+            }
+
+            try {
+                const qaList = JSON.parse(batchText);
+                
+                const batchData = {
+                    qa_pairs: qaList
+                };
+
+                const response = await fetch(`${API_BASE}/qa/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(batchData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('batchResult', `批量添加完成！\n成功: ${result.data.success_count}\n失败: ${result.data.failed_count}`, 'success');
+                    getAllQA(); // 刷新列表
+                } else {
+                    showResult('batchResult', `批量添加失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('batchResult', `数据格式错误或请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 获取所有QA
+        async function getAllQA() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('qaList').style.display = 'none';
+            document.getElementById('getAllResult').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE}/qa`);
+                const result = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (result.success) {
+                    allQAData = result.data || [];
+                    displayQAList(allQAData);
+                    updateQACount(allQAData.length);
+                    showResult('getAllResult', `获取成功，共 ${allQAData.length} 条QA`, 'success');
+                } else {
+                    showResult('getAllResult', `获取失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                showResult('getAllResult', `请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 删除QA
+        async function deleteQA(qaId, question) {
+            if (!confirm('确定要删除这个QA对吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/qa`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: qaId,
+                        query: question
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('删除成功！');
+                    getAllQA(); // 刷新列表
+                } else {
+                    alert(`删除失败: ${result.message}`);
+                }
+            } catch (error) {
+                alert(`请求失败: ${error.message}`);
+            }
+        }
+
+        // 显示QA列表
+        function displayQAList(qaList) {
+            const qaListDiv = document.getElementById('qaList');
+            
+            if (qaList.length === 0) {
+                qaListDiv.innerHTML = '<p style="text-align: center; color: #666;">暂无QA数据</p>';
+            } else {
+                qaListDiv.innerHTML = qaList.map(qa => `
+                    <div class="qa-item">
+                        <button class="delete-btn" onclick="deleteQA('${qa.id}', '${qa.question.replace(/'/g, "\\'")}')">删除</button>
+                        <h4>问题: ${escapeHtml(qa.question)}</h4>
+                        <p><strong>答案:</strong> ${escapeHtml(qa.answer)}</p>
+                        <p><strong>专家ID:</strong> ${qa.extra_fields?.expert_id || '无'}</p>
+                        <p><strong>应用ID:</strong> ${qa.extra_fields?.application_id || '无'}</p>
+                        <p><strong>图片:</strong> ${qa.images || '无'}</p>
+                        <p><strong>记忆ID:</strong> ${qa.id}</p>
+                        ${qa.tags && qa.tags.length > 0 ? `
+                            <div class="tags">
+                                ${qa.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${qa.services && qa.services.length > 0 ? `
+                            <p><strong>服务:</strong> ${qa.services.join(', ')}</p>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            qaListDiv.style.display = 'block';
+        }
+
+        // 获取系统信息
+        async function getSystemInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/count`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('systemResult', `系统统计信息:\n总QA数量: ${result.data.total_count}\n专家库数量: ${result.data.expert_count}\nRedis数量: ${result.data.redis_count}`, 'success');
+                } else {
+                    showResult('systemResult', `获取系统信息失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('systemResult', `请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 健康检查
+        async function pingSystem() {
+            try {
+                const response = await fetch(`${API_BASE}/ping`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const healthInfo = result.data;
+                    showResult('systemResult', `健康检查结果:\n整体健康: ${healthInfo.overall_health ? '正常' : '异常'}\n专家库: ${healthInfo.expert_memory_alive ? '正常' : '异常'}\nRedis: ${healthInfo.redis_alive ? '正常' : '异常'}`, healthInfo.overall_health ? 'success' : 'error');
+                } else {
+                    showResult('systemResult', `健康检查失败: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('systemResult', `请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 导出QA为JSON
+        function exportQA() {
+            if (allQAData.length === 0) {
+                alert('没有数据可导出');
+                return;
+            }
+
+            const dataStr = JSON.stringify(allQAData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `qa_export_${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+        }
+
+        // 填充示例数据
+        function fillSampleBatch() {
+            const sampleData = [
+                {
+                    "question": "如何办理登机手续？",
+                    "answer": "您可以通过以下方式办理登机手续：1. 网上值机 2. 手机App值机 3. 机场自助值机 4. 人工柜台值机",
+                    "tags": ["值机", "登机", "服务流程"],
+                    "images": ["https://example.com/checkin.jpg"],
+                    "services": ["机场服务", "客户服务"],
+                    "extra_fields": {"expert_id": "expert_001"}
+                },
+                {
+                    "question": "可以携带多少行李？",
+                    "answer": "行李限制因航空公司和舱位而异。一般经济舱可免费托运20公斤行李，商务舱30公斤，头等舱40公斤。随身携带行李通常限制在7公斤以内。",
+                    "tags": ["行李", "托运", "限制"],
+                    "images": [],
+                    "services": ["行李服务"],
+                    "extra_fields": {"expert_id": "expert_002"}
+                },
+                {
+                    "question": "航班延误怎么办？",
+                    "answer": "航班延误时：1. 保持冷静，关注航空公司通知 2. 了解延误原因和预计起飞时间 3. 申请餐食或住宿补偿 4. 如需要可申请改签或退票",
+                    "tags": ["延误", "补偿", "改签"],
+                    "images": [],
+                    "services": ["客户服务", "投诉处理"],
+                    "extra_fields": {"expert_id": "expert_003"}
+                }
+            ];
+            
+            document.getElementById('batchQA').value = JSON.stringify(sampleData, null, 2);
+        }
+
+        // 清空添加表单
+        function clearAddForm() {
+            document.getElementById('question').value = '';
+            document.getElementById('answer').value = '';
+            document.getElementById('expertId').value = '';
+            document.getElementById('tags').value = '';
+            document.getElementById('images').value = '';
+            document.getElementById('services').value = '';
+        }
+
+        // 显示结果
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        // 更新QA计数
+        function updateQACount(count) {
+            document.getElementById('qaCount').textContent = count;
+        }
+
+        // 转义HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

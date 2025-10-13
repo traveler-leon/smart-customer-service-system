@@ -12,17 +12,16 @@ logger_config = get_logger_config("agents")
 setup_logger(**logger_config)
 logger = get_logger("agents.tools")
 
-from .airport import airport_knowledge_query
-from .flight import flight_info_query
-from .chit import chitchat_query
-from .business import business_handler,wheelchair_rental_tool
+from .airport import airport_knowledge_query2docs,airport_knowledge_query2docs_main
+from .flight import flight_info_query2docs,get_text2sql_instance
+from .business import wheelchair_rental
 
 logger.info("工具集模块初始化完成")
 
 __all__ = [
-    "airport_knowledge_query"
-    , "flight_info_query"
-    , "chitchat_query"
-    , "business_handler"
-    , "wheelchair_rental_tool"
+    "airport_knowledge_query2docs"
+    , "airport_knowledge_query2docs_main"
+    , "get_text2sql_instance"
+    , "flight_info_query2docs"
+    , "wheelchair_rental"
 ]

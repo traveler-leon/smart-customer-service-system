@@ -99,18 +99,6 @@ class AsyncDBConnector(ABC):
         """异步关闭数据库连接"""
         pass
 
-class AsyncMiddleware(ABC):
-    """异步中间件接口"""
-    
-    @abstractmethod
-    async def process_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """异步处理请求"""
-        pass
-    
-    @abstractmethod
-    async def process_response(self, response: Any) -> Any:
-        """异步处理响应"""
-        pass
 
 class AsyncPlugin(ABC):
     """异步插件接口"""

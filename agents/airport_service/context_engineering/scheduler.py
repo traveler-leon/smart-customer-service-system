@@ -1,6 +1,7 @@
 """
 记忆管理定时任务调度器
-负责用户画像的异步提取和更新
+负责每日画像聚合和深度画像分析的定时调度
+注意：会话画像由前端主动触发，不需要定时调度
 """
 import asyncio
 from datetime import datetime, timedelta
@@ -16,12 +17,19 @@ logger = get_logger("memory_scheduler")
 
 
 class MemoryScheduler:
-    """记忆管理定时任务调度器"""
+    """
+    记忆管理定时任务调度器
+    
+    功能：
+    - 每日凌晨2点：执行每日画像聚合
+    - 每周一凌晨3点：执行深度画像分析
+    - 会话画像不在此处调度，由前端主动触发
+    """
     
     def __init__(self):
         self.is_running = False
         self.scheduler_thread = None
-        self.processed_users: Set[str] = set()  # 今日已处理的用户
+        self.processed_users: Set[str] = set()  # 今日已处理的用户（防重复）
         self.last_reset_date = datetime.now().date()
     
     def start(self):
@@ -50,16 +58,11 @@ class MemoryScheduler:
     
     def _setup_schedules(self):
         """配置定时任务"""
-        # 每天凌晨2点提取用户画像
-        schedule.every().day.at("02:00").do(self._schedule_daily_profile_extraction)
-        
-        # 每小时检查是否有新用户需要提取画像
-        schedule.every().hour.do(self._schedule_hourly_new_user_check)
-        
-        # 每天凌晨重置处理记录
+        schedule.every().day.at("02:00").do(self._schedule_daily_profile_aggregation)
+        schedule.every().monday.at("03:00").do(self._schedule_deep_insight_analysis)
         schedule.every().day.at("00:01").do(self._reset_daily_records)
         
-        logger.info("定时任务已配置")
+        logger.info("定时任务已配置：每日画像聚合(02:00)、深度画像分析(周一03:00)")
     
     def _run_scheduler(self):
         """运行调度器主循环"""
@@ -71,23 +74,23 @@ class MemoryScheduler:
                 logger.error(f"调度器运行异常: {e}", exc_info=True)
                 time.sleep(60)
     
-    def _schedule_daily_profile_extraction(self):
-        """调度每日用户画像提取任务"""
-        logger.info("开始每日用户画像提取任务")
+    def _schedule_daily_profile_aggregation(self):
+        """调度每日画像聚合任务"""
+        logger.info("开始每日画像聚合任务")
         
         # 在新线程中运行异步任务
         asyncio.run_coroutine_threadsafe(
-            self._daily_profile_extraction(),
+            self._daily_profile_aggregation(),
             asyncio.new_event_loop()
         )
     
-    def _schedule_hourly_new_user_check(self):
-        """调度每小时新用户检查任务"""
-        logger.info("开始每小时新用户检查任务")
+    def _schedule_deep_insight_analysis(self):
+        """调度深度画像分析任务"""
+        logger.info("开始深度画像分析任务")
         
         # 在新线程中运行异步任务
         asyncio.run_coroutine_threadsafe(
-            self._hourly_new_user_check(),
+            self._deep_insight_analysis(),
             asyncio.new_event_loop()
         )
     
@@ -99,16 +102,17 @@ class MemoryScheduler:
             self.last_reset_date = current_date
             logger.info("每日处理记录已重置")
     
-    async def _daily_profile_extraction(self):
-        """每日用户画像提取主逻辑"""
+    async def _daily_profile_aggregation(self):
+        """每日画像聚合主逻辑"""
         try:
-            # 获取需要更新画像的用户列表
-            users_to_process = await self._get_users_for_profile_update()
+            # 获取需要进行每日聚合的用户列表
+            users_to_process = await self._get_users_for_daily_aggregation()
             
-            logger.info(f"需要处理的用户数量: {len(users_to_process)}")
+            logger.info(f"需要进行每日聚合的用户数量: {len(users_to_process)}")
             
             success_count = 0
             error_count = 0
+            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
             
             for user_id in users_to_process:
                 if user_id in self.processed_users:
@@ -116,180 +120,246 @@ class MemoryScheduler:
                     continue
                 
                 try:
-                    # 提取用户画像
-                    await self._extract_user_profile_safe(user_id)
-                    self.processed_users.add(user_id)
-                    success_count += 1
+                    # 触发每日画像聚合
+                    result = await memory_manager.trigger_daily_profile_aggregation(
+                        application_id="airport_service",
+                        user_id=user_id,
+                        date=yesterday
+                    )
+                    
+                    if result and result.get("success"):
+                        self.processed_users.add(user_id)
+                        success_count += 1
+                        logger.info(f"用户 {user_id} 每日画像聚合成功")
+                    else:
+                        error_count += 1
+                        logger.warning(f"用户 {user_id} 每日画像聚合失败: {result.get('error') if result else '未知错误'}")
                     
                     # 避免过于频繁的处理
                     await asyncio.sleep(1)
                     
                 except Exception as e:
-                    logger.error(f"用户 {user_id} 画像提取失败: {e}")
+                    logger.error(f"用户 {user_id} 每日画像聚合异常: {e}")
                     error_count += 1
             
-            logger.info(f"每日用户画像提取完成: 成功 {success_count}, 失败 {error_count}")
+            logger.info(f"每日画像聚合完成: 成功 {success_count}, 失败 {error_count}")
             
         except Exception as e:
-            logger.error(f"每日用户画像提取任务异常: {e}", exc_info=True)
+            logger.error(f"每日画像聚合任务异常: {e}", exc_info=True)
     
-    async def _hourly_new_user_check(self):
-        """每小时新用户检查逻辑"""
+    async def _deep_insight_analysis(self):
+        """深度画像分析主逻辑"""
         try:
-            # 获取最近一小时有对话的用户
-            recent_users = await self._get_recent_active_users(hours=1)
+            # 获取需要进行深度分析的用户列表
+            users_to_process = await self._get_users_for_deep_analysis()
             
-            new_users_to_process = []
-            for user_id in recent_users:
-                if user_id not in self.processed_users:
-                    # 检查用户是否有足够的对话历史
-                    conversation_count = await self._get_user_conversation_count(user_id)
-                    if conversation_count >= 5:  # 至少5次对话才提取画像
-                        new_users_to_process.append(user_id)
+            logger.info(f"需要进行深度分析的用户数量: {len(users_to_process)}")
             
-            if new_users_to_process:
-                logger.info(f"发现 {len(new_users_to_process)} 个新用户需要提取画像")
-                
-                for user_id in new_users_to_process:
-                    try:
-                        await self._extract_user_profile_safe(user_id)
-                        self.processed_users.add(user_id)
-                        await asyncio.sleep(1)
-                    except Exception as e:
-                        logger.error(f"新用户 {user_id} 画像提取失败: {e}")
+            success_count = 0
+            error_count = 0
+            
+            for user_id in users_to_process:
+                try:
+                    # 触发深度洞察分析
+                    result = await memory_manager.trigger_deep_insight_analysis(
+                        user_id=user_id,
+                        application_id="airport_service",
+                        days=30
+                    )
+                    
+                    if result and result.get("success"):
+                        success_count += 1
+                        logger.info(f"用户 {user_id} 深度画像分析成功")
+                    else:
+                        error_count += 1
+                        logger.warning(f"用户 {user_id} 深度画像分析失败: {result.get('error') if result else '未知错误'}")
+                    
+                    # 避免过于频繁的处理
+                    await asyncio.sleep(2)
+                    
+                except Exception as e:
+                    logger.error(f"用户 {user_id} 深度画像分析异常: {e}")
+                    error_count += 1
+            
+            logger.info(f"深度画像分析完成: 成功 {success_count}, 失败 {error_count}")
             
         except Exception as e:
-            logger.error(f"每小时新用户检查任务异常: {e}", exc_info=True)
+            logger.error(f"深度画像分析任务异常: {e}", exc_info=True)
     
-    async def _get_users_for_profile_update(self) -> list:
+    async def _get_users_for_daily_aggregation(self) -> list:
         """
-        获取需要更新画像的用户列表
+        获取需要进行每日聚合的用户列表
         
         Returns:
             用户ID列表
         """
         try:
-            # 这里需要根据实际数据源获取用户列表
-            # 可以从对话历史中获取最近活跃的用户
-            return await self._get_recent_active_users(hours=24)
+            # 获取昨天有会话画像的用户
+            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            users = await self._get_users_with_sessions_on_date(yesterday)
+            return users
             
         except Exception as e:
-            logger.error(f"获取用户列表失败: {e}", exc_info=True)
+            logger.error(f"获取每日聚合用户列表失败: {e}", exc_info=True)
             return []
     
-    async def _get_recent_active_users(self, hours: int = 24) -> list:
+    async def _get_users_for_deep_analysis(self) -> list:
         """
-        获取最近活跃的用户列表
+        获取需要进行深度分析的用户列表
+        
+        Returns:
+            用户ID列表
+        """
+        try:
+            # 获取最近30天有活动且数据充足的用户
+            users = await self._get_users_with_sufficient_data(days=30)
+            return users
+            
+        except Exception as e:
+            logger.error(f"获取深度分析用户列表失败: {e}", exc_info=True)
+            return []
+    
+    async def _get_users_with_sessions_on_date(self, date: str) -> list:
+        """
+        获取指定日期有会话画像的用户列表
         
         Args:
-            hours: 时间范围（小时）
+            date: 日期 (YYYY-MM-DD)
             
         Returns:
             用户ID列表
         """
         try:
-            # 这是一个简化的实现
-            # 实际项目中可能需要从数据库或其他数据源获取
+            # 获取指定日期的会话画像
+            session_profiles = await memory_manager.get_session_profiles(
+                day=date,
+                limit=1000  # 设置一个较大的限制
+            )
             
-            # 目前从内存中的记忆管理器获取（这只是示例）
-            # 在生产环境中，你可能需要：
-            # 1. 查询Redis checkpoint中的活跃用户
-            # 2. 查询数据库中的最近对话记录
-            # 3. 从日志中分析活跃用户
+            # 提取唯一的用户ID
+            user_ids = list(set([profile.get("user_id") for profile in session_profiles if profile.get("user_id")]))
             
-            active_users = set()
-            
-            # 示例：从已知用户列表中获取（你需要根据实际情况调整）
-            sample_users = ["alice", "bob", "charlie", "david", "eve"]
-            
-            for user_id in sample_users:
-                try:
-                    conversations = await memory_manager.get_conversation_history(
-                        user_id=user_id,
-                        limit=1
-                    )
-                    if conversations:
-                        # 检查最近是否有对话
-                        latest_conversation = conversations[0]
-                        time_diff = datetime.now() - latest_conversation.timestamp
-                        if time_diff <= timedelta(hours=hours):
-                            active_users.add(user_id)
-                except Exception:
-                    continue
-            
-            return list(active_users)
+            logger.info(f"找到 {len(user_ids)} 个用户在 {date} 有会话画像")
+            return user_ids
             
         except Exception as e:
-            logger.error(f"获取活跃用户失败: {e}", exc_info=True)
+            logger.error(f"获取指定日期会话用户失败: {e}", exc_info=True)
             return []
     
-    async def _get_user_conversation_count(self, user_id: str) -> int:
+    async def _get_users_with_sufficient_data(self, days: int = 30) -> list:
         """
-        获取用户对话数量
+        获取数据充足的用户列表（用于深度分析）
+        
+        Args:
+            days: 数据时间范围（天）
+            
+        Returns:
+            用户ID列表
+        """
+        try:
+            # 获取最近有每日画像的用户
+            sufficient_users = []
+            
+            # 检查最近days天有每日画像的用户
+            for i in range(days):
+                date = (datetime.now() - timedelta(days=i+1)).strftime("%Y-%m-%d")
+                daily_profiles = await memory_manager.get_daily_profiles(
+                    date=date,
+                    limit=100
+                )
+                
+                for profile_data in daily_profiles:
+                    user_id = profile_data.get("user_id")
+                    if user_id and user_id not in sufficient_users:
+                        # 检查用户是否有足够的数据（至少7天的记录）
+                        user_daily_count = await self._count_user_daily_profiles(user_id, days)
+                        if user_daily_count >= 7:
+                            sufficient_users.append(user_id)
+            
+            logger.info(f"找到 {len(sufficient_users)} 个用户数据充足，可进行深度分析")
+            return sufficient_users
+            
+        except Exception as e:
+            logger.error(f"获取数据充足用户失败: {e}", exc_info=True)
+            return []
+    
+    async def _count_user_daily_profiles(self, user_id: str, days: int) -> int:
+        """
+        统计用户的每日画像数量
         
         Args:
             user_id: 用户ID
+            days: 统计天数
             
         Returns:
-            对话数量
+            每日画像数量
         """
         try:
-            conversations = await memory_manager.get_conversation_history(
+            daily_profiles = await memory_manager.get_period_daily_profiles(
                 user_id=user_id,
-                limit=100
+                application_id="airport_service",
+                days=days
             )
-            return len(conversations)
+            return len(daily_profiles)
         except Exception:
             return 0
     
-    async def _extract_user_profile_safe(self, user_id: str):
+    async def manual_trigger_daily_aggregation(self, user_id: str, date: str) -> bool:
         """
-        安全地提取用户画像（带错误处理）
+        手动触发每日画像聚合
         
         Args:
             user_id: 用户ID
-        """
-        try:
-            logger.info(f"开始提取用户画像: {user_id}")
-            
-            # 检查用户是否已有画像
-            existing_profile = await memory_manager.get_user_profile(user_id)
-            
-            if existing_profile:
-                # 检查画像是否需要更新（例如：超过7天）
-                days_since_update = (datetime.now() - existing_profile.last_updated).days
-                if days_since_update < 7:
-                    logger.debug(f"用户 {user_id} 画像较新，跳过更新")
-                    return
-            
-            # 提取用户画像
-            profile = await memory_manager.extract_user_profile(user_id)
-            
-            if profile:
-                logger.info(f"用户画像提取成功: {user_id}")
-            else:
-                logger.warning(f"用户画像提取失败（可能对话历史不足）: {user_id}")
-                
-        except Exception as e:
-            logger.error(f"用户画像提取异常: {user_id}, {e}", exc_info=True)
-            raise
-    
-    async def manual_extract_profile(self, user_id: str) -> bool:
-        """
-        手动触发用户画像提取
-        
-        Args:
-            user_id: 用户ID
+            date: 日期 (YYYY-MM-DD)
             
         Returns:
             是否成功
         """
         try:
-            await self._extract_user_profile_safe(user_id)
-            self.processed_users.add(user_id)
-            return True
+            result = await memory_manager.trigger_daily_profile_aggregation(
+                application_id="airport_service",
+                user_id=user_id,
+                date=date
+            )
+            
+            if result and result.get("success"):
+                logger.info(f"手动触发每日聚合成功: {user_id}, {date}")
+                return True
+            else:
+                logger.warning(f"手动触发每日聚合失败: {user_id}, {date}")
+                return False
+                
         except Exception as e:
-            logger.error(f"手动提取用户画像失败: {user_id}, {e}")
+            logger.error(f"手动触发每日聚合异常: {user_id}, {date}, {e}")
+            return False
+    
+    async def manual_trigger_deep_analysis(self, user_id: str, days: int = 30) -> bool:
+        """
+        手动触发深度画像分析
+        
+        Args:
+            user_id: 用户ID
+            days: 分析天数
+            
+        Returns:
+            是否成功
+        """
+        try:
+            result = await memory_manager.trigger_deep_insight_analysis(
+                user_id=user_id,
+                application_id="airport_service",
+                days=days
+            )
+            
+            if result and result.get("success"):
+                logger.info(f"手动触发深度分析成功: {user_id}")
+                return True
+            else:
+                logger.warning(f"手动触发深度分析失败: {user_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"手动触发深度分析异常: {user_id}, {e}")
             return False
 
 
@@ -307,14 +377,28 @@ def stop_memory_scheduler():
     memory_scheduler.stop()
 
 
-async def trigger_manual_profile_extraction(user_id: str) -> bool:
+async def trigger_manual_daily_aggregation(user_id: str, date: str) -> bool:
     """
-    手动触发用户画像提取
+    手动触发每日画像聚合
     
     Args:
         user_id: 用户ID
+        date: 日期 (YYYY-MM-DD)
         
     Returns:
         是否成功
     """
-    return await memory_scheduler.manual_extract_profile(user_id)
+    return await memory_scheduler.manual_trigger_daily_aggregation(user_id, date)
+
+async def trigger_manual_deep_analysis(user_id: str, days: int = 30) -> bool:
+    """
+    手动触发深度画像分析
+    
+    Args:
+        user_id: 用户ID
+        days: 分析天数
+        
+    Returns:
+        是否成功
+    """
+    return await memory_scheduler.manual_trigger_deep_analysis(user_id, days)

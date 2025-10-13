@@ -53,6 +53,21 @@ class TextEventContent(EventContent):
     text: str = Field(..., description="文本内容")
     format: str = Field("plain", description="文本格式：plain, markdown, html, rich, highlight")
 
+class RichContentImage(BaseModel):
+    """富文本内容中的图片对象"""
+    id: str = Field(..., description="图片唯一标识")
+    content_type: str = Field(..., description="图片MIME类型")
+    data: str = Field(..., description="Base64编码的图片数据")
+    alt_text: Optional[str] = Field(None, description="图片替代文本")
+    description: Optional[str] = Field(None, description="图片描述")
+
+class RichContentEventContent(EventContent):
+    """富文本内容事件"""
+    text: str = Field(..., description="文本内容")
+    format: str = Field("plain", description="文本格式：plain, markdown")
+    images: Optional[List[RichContentImage]] = Field(None, description="图片数组")
+    layout: str = Field("text_first", description="布局方式：text_first, image_first, text_image_mixed, image_gallery")
+
 class DataEventContent(EventContent):
     """数据事件内容"""
     data_type: str = Field(..., description="数据类型")
@@ -88,7 +103,52 @@ class FormEventContent(EventContent):
 class FlightInfo(BaseModel):
     """航班信息"""
     flight_number: str = Field(..., description="航班号")
+    flight_status: Optional[str] = Field(None, description="航班状态")
+    abnormal_status: Optional[str] = Field(None, description="异常状态")
+    abnormal_reason: Optional[str] = Field(None, description="异常原因")
+    
+    # 出发信息
+    departure_station: Optional[str] = Field(None, description="出发机场")
+    departure_terminal: Optional[str] = Field(None, description="出发航站楼")
+    scheduled_departure_time: Optional[str] = Field(None, description="计划出发时间")
+    changed_departure_time: Optional[str] = Field(None, description="变更出发时间")
+    actual_departure_time: Optional[str] = Field(None, description="实际出发时间")
+    
+    # 到达信息
+    destination_station: Optional[str] = Field(None, description="目的地机场")
+    destination_terminal: Optional[str] = Field(None, description="到达航站楼")
+    scheduled_arrival_time: Optional[str] = Field(None, description="计划到达时间")
+    changed_arrival_time: Optional[str] = Field(None, description="变更到达时间")
+    actual_arrival_time: Optional[str] = Field(None, description="实际到达时间")
+    
+    # 航线和航空公司信息
+    full_route_path: Optional[str] = Field(None, description="完整航线路径")
+    airline_twocharcode: Optional[str] = Field(None, description="航空公司两字代码")
+    airline_company: Optional[str] = Field(None, description="航空公司名称")
+    aircraft_type: Optional[str] = Field(None, description="机型")
+    
+    # 登机和服务信息
+    boarding_gate: Optional[str] = Field(None, description="登机口")
+    checkin_counter: Optional[str] = Field(None, description="值机柜台")
+    baggage_carousel: Optional[str] = Field(None, description="行李转盘")
+    
+    # 登机时间信息
+    scheduled_cut_off_time: Optional[str] = Field(None, description="计划截载时间")
+    changed_cut_off_time: Optional[str] = Field(None, description="变更截载时间")
+    actual_cut_off_time: Optional[str] = Field(None, description="实际截载时间")
+    expected_security_check_duration: Optional[str] = Field(None, description="预计安检时长")
+    scheduled_boarding_time: Optional[str] = Field(None, description="计划登机时间")
+    changed_boarding_time: Optional[str] = Field(None, description="变更登机时间")
+    actual_boarding_time: Optional[str] = Field(None, description="实际登机时间")
+    scheduled_boarding_end_time: Optional[str] = Field(None, description="计划登机结束时间")
+    changed_boarding_end_time: Optional[str] = Field(None, description="变更登机结束时间")
+    actual_boarding_end_time: Optional[str] = Field(None, description="实际登机结束时间")
+    expected_boarding_walking_duration: Optional[str] = Field(None, description="预计登机步行时长")
+    
+    # 其他信息
+    shared_flight_number: Optional[str] = Field(None, description="共享航班号")
     subscribe_supported: bool = Field(..., description="是否支持订阅")
+    airline_logo: Optional[str] = Field(None, description="航空公司logo")
 
 class FlightListEventContent(EventContent):
     """航班列表事件内容"""
@@ -110,7 +170,7 @@ class ChatEvent(BaseModel):
     """聊天事件模型"""
     id: str = Field(..., description="事件唯一标识")
     sequence: int = Field(..., description="事件序号")
-    content: Union[TextEventContent, DataEventContent, FormEventContent, FlightListEventContent, EndEventContent, ErrorEventContent] = Field(..., description="事件内容")
+    content: Union[TextEventContent, RichContentEventContent, DataEventContent, FormEventContent, FlightListEventContent, EndEventContent, ErrorEventContent] = Field(..., description="事件内容")
 
 
 

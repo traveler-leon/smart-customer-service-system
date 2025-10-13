@@ -12,7 +12,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import AIMessage
 from trustcall import create_extractor
-from agents.airport_service.core import filter_messages_for_llm,structed_model
+from agents.airport_service.core import filter_messages_for_llm,content_model
 from datetime import datetime
 from common.logging import get_logger
 from agents.airport_service.context_engineering.prompts import business_recommend_prompts
@@ -43,7 +43,7 @@ async def provide_business_recommend(state: BusinessRecommendState, config: Runn
     ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     extractor = create_extractor(
-        structed_model,
+        content_model,
         tools=[BusinessRecommendSchema],
         tool_choice="BusinessRecommendSchema"
     )

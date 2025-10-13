@@ -139,6 +139,7 @@ ws.onclose = function(event) {
 |----------|------|----------|
 | start | 会话开始标记 | 接收到用户消息后立即发送 |
 | text | 文本类响应 | 返回文本内容时 |
+| rich_content | 富文本内容响应 | 返回包含文本和图片的混合内容时 |
 | form | 交互式表单 | 需要用户填写信息时 |
 | flight_list | 航班号列表展示 | 返回多个航班号，供用户独立订阅 |
 | end | 响应结束标记 | 所有处理完成后发送 |
@@ -179,7 +180,63 @@ ws.onclose = function(event) {
 | plain | 纯文本格式，不包含任何样式 | "您好！欢迎使用机场服务" |
 | markdown | Markdown格式，支持标题、列表、强调等基本格式 | "## 航班信息\n* 航班号: **MU5735**" |
 
-### 7.3 表单响应 (event: form)
+### 7.3 富文本内容响应 (event: rich_content)
+
+```json
+{
+  "event": "rich_content",
+  "data": {
+    "id": "rich-1672847123456-1",
+    "sequence": 1,
+    "content": {
+      "text": "您好，深圳机场网约车通道位于地面交通中心（GTC）二层15号门出口处或B区位于GTC一层预约迎客区。",
+      "format": "plain",
+      "images": [
+        {
+          "id": "img-1",
+          "filename": "网约车通道示意图.png",
+          "content_type": "image/png",
+          "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA/g...",
+          "alt_text": "网约车通道位置示意图",
+          "description": "显示深圳机场网约车通道的具体位置"
+        }
+      ],
+      "layout": "text_first"
+    }
+  }
+}
+```
+
+#### 7.3.1 富文本内容字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| text | string | 是 | 文本内容 |
+| format | string | 否 | 文本格式，默认为plain |
+| images | array | 否 | 图片数组 |
+| layout | string | 否 | 布局方式，默认为text_first |
+
+#### 7.3.2 图片对象字段说明
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | string | 是 | 图片唯一标识 |
+| filename | string | 否 | 图片文件名 |
+| content_type | string | 是 | 图片MIME类型 |
+| data | string | 是 | Base64编码的图片数据 |
+| alt_text | string | 否 | 图片替代文本 |
+| description | string | 否 | 图片描述 |
+
+#### 7.3.3 布局选项
+
+| 布局选项 | 说明 |
+|----------|------|
+| text_first | 文本在前，图片在后（默认） |
+| image_first | 图片在前，文本在后 |
+| text_image_mixed | 文本和图片混合排列 |
+| image_gallery | 图片画廊模式，文本作为标题 |
+
+### 7.4 表单响应 (event: form)
 
 ```json
 {
@@ -258,7 +315,7 @@ ws.onclose = function(event) {
 }
 ```
 
-#### 7.3.1 表单字段类型
+#### 7.4.1 表单字段类型
 
 | 字段类型 | 说明 | 支持属性 |
 |----------|------|----------|
@@ -272,7 +329,7 @@ ws.onclose = function(event) {
 | checkbox | 复选框 | options, value |
 | textarea | 多行文本框 | placeholder, rows, maxlength, value |
 
-#### 7.3.2 字段验证 (validation)
+#### 7.4.2 字段验证 (validation)
 
 表单字段可包含 validation 对象进行输入验证：
 
@@ -285,7 +342,7 @@ ws.onclose = function(event) {
 }
 ```
 
-#### 7.3.3 按钮类型
+#### 7.4.3 按钮类型
 
 | 按钮类型 | 说明 | 样式 |
 |----------|------|------|
@@ -295,7 +352,7 @@ ws.onclose = function(event) {
 | secondary | 次要按钮 | 普通显示，用于次要操作 |
 | danger | 危险按钮 | 警告色显示，用于删除等操作 |
 
-#### 7.3.4 表单信息 (info)
+#### 7.4.4 表单信息 (info)
 
 表单可包含 info 对象提供额外信息：
 
@@ -307,7 +364,7 @@ ws.onclose = function(event) {
 }
 ```
 
-### 7.4 航班号列表响应 (event: flight_list)
+### 7.5 航班号列表响应 (event: flight_list)
 
 ```json
 {
@@ -336,7 +393,7 @@ ws.onclose = function(event) {
   }
 }
 
-#### 7.4.1 字段说明
+#### 7.5.1 字段说明
 | 字段                   | 类型      | 说明            |
 | -------------------- | ------- | ------------- |
 | title                | string  | 列表标题或提示信息     |
@@ -346,7 +403,7 @@ ws.onclose = function(event) {
 | action\_hint         | string  | 展示在前端的提示语（可选） |
 
 
-#### 7.4.2 前端建议
+#### 7.5.2 前端建议
 展示航班号列表；
 
 支持在每个航班号后展示“订阅”按钮；
@@ -355,7 +412,7 @@ subscribe_supported: false 的航班，按钮应置灰或禁用；
 
 
 
-### 7.5 结束事件 (event: end)
+### 7.6 结束事件 (event: end)
 
 ```json
 {
@@ -374,7 +431,7 @@ subscribe_supported: false 的航班，按钮应置灰或禁用；
 }
 ```
 
-### 7.6 错误事件 (event: error)
+### 7.7 错误事件 (event: error)
 
 ```json
 {
@@ -390,7 +447,7 @@ subscribe_supported: false 的航班，按钮应置灰或禁用；
 }
 ```
 
-#### 7.6.1 错误代码说明
+#### 7.7.1 错误代码说明
 
 | 错误代码 | 说明 | 处理建议 |
 |----------|------|----------|
@@ -402,7 +459,51 @@ subscribe_supported: false 的航班，按钮应置灰或禁用；
 
 ## 8. 完整对话示例
 
-### 8.1 客户端发送消息
+### 8.1 富文本内容示例
+
+当系统返回包含图片的回答时，会触发富文本内容事件：
+
+#### 客户端发送消息
+```json
+{
+  "thread_id": "thread_20241224_001",
+  "user_id": "passenger_12345",
+  "query": "网约车通道在哪里？",
+  "metadata": {
+    "Is_translate": false,
+    "Is_emotion": false
+  }
+}
+```
+
+#### 服务端响应：富文本内容事件
+```json
+{
+  "event": "rich_content",
+  "data": {
+    "id": "rich-1672847123456-1",
+    "sequence": 1,
+    "content": {
+      "text": "您好，深圳机场网约车通道位于地面交通中心（GTC）二层15号门出口处或B区位于GTC一层预约迎客区。",
+      "format": "plain",
+      "images": [
+        {
+          "id": "img-1",
+          "content_type": "image/png",
+          "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA/g...",
+          "alt_text": "图片1",
+          "description": "相关图片内容"
+        }
+      ],
+      "layout": "text_first"
+    }
+  }
+}
+```
+
+### 8.2 普通对话示例
+
+### 8.2.1 客户端发送消息
 
 ```json
 {
@@ -416,7 +517,7 @@ subscribe_supported: false 的航班，按钮应置灰或禁用；
 }
 ```
 
-### 8.2 服务端响应序列
+### 8.2.2 服务端响应序列
 
 #### 响应1: 开始事件
 ```json
@@ -542,4 +643,5 @@ function sendMessage(message) {
 | --------- | -------------- | --------------------------------------- |
 | 1.0.0     | 2024-12-24     | 初始版本，支持基本对话功能                           |
 | 1.1.0     | 2024-12-24     | 增加图片识别和表单交互功能                            |
-| 1.2.0     | 025-07-10      | 新增 `flight_list` 事件，仅返回航班号，支持独立订阅展示 |
+| 1.2.0     | 2025-07-10     | 新增 `flight_list` 事件，仅返回航班号，支持独立订阅展示 |
+| 1.3.0     | 2025-09-23     | 新增 `rich_content` 事件，支持文本和图片混合内容返回 |

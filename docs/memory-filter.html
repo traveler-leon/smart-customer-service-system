@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="智能记忆筛选系统 - 基于多因子综合评分的记忆检索算法">
+    <title>智能记忆筛选 - 智能客服系统文档</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>智能客服系统</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">首页</a></li>
+                <li><a href="user-profile.html" class="nav-link">用户画像</a></li>
+                <li><a href="api-docs.html" class="nav-link">API 文档</a></li>
+                <li><a href="architecture.html" class="nav-link">系统架构</a></li>
+                <li><a href="memory-filter.html" class="nav-link active">智能记忆</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <header class="doc-header">
+        <div class="container">
+            <h1 class="doc-title">智能记忆筛选</h1>
+            <p class="doc-subtitle">基于多因子综合评分的记忆检索算法，综合考虑向量相似度、时间遗忘因子和专家评分</p>
+        </div>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <section id="overview">
+                <h2>概述</h2>
+                <p>智能记忆筛选是一个基于多因子综合评分的记忆检索算法，它综合考虑向量相似度、时间遗忘因子和专家评分等多个维度，返回最符合条件的TopK记忆。</p>
+                
+                <div class="feature-card" style="background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%); border: 2px solid var(--primary-color);">
+                    <div class="card-icon">🧠</div>
+                    <h3>智能记忆筛选的价值</h3>
+                    <p>通过多维度评分机制，确保检索到的记忆既相关又准确，同时考虑时效性和质量，为用户提供最有价值的知识内容。</p>
+                </div>
+            </section>
+
+            <section id="algorithm">
+                <h2>核心算法</h2>
+                
+                <h3>综合评分公式</h3>
+                <div class="quick-start-item">
+                    <pre><code class="language-text">composite_score = similarity_score × similarity_weight + 
+                 time_score × time_weight + 
+                 quality_score × quality_weight</code></pre>
+                </div>
+
+                <h3>三个关键因子</h3>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="card-icon">🔍</div>
+                        <h3>1. 向量相似度 (similarity_score)</h3>
+                        <ul>
+                            <li><strong>基础</strong>: 基于语义向量的相似度匹配</li>
+                            <li><strong>范围</strong>: 0-1，越高表示语义越相似</li>
+                            <li><strong>来源</strong>: 由底层的向量搜索引擎提供</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">⏰</div>
+                        <h3>2. 时间遗忘因子 (time_score)</h3>
+                        <ul>
+                            <li><strong>模型</strong>: 使用指数衰减模型: <code>exp(-time_diff / time_decay_days)</code></li>
+                            <li><strong>范围</strong>: 0-1，越新的记忆得分越高</li>
+                            <li><strong>配置</strong>: 可配置时间衰减周期</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">⭐</div>
+                        <h3>3. 专家评分 (quality_score)</h3>
+                        <ul>
+                            <li><strong>标准</strong>: 专家对回答质量的评分</li>
+                            <li><strong>范围</strong>: 0-1，专家审核通过的记忆才会被筛选</li>
+                            <li><strong>保障</strong>: 确保结果的质量和准确性</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="api-usage">
+                <h2>API 使用方式</h2>
+                
+                <h3>1. 底层调用 (memory_manager)</h3>
+                <pre><code class="language-python">from agents.airport_service.context_engineering.memory_manager import memory_manager
+
+results = await memory_manager.get_smart_filtered_memories(
+    query="机场餐厅推荐",
+    user_id="user123",
+    agent_name="机场知识问答子智能体",
+    limit=10,
+    similarity_weight=0.5,    # 相似度权重
+    time_weight=0.2,          # 时间权重  
+    quality_weight=0.3,       # 质量权重
+    min_quality_score=0.7,    # 最低质量门槛
+    time_decay_days=30        # 时间衰减周期(天)
+)</code></pre>
+
+                <h3>2. 智能体集成层调用</h3>
+                <pre><code class="language-python">from agents.airport_service.context_engineering.agent_memory import AgentMemoryMixin
+
+smart_memories = await AgentMemoryMixin.retrieve_smart_filtered_memories(
+    user_id="user123",
+    current_query="机场餐厅推荐",
+    agent_name="机场知识问答子智能体",
+    limit=5,
+    similarity_weight=0.6,
+    time_weight=0.2,
+    quality_weight=0.2
+)</code></pre>
+
+                <h3>3. HTTP API 调用</h3>
+                <pre><code class="language-bash">POST /memory/v1/conversations/smart-filter
+Content-Type: application/json
+
+{
+    "query": "机场餐厅推荐",
+    "user_id": "user123",
+    "agent_name": "机场知识问答子智能体",
+    "limit": 10,
+    "similarity_weight": 0.5,
+    "time_weight": 0.2,
+    "quality_weight": 0.3,
+    "min_quality_score": 0.7,
+    "time_decay_days": 30
+}</code></pre>
+            </section>
+
+            <section id="configuration">
+                <h2>参数配置指南</h2>
+                
+                <h3>权重配置策略</h3>
+                
+                <div class="quick-start-grid">
+                    <div class="quick-start-item">
+                        <h4>1. 重视准确性场景 (客服、医疗等)</h4>
+                        <pre><code class="language-python">similarity_weight=0.3
+time_weight=0.2  
+quality_weight=0.5  # 高质量权重</code></pre>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h4>2. 重视时效性场景 (新闻、股价等)</h4>
+                        <pre><code class="language-python">similarity_weight=0.3
+time_weight=0.5     # 高时间权重
+quality_weight=0.2</code></pre>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h4>3. 重视相似度场景 (文档搜索等)</h4>
+                        <pre><code class="language-python">similarity_weight=0.7  # 高相似度权重
+time_weight=0.15
+quality_weight=0.15</code></pre>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h4>4. 均衡场景 (一般对话)</h4>
+                        <pre><code class="language-python">similarity_weight=0.4
+time_weight=0.3
+quality_weight=0.3</code></pre>
+                    </div>
+                </div>
+
+                <h3>时间衰减周期设置</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>衰减周期</th>
+                            <th>适用场景</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>7天</td>
+                            <td>快速变化的信息</td>
+                            <td>如实时公告、临时政策</td>
+                        </tr>
+                        <tr>
+                            <td>30天</td>
+                            <td>一般业务场景</td>
+                            <td>如常规问答、服务指南</td>
+                        </tr>
+                        <tr>
+                            <td>90天</td>
+                            <td>相对稳定的知识</td>
+                            <td>如流程规范、基础知识</td>
+                        </tr>
+                        <tr>
+                            <td>365天</td>
+                            <td>长期有效的信息</td>
+                            <td>如法规条文、基础设施</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>质量门槛设置</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>0.9+</h3>
+                        <p>仅返回最高质量的记忆</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>0.8+</h3>
+                        <p>高质量记忆</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>0.7+</h3>
+                        <p>中等以上质量记忆</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>0.5+</h3>
+                        <p>包含中等质量记忆</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="response">
+                <h2>返回数据结构</h2>
+                
+                <pre><code class="language-json">{
+    "memory_id": "mem_123",
+    "user_id": "user123", 
+    "query": "用户查询",
+    "response": "智能体回复",
+    "agent_name": "智能体名称",
+    "expert_verified": true,
+    "quality_score": 0.95,
+    "created_at": "2024-01-01T12:00:00",
+    
+    // 评分详情
+    "similarity_score": 0.85,
+    "time_score": 0.92,
+    "composite_score": 0.89,
+    "expert_corrected": false,
+    
+    "score_breakdown": {
+        "similarity": 0.85,
+        "time_factor": 0.92,
+        "quality": 0.95,
+        "weights": {
+            "similarity": 0.5,
+            "time": 0.2,
+            "quality": 0.3
+        }
+    }
+}</code></pre>
+            </section>
+
+            <section id="best-practices">
+                <h2>最佳实践</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="card-icon">⚙️</div>
+                        <h3>1. 权重调优</h3>
+                        <ul>
+                            <li>根据业务场景测试不同权重组合</li>
+                            <li>观察TopK结果的质量和相关性</li>
+                            <li>可以A/B测试不同配置的效果</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">⭐</div>
+                        <h3>2. 质量管理</h3>
+                        <ul>
+                            <li>建立专家审核流程</li>
+                            <li>定期review低质量的记忆</li>
+                            <li>设置合适的质量门槛</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">⏰</div>
+                        <h3>3. 时间管理</h3>
+                        <ul>
+                            <li>根据信息更新频率设置衰减周期</li>
+                            <li>定期清理过时的记忆</li>
+                            <li>考虑业务的季节性特点</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">⚡</div>
+                        <h3>4. 性能优化</h3>
+                        <ul>
+                            <li>候选集通常设置为目标数量的3-5倍</li>
+                            <li>合理设置最大限制避免性能问题</li>
+                            <li>考虑缓存热门查询的结果</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="demo">
+                <h2>使用示例</h2>
+                
+                <p>运行演示程序查看完整示例：</p>
+                <pre><code class="language-bash">python examples/smart_memory_filter_demo.py</code></pre>
+
+                <h3>实际应用示例</h3>
+                <div class="quick-start-grid">
+                    <div class="quick-start-item">
+                        <h4>机场安检查询</h4>
+                        <pre><code class="language-python"># 重视准确性和时效性
+memories = await memory_manager.get_smart_filtered_memories(
+    query="液体登机规定",
+    user_id="user001",
+    agent_name="安检助手",
+    similarity_weight=0.4,
+    time_weight=0.3,
+    quality_weight=0.3,
+    min_quality_score=0.8,
+    time_decay_days=30
+)</code></pre>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h4>紧急通知查询</h4>
+                        <pre><code class="language-python"># 重视时效性
+memories = await memory_manager.get_smart_filtered_memories(
+    query="航班延误通知",
+    user_id="user002",
+    agent_name="航班助手",
+    similarity_weight=0.3,
+    time_weight=0.5,
+    quality_weight=0.2,
+    time_decay_days=7
+)</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="faq">
+                <h2>常见问题</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>Q: 权重不加起来等于1怎么办？</h3>
+                        <p>A: 系统会自动归一化权重，并记录warning日志。</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Q: 没有专家审核的记忆会被返回吗？</h3>
+                        <p>A: 不会，智能筛选只返回expert_verified=True的记忆。</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Q: 如何处理时间解析失败？</h3>
+                        <p>A: 系统会给予默认的中等时间得分(0.5)，确保不影响整体筛选。</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <h3>Q: 相似度搜索返回空结果怎么办？</h3>
+                        <p>A: 可能是查询条件过于严格，建议降低min_quality_score或扩大搜索范围。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="extensions">
+                <h2>扩展功能</h2>
+                
+                <h3>自定义评分因子</h3>
+                <p>如需添加更多评分维度(如用户反馈、点击率等)，可以扩展<code>get_smart_filtered_memories</code>方法：</p>
+                
+                <pre><code class="language-python"># 在memory_manager.py中扩展
+custom_score = calculate_custom_factor(result)
+composite_score = (
+    similarity_score * similarity_weight +
+    time_score * time_weight +
+    quality_score * quality_weight +
+    custom_score * custom_weight
+)</code></pre>
+
+                <p>这样就可以根据业务需求灵活扩展评分模型。</p>
+
+                <h3>多维度评分可视化</h3>
+                <div class="architecture-diagram">
+                    <div class="arch-layer">
+                        <h4>评分维度</h4>
+                        <div class="arch-components">
+                            <span class="component">语义相似度</span>
+                            <span class="component">时间遗忘因子</span>
+                            <span class="component">专家质量评分</span>
+                            <span class="component">用户反馈</span>
+                            <span class="component">点击率</span>
+                            <span class="component">自定义因子</span>
+                        </div>
+                    </div>
+                    
+                    <div class="arch-layer">
+                        <h4>权重配置</h4>
+                        <div class="arch-components">
+                            <span class="component">业务场景驱动</span>
+                            <span class="component">A/B测试优化</span>
+                            <span class="component">机器学习调优</span>
+                        </div>
+                    </div>
+                    
+                    <div class="arch-layer">
+                        <h4>综合评分</h4>
+                        <div class="arch-components">
+                            <span class="component">加权平均</span>
+                            <span class="component">归一化处理</span>
+                            <span class="component">TopK筛选</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div style="text-align: center; margin: 3rem 0;">
+                <p><em>智能记忆筛选系统通过多维度评分，确保为用户提供最相关、最及时、最准确的知识内容。</em></p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>文档</h4>
+                    <ul>
+                        <li><a href="api-docs.html">API 文档</a></li>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="architecture.html">系统架构</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>资源</h4>
+                    <ul>
+                        <li><a href="#examples">使用示例</a></li>
+                        <li><a href="#tutorials">教程指南</a></li>
+                        <li><a href="#changelog">更新日志</a></li>
+                        <li><a href="#support">技术支持</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>关于</h4>
+                    <ul>
+                        <li><a href="#about">项目介绍</a></li>
+                        <li><a href="#team">开发团队</a></li>
+                        <li><a href="#license">开源许可</a></li>
+                        <li><a href="#contact">联系我们</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 智能客服系统. 版权所有.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

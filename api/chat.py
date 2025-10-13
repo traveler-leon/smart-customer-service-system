@@ -5,7 +5,7 @@ import os
 import base64
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from models.schemas import (
-    TextEventContent, FormEventContent, FlightListEventContent, FlightInfo, EndEventContent, ErrorEventContent, ChatEvent
+    TextEventContent, RichContentEventContent, FormEventContent, FlightListEventContent, FlightInfo, EndEventContent, ErrorEventContent, ChatEvent
 )
 from agents.airport_service import graph_manager
 from common.logging import get_logger
@@ -38,6 +38,46 @@ class EventGenerator:
             id=self._generate_id("text"),
             sequence=self._next_sequence(),
             content=TextEventContent(text=text, format=format_type)
+        )
+    
+    def create_rich_content_event(self, text: str, images: str = None, format_type: str = "plain", layout: str = "text_first") -> ChatEvent:
+        """创建富文本内容事件"""
+        from models.schemas import RichContentImage
+        
+        # 处理图片数据 - images格式: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA/g||data:image/jpeg;base64,...'
+        image_objects = []
+        if images:
+            # 按||分割图片数据
+            image_parts = images.split('||')
+            img_count = 0
+            for image_part in image_parts:
+                if image_part.strip():  # 确保不是空字符串
+                    # 检查是否是完整的data URI格式: data:image/png;base64,数据
+                    if image_part.startswith('data:') and ';base64,' in image_part:
+                        # 分离content_type和数据部分
+                        content_type_part, image_data = image_part.split(',', 1)
+                        # 提取content_type: data:image/png;base64 -> image/png
+                        content_type = content_type_part.replace('data:', '').replace(';base64', '')
+                        
+                        img_count += 1
+                        image_obj = RichContentImage(
+                            id=f"img-{img_count}",
+                            content_type=content_type,
+                            data=image_part,  # 保持完整的data URI格式
+                            alt_text=f"图片{img_count}",
+                            description=f"相关图片内容"
+                        )
+                        image_objects.append(image_obj)
+        
+        return ChatEvent(
+            id=self._generate_id("rich"),
+            sequence=self._next_sequence(),
+            content=RichContentEventContent(
+                text=text,
+                format=format_type,
+                images=image_objects if image_objects else None,
+                layout=layout
+            )
         )
     def create_form_event(
         self,
@@ -136,8 +176,19 @@ async def airport_chat_websocket(websocket: WebSocket):
             token = message_data.get("token", "")
             Is_translate = metadata.get("Is_translate", False)
             Is_emotion = metadata.get("Is_emotion", False)
-            # Is_emotion = True
-            # Is_translate = True
+            
+            # 提取技术环境信息字段
+            query_source = metadata.get("query_source","小程序")
+            query_device = metadata.get("query_device","手机")
+            query_ip = metadata.get("query_ip","")
+            network_type = metadata.get("network_type","5g")
+            
+            # 构建技术环境metadata
+            technical_metadata = {}
+            technical_metadata["query_source"] = query_source
+            technical_metadata["query_device"] = query_device
+            technical_metadata["query_ip"] = query_ip
+            technical_metadata["network_type"] = network_type
             
             # 检查是否提供了query或image中的至少一项
             if not thread_id or not user_id or (not query and not image_data):
@@ -149,7 +200,7 @@ async def airport_chat_websocket(websocket: WebSocket):
                 )
                 error_response = {
                     "event": "error",
-                    "data": error_event.dict()
+                    "data": error_event.model_dump()
                 }
                 await websocket.send_text(json.dumps(error_response, ensure_ascii=False))
                 continue
@@ -165,13 +216,16 @@ async def airport_chat_websocket(websocket: WebSocket):
                         "image_data": image_data,
                         "token": token,
                         "Is_translate": Is_translate,
-                        "Is_emotion": Is_emotion
+                        "Is_emotion": Is_emotion,
+                        "metadata": technical_metadata
                     }
                 }
                 if Is_translate:
-                    output_nodes = ["translate_output_node"]
+                    msg_nodes = ["translate_output_node"]
+                    custom_nodes = []
                 else:
-                    output_nodes = ["airport_assistant_node", "flight_assistant_node", "chitchat_node", "business_assistant_node","transfer_to_human"]           
+                    msg_nodes = ["airport_assistant_node", "flight_assistant_node", "chitchat_node", "business_assistant_node","transfer_to_human"]           
+                    custom_nodes = ["airport_info_search_node","flight_assistant_node","business_assistant_node"]
                 
                 # 发送开始事件（与原始接口保持一致）
                 start_response = {
@@ -179,15 +233,17 @@ async def airport_chat_websocket(websocket: WebSocket):
                     "thread_id": thread_id,
                     "user_id": user_id
                 }
-                await websocket.send_text(json.dumps(start_response, ensure_ascii=False))
-                
+                await websocket.send_text(json.dumps(start_response, ensure_ascii=False))                
                 # 处理聊天消息并发送事件
                 result_count = 0
+                logger.info(f"3333333msg_nodes: {msg_nodes}")
+                logger.info(f"4444444custom_nodes: {custom_nodes}")
                 async for msg_type, node, result in graph_manager.process_chat_message_stream(
                     message=query,
                     thread_id=threads,
                     graph_id="airport_service_graph",
-                    output_node=output_nodes
+                    msg_nodes=msg_nodes,
+                    custom_nodes=custom_nodes
                 ):
                     result_count += 1                    
                     # 根据节点类型创建不同类型的事件
@@ -250,6 +306,39 @@ async def airport_chat_websocket(websocket: WebSocket):
                             logger.info("✅ WebSocket 发送了航班列表事件")
                             continue  # 跳过后面的文本事件发送
 
+                        except json.JSONDecodeError:
+                            # JSON解析失败，按普通文本处理
+                            text_event = event_gen.create_text_event(result)
+                    elif msg_type=="custom" and node=="airport_info_search_node":
+                        # 处理机场知识                        
+                        # 尝试解析 qa 事件的 JSON 数据
+                        try:
+                            if result.get('type') == 'qa' and 'answer' in result:
+                                answer = result.get('answer', '')
+                                images = result.get('images', '')
+                               
+                                # 如果有图片数据，创建富文本事件
+                                if images:
+                                    rich_event = event_gen.create_rich_content_event(
+                                        text=answer,
+                                        images=images,
+                                        format_type="plain",
+                                        layout="text_first"
+                                    )
+                                    
+                                    rich_response = {
+                                        "event": "rich_content",
+                                        "data": rich_event.model_dump()
+                                    }
+                                    await websocket.send_text(json.dumps(rich_response, ensure_ascii=False))
+                                    logger.info("✅ WebSocket 发送了富文本内容事件")
+                                    continue  # 跳过后面的文本事件发送
+                                else:
+                                    # 只有文本，创建普通文本事件
+                                    text_event = event_gen.create_text_event(answer)
+                            else:
+                                # 不是qa结构或缺少answer，按普通文本处理
+                                text_event = event_gen.create_text_event(result)
                         except json.JSONDecodeError:
                             # JSON解析失败，按普通文本处理
                             text_event = event_gen.create_text_event(result)

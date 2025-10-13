@@ -60,13 +60,13 @@ class GenericEmbedding(AsyncEmbeddingProvider):
             }
                 
             self.client = AsyncOpenAI(**client_params)
-            self.logger.debug(f"{self.provider_name}异步客户端已初始化")
+            self.logger.debug(f"异步客户端已初始化")
     
     async def close(self):
         """关闭客户端资源"""
         # AsyncOpenAI客户端会自动管理资源
         self.client = None
-        self.logger.debug(f"{self.provider_name}异步客户端已重置")
+        self.logger.debug(f"异步客户端已重置")
     
     async def generate_embedding(self, data: str, **kwargs) -> Dict[str, Any]:
         """异步生成文本嵌入向量"""
@@ -81,8 +81,8 @@ class GenericEmbedding(AsyncEmbeddingProvider):
             }
             
             # 如果支持dimensions参数，添加它
-            if self.dimensions:
-                request_args["dimensions"] = self.dimensions
+            # if self.dimensions:
+            #     request_args["dimensions"] = self.dimensions
             
             # 从kwargs中提取OpenAI API支持的参数
             openai_params = ["user", "encoding_format"]

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="智能客服系统用户画像 - 三步走战略，从实时会话分析到长期行为洞察">
+    <title>用户画像系统 - 智能客服系统文档</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>智能客服系统</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">首页</a></li>
+                <li><a href="user-profile.html" class="nav-link active">用户画像</a></li>
+                <li><a href="api-docs.html" class="nav-link">API 文档</a></li>
+                <li><a href="architecture.html" class="nav-link">系统架构</a></li>
+                <li><a href="memory-filter.html" class="nav-link">智能记忆</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <header class="doc-header">
+        <div class="container">
+            <h1 class="doc-title">用户画像系统</h1>
+            <p class="doc-subtitle">三步走战略，从实时会话分析到长期行为洞察，为机场运营提供全方位的用户理解和业务优化支持</p>
+        </div>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <section id="overview">
+                <h2>系统概述</h2>
+                <p>基于大模型的智能客服系统用户画像系统，采用三步走战略，从实时会话分析到长期行为洞察，为机场运营提供全方位的用户理解和业务优化支持。</p>
+            </section>
+
+            <section id="strategy">
+                <h2>三步走战略架构</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="card-icon">⚡</div>
+                        <h3>第一步：实时会话画像</h3>
+                        <ul>
+                            <li><strong>触发时机</strong>: 当次会话结束后（长时间无输入或前端主动触发）</li>
+                            <li><strong>数据来源</strong>: 单次会话的所有交互数据</li>
+                            <li><strong>主要功能</strong>: 从非结构化对话中提取用户当次行为特征</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">📊</div>
+                        <h3>第二步：每日统计画像</h3>
+                        <ul>
+                            <li><strong>触发时机</strong>: 每天定时触发（默认凌晨1点）</li>
+                            <li><strong>数据来源</strong>: 当天所有会话画像的聚合</li>
+                            <li><strong>主要功能</strong>: 形成用户日常行为模式和偏好统计</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">🔍</div>
+                        <h3>第三步：深度洞察画像</h3>
+                        <ul>
+                            <li><strong>触发时机</strong>: 定期触发（默认每周一）</li>
+                            <li><strong>数据来源</strong>: 长周期的每日画像数据综合分析</li>
+                            <li><strong>主要功能</strong>: 深层用户标签、价值评估、个性化策略</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="models">
+                <h2>核心模型设计</h2>
+                
+                <h3>画像层次结构</h3>
+                <div class="architecture-diagram">
+                    <div class="arch-layer">
+                        <h4>数据流向</h4>
+                        <div class="arch-components">
+                            <span class="component">原始会话数据</span>
+                            <span class="component">→</span>
+                            <span class="component">实时会话画像</span>
+                            <span class="component">→</span>
+                            <span class="component">每日统计画像</span>
+                            <span class="component">→</span>
+                            <span class="component">深度洞察画像</span>
+                            <span class="component">→</span>
+                            <span class="component">运营分析报告</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>用户标签体系</h3>
+                
+                <div class="quick-start-grid">
+                    <div class="quick-start-item">
+                        <h4>基础标签</h4>
+                        <ul>
+                            <li><strong>旅客类型</strong>: 商旅人士、休闲旅客、首次乘机、常旅客、家庭出行、学生出行、中转旅客</li>
+                            <li><strong>用户角色</strong>: 乘机人本人、亲友代问、接送机人员、代理人、机场工作人员</li>
+                            <li><strong>消费能力</strong>: 高价值客户、中等消费、价格敏感、未知</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h4>行为标签</h4>
+                        <ul>
+                            <li><strong>提问风格</strong>: 简洁型、详细型、紧急型、随意型、专业型</li>
+                            <li><strong>情感状态</strong>: 积极、中性、消极、焦虑、满意</li>
+                            <li><strong>服务偏好</strong>: 自助服务倾向、人工服务偏好、创新服务接受度</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h4>业务标签</h4>
+                        <ul>
+                            <li><strong>出行频率</strong>: 高频、中频、低频</li>
+                            <li><strong>航司偏好</strong>: 基于查询和使用历史</li>
+                            <li><strong>服务需求</strong>: 特殊服务、增值服务使用情况</li>
+                            <li><strong>价值评估</strong>: 客户价值分数、流失风险、增值潜力</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="implementation">
+                <h2>技术实现架构</h2>
+                
+                <h3>系统组件</h3>
+                <div class="architecture-diagram">
+                    <div class="arch-layer">
+                        <h4>1. 画像模型层</h4>
+                        <div class="arch-components">
+                            <span class="component">user_profile_model.py</span>
+                            <span class="component">user_profile_model_extended.py</span>
+                        </div>
+                        <p style="margin-top: 1rem; color: var(--text-secondary);">定义所有画像数据结构、枚举类型和验证规则、向后兼容性支持</p>
+                    </div>
+                    
+                    <div class="arch-layer">
+                        <h4>2. 画像提取器</h4>
+                        <div class="arch-components">
+                            <span class="component">SessionProfileExtractor</span>
+                            <span class="component">DailyStatisticsExtractor</span>
+                            <span class="component">DeepInsightExtractor</span>
+                            <span class="component">ProfileOrchestrator</span>
+                        </div>
+                    </div>
+                    
+                    <div class="arch-layer">
+                        <h4>3. 调度系统</h4>
+                        <div class="arch-components">
+                            <span class="component">profile_scheduler.py</span>
+                        </div>
+                        <p style="margin-top: 1rem; color: var(--text-secondary);">自动化触发机制、并发控制和错误处理、监控和状态管理</p>
+                    </div>
+                    
+                    <div class="arch-layer">
+                        <h4>4. 运营分析</h4>
+                        <div class="arch-components">
+                            <span class="component">operational_analytics.py</span>
+                        </div>
+                        <p style="margin-top: 1rem; color: var(--text-secondary);">业务指标计算、用户分群分析、报告生成和洞察</p>
+                    </div>
+                </div>
+
+                <h3>关键算法</h3>
+                
+                <h4>情感分析算法</h4>
+                <pre><code class="language-python">def analyze_sentiment(text: str) -> Sentiment:
+    sentiment_keywords = {
+        Sentiment.POSITIVE: ["满意", "好的", "谢谢", "不错", "棒"],
+        Sentiment.NEGATIVE: ["不满", "糟糕", "失望", "烦", "差"],
+        Sentiment.ANXIOUS: ["急", "赶时间", "担心", "焦虑", "紧张"],
+        # ...
+    }
+    # 基于关键词匹配和权重计算</code></pre>
+
+                <h4>用户价值评估</h4>
+                <pre><code class="language-python">def calculate_value_score(profiles: List[DailyStatisticsProfile]) -> float:
+    # 综合考虑：活跃度 + 忠诚度 + 消费潜力
+    total_sessions = sum(p.interaction_metrics.total_sessions for p in profiles)
+    avg_satisfaction = sum(p.service_usage.satisfaction_rate for p in profiles) / len(profiles)
+    days_span = len(profiles)
+    
+    value_score = (total_sessions/50 + avg_satisfaction + days_span/30) / 3
+    return min(value_score, 1.0)</code></pre>
+            </section>
+
+            <section id="deployment">
+                <h2>部署和集成</h2>
+                
+                <h3>环境要求</h3>
+                <pre><code class="language-toml"># pyproject.toml 依赖
+dependencies = [
+    "pydantic>=2.0.0",
+    "asyncio",
+    "apscheduler>=3.10.0",
+    "datetime",
+    "typing_extensions"
+]</code></pre>
+
+                <h3>初始化系统</h3>
+                <pre><code class="language-python">from agents.airport_service.context_engineering.profile_scheduler import ProfileScheduler, ScheduleConfig
+from agents.airport_service.context_engineering.profile_scheduler import ProfileAPI
+
+# 创建配置
+config = ScheduleConfig(
+    daily_aggregation_time="01:00",
+    deep_analysis_day=0,  # 周一
+    session_timeout_minutes=30
+)
+
+# 初始化系统
+scheduler = ProfileScheduler(config)
+api = ProfileAPI(scheduler)
+
+# 启动调度器
+scheduler.start()</code></pre>
+
+                <h3>API使用示例</h3>
+                
+                <h4>跟踪用户消息</h4>
+                <pre><code class="language-python">await api.track_message(
+    user_id="user_123",
+    session_id="session_456", 
+    message_data={
+        "role": "user",
+        "content": "我想查询航班信息",
+        "timestamp": "2024-01-01T10:00:00",
+        "technical_context": {
+            "device": "mobile",
+            "source": "wechat",
+            "location": "北京"
+        }
+    }
+)</code></pre>
+
+                <h4>触发会话结束</h4>
+                <pre><code class="language-python">result = await api.trigger_session_end("user_123", "session_456")</code></pre>
+
+                <h4>手动触发画像更新</h4>
+                <pre><code class="language-python"># 每日更新
+daily_result = await api.manual_daily_update("user_123", "2024-01-01")
+
+# 深度分析
+deep_result = await api.manual_deep_analysis("user_123", days=30)</code></pre>
+            </section>
+
+            <section id="applications">
+                <h2>运营应用场景</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="card-icon">⚡</div>
+                        <h3>1. 实时服务优化</h3>
+                        <p><strong>场景</strong>: 会话进行中识别用户类型和情感状态</p>
+                        <p><strong>应用</strong>: 动态调整回复策略，匹配合适的服务方式</p>
+                        <p><strong>价值</strong>: 提升用户体验，减少升级到人工的比例</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">🎯</div>
+                        <h3>2. 个性化推荐</h3>
+                        <p><strong>场景</strong>: 基于用户画像推荐相关服务</p>
+                        <p><strong>应用</strong>: 主动推送个性化信息，精准营销</p>
+                        <p><strong>价值</strong>: 增加服务使用率，提升客户价值</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">👥</div>
+                        <h3>3. 用户分群运营</h3>
+                        <p><strong>场景</strong>: 识别不同价值用户群体</p>
+                        <p><strong>应用</strong>: 差异化服务策略，精准投放资源</p>
+                        <p><strong>价值</strong>: 提高运营效率，优化资源配置</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">⚠️</div>
+                        <h3>4. 流失预警</h3>
+                        <p><strong>场景</strong>: 识别有流失风险的用户</p>
+                        <p><strong>应用</strong>: 主动关怀，挽留措施</p>
+                        <p><strong>价值</strong>: 提高用户留存率，降低获客成本</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="card-icon">🔧</div>
+                        <h3>5. 服务改进</h3>
+                        <p><strong>场景</strong>: 分析用户痛点和需求</p>
+                        <p><strong>应用</strong>: 优化服务流程，开发新功能</p>
+                        <p><strong>价值</strong>: 持续改进用户体验，提升竞争力</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="analytics">
+                <h2>运营指标体系</h2>
+                
+                <h3>核心KPI</h3>
+                <ul>
+                    <li><strong>用户活跃度</strong>: 日活跃用户数、月活跃用户数</li>
+                    <li><strong>服务质量</strong>: 问题解决率、平均响应时间、用户满意度</li>
+                    <li><strong>业务价值</strong>: 客户价值分数、留存率、转化率</li>
+                </ul>
+
+                <h3>分群指标</h3>
+                <div class="architecture-diagram">
+                    <div class="arch-layer">
+                        <h4>用户分群统计</h4>
+                        <div class="arch-components">
+                            <span class="component">高价值商旅客户: 14.4%，平均满意度89%</span>
+                            <span class="component">常旅客: 25.6%，忠诚度分数0.72</span>
+                            <span class="component">首次用户: 33.6%，增长潜力85%</span>
+                            <span class="component">家庭客户: 12.0%，特殊服务使用率高</span>
+                            <span class="component">价格敏感用户: 14.4%，需要成本优化策略</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>趋势分析</h3>
+                <ul>
+                    <li><strong>用户增长趋势</strong>: 新用户占比、留存曲线</li>
+                    <li><strong>服务使用趋势</strong>: 热门服务排行、使用频率变化</li>
+                    <li><strong>满意度趋势</strong>: 时间序列分析、影响因素识别</li>
+                </ul>
+            </section>
+
+            <section id="security">
+                <h2>数据隐私和安全</h2>
+                
+                <div class="quick-start-grid">
+                    <div class="quick-start-item">
+                        <h3>数据脱敏</h3>
+                        <ul>
+                            <li>个人身份信息Hash处理</li>
+                            <li>位置信息模糊化到城市级别</li>
+                            <li>敏感内容过滤和替换</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h3>访问控制</h3>
+                        <ul>
+                            <li>分级权限管理</li>
+                            <li>数据使用审计日志</li>
+                            <li>定期权限回收</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="quick-start-item">
+                        <h3>合规要求</h3>
+                        <ul>
+                            <li>符合数据保护法规</li>
+                            <li>用户同意机制</li>
+                            <li>数据删除和导出权利</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="optimization">
+                <h2>扩展和优化</h2>
+                
+                <h3>短期优化</h3>
+                <ol>
+                    <li><strong>提升画像精度</strong>: 优化特征提取算法，增加训练数据</li>
+                    <li><strong>减少处理延迟</strong>: 优化并发处理，增加缓存机制</li>
+                    <li><strong>丰富画像维度</strong>: 增加新的行为特征和业务标签</li>
+                </ol>
+
+                <h3>长期发展</h3>
+                <ol>
+                    <li><strong>机器学习增强</strong>: 引入深度学习模型，自动特征学习</li>
+                    <li><strong>实时流处理</strong>: 升级为流式计算架构，支持实时画像更新</li>
+                    <li><strong>多模态融合</strong>: 整合文本、语音、图像等多种数据源</li>
+                </ol>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>故障处理</h2>
+                
+                <h3>常见问题</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>画像提取失败</h3>
+                        <p>检查数据格式，查看错误日志</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>调度任务异常</h3>
+                        <p>验证Cron表达式，检查资源限制</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>性能下降</h3>
+                        <p>监控并发数，优化数据库查询</p>
+                    </div>
+                </div>
+
+                <h3>应急预案</h3>
+                <ol>
+                    <li><strong>服务降级</strong>: 关闭非关键功能，保证核心流程</li>
+                    <li><strong>数据恢复</strong>: 从备份恢复画像数据</li>
+                    <li><strong>手动干预</strong>: 提供手动触发接口，绕过自动化流程</li>
+                </ol>
+            </section>
+
+            <div style="text-align: center; margin: 3rem 0;">
+                <p><em>最后更新: 2024年12月</em></p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>文档</h4>
+                    <ul>
+                        <li><a href="api-docs.html">API 文档</a></li>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="architecture.html">系统架构</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>资源</h4>
+                    <ul>
+                        <li><a href="#examples">使用示例</a></li>
+                        <li><a href="#tutorials">教程指南</a></li>
+                        <li><a href="#changelog">更新日志</a></li>
+                        <li><a href="#support">技术支持</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>关于</h4>
+                    <ul>
+                        <li><a href="#about">项目介绍</a></li>
+                        <li><a href="#team">开发团队</a></li>
+                        <li><a href="#license">开源许可</a></li>
+                        <li><a href="#contact">联系我们</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 智能客服系统. 版权所有.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

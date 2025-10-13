@@ -5,14 +5,9 @@ import sys
 import os
 # 添加项目根目录到系统路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from langchain_core.messages import ToolMessage
-from langchain_core.tools import tool, InjectedToolCallId
-from langgraph.prebuilt import InjectedState
+from langchain_core.tools import tool
 from pydantic import BaseModel,Field
-from typing import Annotated, NotRequired
-from langgraph.types import Command
 from langchain_core.runnables import RunnableConfig
-from ..state import AirportMainServiceState
 from common.logging import get_logger
 import asyncio
 
@@ -29,7 +24,7 @@ class WhellchairRentalRequest(BaseModel):
 
 
 @tool(return_direct=True,args_schema=WhellchairRentalRequest)
-async def wheelchair_rental_tool(name: str
+async def wheelchair_rental(name: str
                                  , id_number: str
                                  , phone_number: str
                                  , flight_number: str
@@ -157,25 +152,3 @@ async def wheelchair_rental_tool(name: str
     
     return json.dumps(form_data, ensure_ascii=False)
 
-@tool
-async def business_handler(query: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> str:
-    """
-    通用业务办理工具
-    用于处理用户的业务办理请求，如轮椅租赁等。
-    
-    Args:
-        query: 用户输入的业务办理请求
-    示例:
-        >>> business_handler("我要租一个轮椅")
-    """
-    logger.info("进入业务办理工具")
-    return Command(
-        update={
-            "messages": [
-                ToolMessage(
-                    content="工具调用结束，已准备转交业务办理子智能体处理",
-                    tool_call_id=tool_call_id
-                )
-            ]
-        }
-    )

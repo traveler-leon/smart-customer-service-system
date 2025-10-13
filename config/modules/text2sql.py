@@ -19,8 +19,8 @@ TEXT2SQL_CONFIG = {
         "api_key": os.getenv("EMBEDDING_API_KEY",os.getenv("LLM_API_KEY")),
         "base_url": os.getenv("EMBEDDING_BASE_URL",os.getenv("LLM_BASE_URL")),
         "embedding_model": os.getenv("EMBEDDING_MODEL"),
-        "dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", 1024)),
-        "max_tokens": int(os.getenv("EMBEDDING_MAX_TOKENS", 512))
+        "dimensions": int(os.getenv("EMBEDDING_DIMENSIONS", 512)),
+        "max_tokens": int(os.getenv("EMBEDDING_MAX_TOKENS", 1024))
     },
     
     # 数据库配置

@@ -62,7 +62,7 @@ class GenericLLM(AsyncLLMProvider):
         """关闭异步会话"""
         # AsyncOpenAI 客户端会自动管理会话，不需要手动关闭
         self.client = None
-        self.logger.debug(f"{self.provider_name}异步客户端已重置")
+        self.logger.debug(f"异步客户端已重置")
     
     def system_message(self, message: str) -> Dict[str, str]:
         """创建系统消息"""

@@ -2,11 +2,10 @@ import sys
 import os
 # 添加项目根目录到系统路径
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-from langgraph.types import Command
-from langchain_core.tools import InjectedToolCallId,tool
-from typing import Annotated, NotRequired
-from langchain_core.messages import ToolMessage
+from typing import List
+from langchain_core.messages import AnyMessage
 import asyncio
+from agents.airport_service.core.query import comprehensive_query_transform
 from text2sql import create_text2sql
 from config.utils import config_manager
 from common.logging import get_logger
@@ -38,8 +37,8 @@ async def get_text2sql_instance():
     return _text2sql_instance
 
 
-@tool
-async def flight_info_query(question: str, tool_call_id: Annotated[str, InjectedToolCallId]) -> str:
+
+async def flight_info_query2docs(question: str, messages:List[AnyMessage]) -> str:
     """
     查询航班信息的工具
     此工具用于回答用户关于航班的各类查询
@@ -66,15 +65,12 @@ async def flight_info_query(question: str, tool_call_id: Annotated[str, Injected
             return error_msg
 
     # 执行异步查询
-    result = await perform_query(question)
+    rewritten_query = await comprehensive_query_transform(question,'flight_rewrite',messages)
+    result = await perform_query(rewritten_query)
     logger.debug(f"查询结果: {result}")
-    return Command(
-        update={
-            "messages": [ToolMessage(content=result['sql'], tool_call_id=tool_call_id)],
-            "db_context_docs": result
-        }
-    )
+    return {"db_context_docs": result}
 
 
-# if __name__ == "__main__":
-#     flight_info_query.invoke({"question":"查一下从深圳出发的所有航班", "tool_call_id": "test_call_id"})
+# if __name__ == "__main__": 
+    # flight_info_query.invoke({"question":"查一下从深圳出发的所有航班", "tool_call_id": "test_call_id"})
+    

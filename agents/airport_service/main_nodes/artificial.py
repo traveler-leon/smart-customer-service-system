@@ -115,7 +115,7 @@ async def detect_emotion(state: AirportMainServiceState, config: RunnableConfig,
         store: 存储对象
     """
     Is_emotion = config["configurable"].get("Is_emotion", False)
-    user_query = state.get("user_query") if state.get("user_query") else config["configurable"].get("user_query", "")
+    user_query = config["configurable"].get("user_query", "")
     logger.info(f"进入情感识别子智能体 - 是否需要情感识别: {Is_emotion},识别内容: {user_query}")
     if not Is_emotion:
         return state

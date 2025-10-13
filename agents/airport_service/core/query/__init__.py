@@ -4,11 +4,10 @@
 提供查询转换和重排序功能
 """
 
-from .transform import rewrite_query, generate_step_back_query
+from .transform import comprehensive_query_transform
 from .rerank import rerank_results
 
 __all__ = [
-    "rewrite_query",
-    "generate_step_back_query", 
+    "comprehensive_query_transform",
     "rerank_results"
 ] 

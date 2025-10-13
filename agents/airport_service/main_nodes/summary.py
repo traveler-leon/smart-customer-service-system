@@ -1,9 +1,7 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
-from langmem.short_term import SummarizationNode, RunningSummary
 from langchain_core.prompts import ChatPromptTemplate
-
 from langgraph.graph import MessagesState
 from agents.airport_service.core import base_model
 from common.logging import get_logger

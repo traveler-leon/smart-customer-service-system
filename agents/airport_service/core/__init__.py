@@ -9,7 +9,7 @@ from .utils import (
     memery_delay,
     emotion
 )
-from .query.transform import rewrite_query, generate_step_back_query
+from .query import comprehensive_query_transform
 from .query.rerank import rerank_results
 from .models import image_model
 __all__ = [
@@ -26,7 +26,6 @@ __all__ = [
     "max_tokens",
     "memery_delay",
     "emotion",
-    "rewrite_query",
-    "generate_step_back_query",
+    "comprehensive_query_transform",
     "rerank_results"
 ]

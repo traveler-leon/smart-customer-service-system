@@ -1,7 +1,7 @@
 import importlib
 from typing import Dict, Any, List, Type
 from common.logging import get_logger
-from .interfaces import AsyncLLMProvider, AsyncVectorStore, AsyncDBConnector, AsyncMiddleware, AsyncEmbeddingProvider
+from .interfaces import AsyncLLMProvider, AsyncVectorStore, AsyncDBConnector, AsyncEmbeddingProvider
 from .abstract import AsyncSmartSqlBase
 
 # 获取日志记录器
@@ -59,23 +59,6 @@ class AsyncDBFactory:
         except (ImportError, AttributeError) as e:
             raise ValueError(f"不支持的数据库类型: {db_type}，错误：{str(e)}")
 
-class AsyncMiddlewareFactory:
-    """异步中间件工厂"""
-    
-    @staticmethod
-    async def create(middleware_type: str, config: Dict[str, Any] = None) -> AsyncMiddleware:
-        """异步创建中间件实例"""
-        try:
-            module_path = f"..middleware.{middleware_type.lower()}"
-            class_name = f"{middleware_type.capitalize()}Middleware"
-            
-            module = importlib.import_module(module_path, package="text2sql.base")
-            middleware_class = getattr(module, class_name)
-            
-            middleware = middleware_class(config)
-            return middleware
-        except (ImportError, AttributeError) as e:
-            raise ValueError(f"不支持的中间件类型: {middleware_type}，错误：{str(e)}")
 
 class AsyncSmartSqlFactory:
     """异步SmartSQL工厂"""
@@ -117,13 +100,6 @@ class AsyncSmartSqlFactory:
             storage_task, db_task
         )
         
-        # 创建中间件（如果有）
-        middlewares = []
-        middleware_configs = config.get("middlewares", [])
-        for mw_config in middleware_configs:
-            mw_type = mw_config.pop("type")
-            middleware = await AsyncMiddlewareFactory.create(mw_type, mw_config)
-            middlewares.append(middleware)
         
         # 导入AsyncSmartSqlBase类
         from .abstract import AsyncSmartSqlBase
@@ -134,7 +110,6 @@ class AsyncSmartSqlFactory:
             embedding_provider=embedding_provider,  # 添加嵌入模型提供者
             vector_store=vector_store,
             db_connector=db_connector,
-            middlewares=middlewares,
             config=config
         )
         

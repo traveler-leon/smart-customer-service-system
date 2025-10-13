@@ -26,13 +26,11 @@ def build_airport_service_graph():
     
     # 核心处理节点
     graph.add_node("router", router.identify_intent, retry_policy=RetryPolicy(max_attempts=5))
-    graph.add_node("flight_tool_node", flight.flight_tool_node, retry_policy=RetryPolicy(max_attempts=5))
-    graph.add_node("flight_assistant_node", flight.provide_flight_info, retry_policy=RetryPolicy(max_attempts=5))
-    graph.add_node("airport_tool_node", airport.airport_tool_node, retry_policy=RetryPolicy(max_attempts=5))
-    graph.add_node("airport_assistant_node", airport.provide_airport_knowledge, retry_policy=RetryPolicy(max_attempts=5))
-    # graph.add_node("chitchat_tool_node", chitchat.chitchat_tool_node, retry=RetryPolicy(max_attempts=5))
-    graph.add_node("chitchat_node", chitchat.handle_chitchat, retry_policy=RetryPolicy(max_attempts=5))
-    graph.add_node("business_tool_node", business.router_bussiness_tools, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("flight_info_search_node", flight.flight_info_search, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("flight_assistant_node", flight.flight_info_agent, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("airport_info_search_node", airport.airport_knowledge_search, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("airport_assistant_node", airport.airport_knowledge_agent, retry_policy=RetryPolicy(max_attempts=5))
+    graph.add_node("chitchat_node", chitchat.chitchat_agent, retry_policy=RetryPolicy(max_attempts=5))
     graph.add_node("business_assistant_node", business.business_agent, retry_policy=RetryPolicy(max_attempts=5))
     
     # 添加边 - 首先进行输入翻译
@@ -55,19 +53,16 @@ def build_airport_service_graph():
         "router",
         router.route_to_next_node,
         {
-            "flight_tool_node": "flight_tool_node",
-            "airport_tool_node": "airport_tool_node",
-            "business_tool_node": "business_tool_node",
-            # "chitchat_tool_node": "chitchat_tool_node"
+            "flight_info_search_node": "flight_info_search_node",
+            "airport_info_search_node": "airport_info_search_node",
+            "business_assistant_node": "business_assistant_node",
         }
     )
-    graph.add_edge("airport_tool_node", "airport_assistant_node")
+    graph.add_edge("flight_info_search_node", "flight_assistant_node")
+    graph.add_edge("airport_info_search_node", "airport_assistant_node")
     graph.add_edge("airport_assistant_node", "translate_output_node")
-    graph.add_edge("flight_tool_node", "flight_assistant_node")
     graph.add_edge("flight_assistant_node", "translate_output_node")
-    # graph.add_edge("chitchat_tool_node", "chitchat_node")
-    # graph.add_edge("chitchat_node", "translate_output_node")
-    graph.add_edge("business_tool_node", "business_assistant_node")
+    graph.add_edge("chitchat_node", "translate_output_node")
     graph.add_edge("business_assistant_node", END)
 
     graph.add_edge("transfer_to_human", 'translate_output_node')

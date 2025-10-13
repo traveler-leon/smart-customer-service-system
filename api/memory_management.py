@@ -8,7 +8,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request, Query
 from pydantic import BaseModel, Field
 
-from agents.airport_service.context_engineering.memory_manager import memory_manager, ConversationMemory
+from agents.airport_service.context_engineering.memory_manager import memory_manager
 from common.logging import get_logger
 
 logger = get_logger("api.memory_management")

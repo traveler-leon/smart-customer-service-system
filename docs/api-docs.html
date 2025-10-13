@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="智能客服系统 API 文档 - WebSocket 聊天接口和智能推荐接口">
+    <title>API 文档 - 智能客服系统文档</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>智能客服系统</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">首页</a></li>
+                <li><a href="user-profile.html" class="nav-link">用户画像</a></li>
+                <li><a href="api-docs.html" class="nav-link active">API 文档</a></li>
+                <li><a href="architecture.html" class="nav-link">系统架构</a></li>
+                <li><a href="memory-filter.html" class="nav-link">智能记忆</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <header class="doc-header">
+        <div class="container">
+            <h1 class="doc-title">API 文档</h1>
+            <p class="doc-subtitle">WebSocket 聊天接口、智能推荐接口和完整的系统集成指南</p>
+        </div>
+    </header>
+
+    <main class="doc-content">
+        <div class="container">
+            <!-- 侧边导航 -->
+            <div style="display: flex; gap: 2rem; align-items: flex-start;">
+                <nav class="doc-nav" style="position: sticky; top: 90px; min-width: 250px; background: var(--bg-card); padding: 1.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+                    <h3 style="margin-bottom: 1rem; color: var(--primary-color);">目录</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="#websocket" style="color: var(--text-secondary); text-decoration: none; display: block; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">WebSocket 聊天</a></li>
+                        <li><a href="#recommend" style="color: var(--text-secondary); text-decoration: none; display: block; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">智能推荐</a></li>
+                        <li><a href="#events" style="color: var(--text-secondary); text-decoration: none; display: block; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">事件类型</a></li>
+                        <li><a href="#examples" style="color: var(--text-secondary); text-decoration: none; display: block; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color);">完整示例</a></li>
+                        <li><a href="#errors" style="color: var(--text-secondary); text-decoration: none; display: block; padding: 0.5rem 0;">错误处理</a></li>
+                    </ul>
+                </nav>
+
+                <div class="doc-main" style="flex: 1;">
+                    <section id="overview">
+                        <h2>概述</h2>
+                        <p>智能客服系统提供两套主要的 API 接口：</p>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="card-icon">🔗</div>
+                                <h3>WebSocket 聊天接口</h3>
+                                <p>支持实时双向通信、文本对话、图片识别、表单交互和多语言支持</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="card-icon">🤖</div>
+                                <h3>智能推荐接口</h3>
+                                <p>提供问题推荐和商业推荐服务，基于用户输入和上下文进行智能推荐</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="websocket">
+                        <h2>WebSocket 聊天接口</h2>
+                        
+                        <div class="quick-start-item">
+                            <h3>基本信息</h3>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>属性</th>
+                                        <th>值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>接口路径</td>
+                                        <td><code>/api/v1/airport-assistant/chat/ws</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td>协议类型</td>
+                                        <td>WebSocket</td>
+                                    </tr>
+                                    <tr>
+                                        <td>连接方式</td>
+                                        <td>全双工实时通信</td>
+                                    </tr>
+                                    <tr>
+                                        <td>消息格式</td>
+                                        <td>JSON</td>
+                                    </tr>
+                                    <tr>
+                                        <td>支持功能</td>
+                                        <td>文本对话、图片识别、表单交互、多语言支持</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>连接建立</h3>
+                        <pre><code class="language-javascript">const ws = new WebSocket('ws://192.168.0.200/api/v1/airport-assistant/chat/ws');
+
+ws.onopen = function(event) {
+    console.log('WebSocket 连接已建立');
+};
+
+ws.onmessage = function(event) {
+    const message = JSON.parse(event.data);
+    console.log('收到消息:', message);
+};
+
+ws.onerror = function(error) {
+    console.error('WebSocket 错误:', error);
+};
+
+ws.onclose = function(event) {
+    console.log('WebSocket 连接已关闭');
+};</code></pre>
+
+                        <h3>请求协议</h3>
+                        
+                        <h4>消息结构</h4>
+                        <pre><code class="language-json">{
+  "thread_id": "会话ID",
+  "user_id": "用户唯一标识",
+  "query": "用户输入的文本内容",
+  "image": {
+    "filename": "图片文件名.jpg",
+    "content_type": "image/jpeg",
+    "data": "Base64编码的图片数据"
+  },
+  "metadata": {
+    "Is_translate": false,
+    "Is_emotion": false
+  },
+  "token": "认证令牌"
+}</code></pre>
+
+                        <h4>参数说明</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>参数</th>
+                                    <th>类型</th>
+                                    <th>必填</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>thread_id</td>
+                                    <td>string</td>
+                                    <td>是</td>
+                                    <td>会话标识，LangGraph利用此ID管理会话状态</td>
+                                </tr>
+                                <tr>
+                                    <td>user_id</td>
+                                    <td>string</td>
+                                    <td>是</td>
+                                    <td>用户唯一标识，用于用户画像关联</td>
+                                </tr>
+                                <tr>
+                                    <td>query</td>
+                                    <td>string</td>
+                                    <td>条件</td>
+                                    <td>用户当前输入内容，与image至少需要一项</td>
+                                </tr>
+                                <tr>
+                                    <td>image</td>
+                                    <td>object</td>
+                                    <td>条件</td>
+                                    <td>图片对象，包含文件信息和base64数据，与query至少需要一项</td>
+                                </tr>
+                                <tr>
+                                    <td>metadata</td>
+                                    <td>object</td>
+                                    <td>否</td>
+                                    <td>可选的上下文信息和系统参数</td>
+                                </tr>
+                                <tr>
+                                    <td>token</td>
+                                    <td>string</td>
+                                    <td>否</td>
+                                    <td>认证令牌，可选</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>请求示例</h4>
+                        
+                        <div class="quick-start-grid">
+                            <div class="quick-start-item">
+                                <h4>纯文本查询</h4>
+                                <pre><code class="language-json">{
+  "thread_id": "thread_123456",
+  "user_id": "user_789",
+  "query": "我想查询今天飞往北京的航班",
+  "metadata": {
+    "Is_translate": false,
+    "Is_emotion": false
+  }
+}</code></pre>
+                            </div>
+                            
+                            <div class="quick-start-item">
+                                <h4>图片查询</h4>
+                                <pre><code class="language-json">{
+  "thread_id": "thread_123456",
+  "user_id": "user_789",
+  "query": "这是我的登机牌，请帮我查看航班信息",
+  "image": {
+    "filename": "boarding_pass.jpg",
+    "content_type": "image/jpeg",
+    "data": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+  },
+  "metadata": {
+    "Is_translate": false,
+    "Is_emotion": false
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="events">
+                        <h2>响应事件类型</h2>
+                        
+                        <p>响应采用结构化JSON消息格式，每个消息包含事件类型和数据内容：</p>
+                        
+                        <pre><code class="language-json">{
+  "event": "事件类型",
+  "data": {
+    "id": "事件唯一标识",
+    "sequence": 1,
+    "content": {
+      // 根据事件类型不同而变化
+    }
+  }
+}</code></pre>
+
+                        <h3>事件类型说明</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>事件类型</th>
+                                    <th>说明</th>
+                                    <th>触发时机</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>start</td>
+                                    <td>会话开始标记</td>
+                                    <td>接收到用户消息后立即发送</td>
+                                </tr>
+                                <tr>
+                                    <td>text</td>
+                                    <td>文本类响应</td>
+                                    <td>返回文本内容时</td>
+                                </tr>
+                                <tr>
+                                    <td>form</td>
+                                    <td>交互式表单</td>
+                                    <td>需要用户填写信息时</td>
+                                </tr>
+                                <tr>
+                                    <td>flight_list</td>
+                                    <td>航班号列表展示</td>
+                                    <td>返回多个航班号，供用户独立订阅</td>
+                                </tr>
+                                <tr>
+                                    <td>end</td>
+                                    <td>响应结束标记</td>
+                                    <td>所有处理完成后发送</td>
+                                </tr>
+                                <tr>
+                                    <td>error</td>
+                                    <td>错误信息</td>
+                                    <td>处理异常时发送</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>文本响应 (event: text)</h3>
+                        <pre><code class="language-json">{
+  "event": "text",
+  "data": {
+    "id": "text-1672847123456-1",
+    "sequence": 1,
+    "content": {
+      "text": "您好！我是机场智能客服，很高兴为您服务。请问您需要什么帮助？",
+      "format": "plain"
+    }
+  }
+}</code></pre>
+
+                        <h4>文本格式选项</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>格式选项</th>
+                                    <th>说明</th>
+                                    <th>示例</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>plain</td>
+                                    <td>纯文本格式，不包含任何样式</td>
+                                    <td>"您好！欢迎使用机场服务"</td>
+                                </tr>
+                                <tr>
+                                    <td>markdown</td>
+                                    <td>Markdown格式，支持标题、列表、强调等基本格式</td>
+                                    <td>"## 航班信息\n* 航班号: **MU5735**"</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>表单响应 (event: form)</h3>
+                        <pre><code class="language-json">{
+  "event": "form",
+  "data": {
+    "id": "form-1672847123456-business",
+    "sequence": 2,
+    "content": {
+      "form_id": "business-1672847123",
+      "title": "轮椅租赁申请",
+      "description": "请填写以下信息完成轮椅租赁申请",
+      "action": "/api/v1/business/wheelchair-rental",
+      "fields": [
+        {
+          "id": "cjr",
+          "type": "text",
+          "label": "预约人姓名",
+          "placeholder": "请输入预约人姓名",
+          "required": true,
+          "value": "张三"
+        },
+        {
+          "id": "id_number",
+          "type": "text",
+          "label": "身份证号码",
+          "placeholder": "请输入18位身份证号码",
+          "required": true,
+          "validation": {
+            "pattern": "^[0-9]{18}$",
+            "error_message": "请输入有效的18位身份证号码"
+          }
+        }
+      ],
+      "buttons": [
+        {
+          "id": "submit",
+          "label": "提交申请",
+          "type": "submit"
+        },
+        {
+          "id": "cancel",
+          "label": "取消",
+          "type": "cancel"
+        }
+      ]
+    }
+  }
+}</code></pre>
+
+                        <h4>表单字段类型</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>字段类型</th>
+                                    <th>说明</th>
+                                    <th>支持属性</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>text</td>
+                                    <td>文本输入框</td>
+                                    <td>placeholder, maxlength, required, value, validation</td>
+                                </tr>
+                                <tr>
+                                    <td>number</td>
+                                    <td>数字输入框</td>
+                                    <td>min, max, step, required, value</td>
+                                </tr>
+                                <tr>
+                                    <td>email</td>
+                                    <td>邮箱输入框</td>
+                                    <td>placeholder, required, value, validation</td>
+                                </tr>
+                                <tr>
+                                    <td>tel</td>
+                                    <td>电话输入框</td>
+                                    <td>placeholder, pattern, required, value, validation</td>
+                                </tr>
+                                <tr>
+                                    <td>datetime-local</td>
+                                    <td>日期时间选择器</td>
+                                    <td>placeholder, required, value</td>
+                                </tr>
+                                <tr>
+                                    <td>select</td>
+                                    <td>下拉选择框</td>
+                                    <td>options, required, value</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>航班号列表响应 (event: flight_list)</h3>
+                        <pre><code class="language-json">{
+  "event": "flight_list",
+  "data": {
+    "id": "flight_list-1720593765000-1",
+    "sequence": 3,
+    "content": {
+      "title": "以下是为您找到的航班号：",
+      "flights": [
+        {
+          "flight_number": "CZ1234",
+          "subscribe_supported": true
+        },
+        {
+          "flight_number": "MU5678",
+          "subscribe_supported": true
+        },
+        {
+          "flight_number": "ZH9999",
+          "subscribe_supported": false
+        }
+      ],
+      "action_hint": "点击每个航班右侧的按钮可订阅航班动态"
+    }
+  }
+}</code></pre>
+                    </section>
+
+                    <section id="recommend">
+                        <h2>智能推荐接口</h2>
+                        
+                        <div class="quick-start-item">
+                            <h3>基础信息</h3>
+                            <ul>
+                                <li><strong>基础URL</strong>: <code>http://localhost:8081</code></li>
+                                <li><strong>Content-Type</strong>: <code>application/json</code></li>
+                                <li><strong>认证方式</strong>: 通过请求头中的 <code>token</code> 字段进行认证</li>
+                            </ul>
+                        </div>
+
+                        <h3>1. 问题推荐接口</h3>
+                        
+                        <div class="quick-start-item">
+                            <h4>接口信息</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>属性</th>
+                                        <th>值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>接口路径</td>
+                                        <td><code>/api/v1/question-recommend/questions</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td>请求方法</td>
+                                        <td>POST</td>
+                                    </tr>
+                                    <tr>
+                                        <td>接口描述</td>
+                                        <td>基于用户的当前问题和上下文，推荐相关的后续问题</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h4>请求示例</h4>
+                        <pre><code class="language-bash">curl -X POST "http://localhost:8081/api/v1/question-recommend/questions" \
+  -H "Content-Type: application/json" \
+  -H "token: your_token_here" \
+  -d '{
+    "thread_id": "thread_123",
+    "user_id": "user_456",
+    "query": "我想了解机场安检规定",
+    "metadata": {
+      "Is_translate": false,
+      "Is_emotion": true
+    }
+  }'</code></pre>
+
+                        <h4>成功响应</h4>
+                        <pre><code class="language-json">{
+  "ret_code": "000000",
+  "ret_msg": "操作成功",
+  "item": {
+    "thread_id": "thread_123",
+    "user_id": "user_456",
+    "recommended_questions": [
+      "是否可以携带液体上飞机？",
+      "充电宝的容量限制是多少？",
+      "登机时需要提前多久到达机场？"
+    ],
+    "processing_time": "1.23s"
+  }
+}</code></pre>
+
+                        <h3>2. 商业推荐接口</h3>
+                        
+                        <div class="quick-start-item">
+                            <h4>接口信息</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>属性</th>
+                                        <th>值</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>接口路径</td>
+                                        <td><code>/api/v1/business-recommend/business</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td>请求方法</td>
+                                        <td>POST</td>
+                                    </tr>
+                                    <tr>
+                                        <td>接口描述</td>
+                                        <td>基于用户的当前问题和上下文，推荐相关的机场业务服务</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h4>请求示例</h4>
+                        <pre><code class="language-bash">curl -X POST "http://localhost:8081/api/v1/business-recommend/business" \
+  -H "Content-Type: application/json" \
+  -H "token: your_token_here" \
+  -d '{
+    "thread_id": "thread_123",
+    "user_id": "user_456",
+    "query": "我行动不便，需要帮助",
+    "metadata": {
+      "Is_translate": false,
+      "Is_emotion": true
+    }
+  }'</code></pre>
+
+                        <h4>成功响应</h4>
+                        <pre><code class="language-json">{
+  "ret_code": "000000",
+  "ret_msg": "操作成功",
+  "item": {
+    "thread_id": "thread_123",
+    "user_id": "user_456",
+    "recommended_business": [
+      "轮椅租赁服务",
+      "无人陪伴儿童服务",
+      "特殊餐食申请",
+      "行李寄存服务",
+      "贵宾休息室服务"
+    ],
+    "processing_time": "1.45s"
+  }
+}</code></pre>
+                    </section>
+
+                    <section id="examples">
+                        <h2>完整对话示例</h2>
+                        
+                        <h3>客户端发送消息</h3>
+                        <pre><code class="language-json">{
+  "thread_id": "thread_20241224_001",
+  "user_id": "passenger_12345",
+  "query": "我想办理值机手续",
+  "metadata": {
+    "Is_translate": false,
+    "Is_emotion": false
+  }
+}</code></pre>
+
+                        <h3>服务端响应序列</h3>
+                        
+                        <div class="quick-start-grid">
+                            <div class="quick-start-item">
+                                <h4>响应1: 开始事件</h4>
+                                <pre><code class="language-json">{
+  "event": "start",
+  "thread_id": "thread_20241224_001",
+  "user_id": "passenger_12345"
+}</code></pre>
+                            </div>
+                            
+                            <div class="quick-start-item">
+                                <h4>响应2: 文本事件</h4>
+                                <pre><code class="language-json">{
+  "event": "text",
+  "data": {
+    "id": "text-1672847123456-1",
+    "sequence": 1,
+    "content": {
+      "text": "您好！我来帮您办理值机手续。为了更好地为您服务，请提供以下信息：",
+      "format": "plain"
+    }
+  }
+}</code></pre>
+                            </div>
+                            
+                            <div class="quick-start-item">
+                                <h4>响应3: 表单事件</h4>
+                                <pre><code class="language-json">{
+  "event": "form",
+  "data": {
+    "id": "form-1672847123456-checkin",
+    "sequence": 2,
+    "content": {
+      "form_id": "checkin-1672847123",
+      "title": "值机办理",
+      "description": "请填写您的航班信息",
+      "action": "/api/v1/checkin/submit",
+      "fields": [
+        {
+          "id": "booking_reference",
+          "label": "订票号/确认号",
+          "type": "text",
+          "required": true,
+          "placeholder": "6位订票号码"
+        },
+        {
+          "id": "passenger_surname",
+          "label": "旅客姓氏",
+          "type": "text",
+          "required": true,
+          "placeholder": "请输入姓氏"
+        }
+      ],
+      "buttons": [
+        {
+          "id": "submit",
+          "label": "开始值机",
+          "type": "primary",
+          "action": "submit"
+        }
+      ]
+    }
+  }
+}</code></pre>
+                            </div>
+                            
+                            <div class="quick-start-item">
+                                <h4>响应4: 结束事件</h4>
+                                <pre><code class="language-json">{
+  "event": "end",
+  "data": {
+    "id": "end-1672847123456-1",
+    "sequence": 3,
+    "content": {
+      "suggestions": ["查询航班状态", "选择座位", "行李托运"],
+      "metadata": {
+        "processing_time": "0.8s",
+        "results_count": 1
+      }
+    }
+  }
+}</code></pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="errors">
+                        <h2>错误处理</h2>
+                        
+                        <h3>错误码说明</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>错误码</th>
+                                    <th>说明</th>
+                                    <th>处理建议</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>invalid_json</td>
+                                    <td>JSON格式错误</td>
+                                    <td>检查请求格式是否正确</td>
+                                </tr>
+                                <tr>
+                                    <td>missing_fields</td>
+                                    <td>必要字段缺失</td>
+                                    <td>确保提供必要的字段信息</td>
+                                </tr>
+                                <tr>
+                                    <td>service_unavailable</td>
+                                    <td>服务不可用</td>
+                                    <td>稍后重试或联系客服</td>
+                                </tr>
+                                <tr>
+                                    <td>authentication_failed</td>
+                                    <td>认证失败</td>
+                                    <td>检查token是否有效</td>
+                                </tr>
+                                <tr>
+                                    <td>rate_limit_exceeded</td>
+                                    <td>请求频率超限</td>
+                                    <td>降低请求频率</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>连接错误处理</h3>
+                        <pre><code class="language-javascript">function connectWebSocket() {
+    const ws = new WebSocket('ws://your-domain/api/v1/airport-assistant/chat/ws');
+    
+    ws.onclose = function(event) {
+        console.log('连接关闭，5秒后重连...');
+        setTimeout(connectWebSocket, 5000);
+    };
+    
+    ws.onerror = function(error) {
+        console.error('WebSocket 错误:', error);
+    };
+}
+
+function sendMessage(message) {
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(message));
+    } else {
+        console.error('WebSocket 连接未建立');
+    }
+}</code></pre>
+
+                        <h3>错误事件响应</h3>
+                        <pre><code class="language-json">{
+  "event": "error",
+  "data": {
+    "id": "error-service_unavailable-1672847123456",
+    "sequence": 1,
+    "content": {
+      "error_code": "service_unavailable",
+      "error_message": "服务暂时不可用，请稍后再试"
+    }
+  }
+}</code></pre>
+                    </section>
+
+                    <section id="notes">
+                        <h2>注意事项</h2>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <h3>图片处理</h3>
+                                <ul>
+                                    <li>图片大小限制: 建议不超过10MB</li>
+                                    <li>支持格式: JPEG, PNG, GIF, WebP</li>
+                                    <li>需要base64编码传输</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>并发限制</h3>
+                                <ul>
+                                    <li>单用户并发请求数不超过10个</li>
+                                    <li>使用不同thread_id区分会话</li>
+                                    <li>响应时间通常在1-3秒</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="feature-card">
+                                <h3>安全考虑</h3>
+                                <ul>
+                                    <li>所有请求都会被记录和监控</li>
+                                    <li>敏感信息会被过滤处理</li>
+                                    <li>支持缓存机制提升性能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div style="text-align: center; margin: 3rem 0;">
+                        <p><em>最后更新: 2024年12月</em></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>文档</h4>
+                    <ul>
+                        <li><a href="api-docs.html">API 文档</a></li>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="architecture.html">系统架构</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>资源</h4>
+                    <ul>
+                        <li><a href="#examples">使用示例</a></li>
+                        <li><a href="#tutorials">教程指南</a></li>
+                        <li><a href="#changelog">更新日志</a></li>
+                        <li><a href="#support">技术支持</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>关于</h4>
+                    <ul>
+                        <li><a href="#about">项目介绍</a></li>
+                        <li><a href="#team">开发团队</a></li>
+                        <li><a href="#license">开源许可</a></li>
+                        <li><a href="#contact">联系我们</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 智能客服系统. 版权所有.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

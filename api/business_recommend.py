@@ -31,8 +31,20 @@ async def get_business_recommendations(request: BusinessRecommendRequest, http_r
     metadata = request.metadata or {}
     Is_translate = metadata.get("Is_translate", False)
     Is_emotion = metadata.get("Is_emotion", False)
-    # Is_translate = True
-    # Is_emotion = True
+    
+    # 提取技术环境信息字段
+    query_source = metadata.get("query_source","小程序")
+    query_device = metadata.get("query_device","手机")
+    query_ip = metadata.get("query_ip","")
+    network_type = metadata.get("network_type","5g")
+    
+    # 构建技术环境metadata
+    technical_metadata = {}
+    technical_metadata["query_source"] = query_source
+    technical_metadata["query_device"] = query_device
+    technical_metadata["query_ip"] = query_ip
+    technical_metadata["network_type"] = network_type
+    
     
     try:
         start_time = time.time()
@@ -54,7 +66,8 @@ async def get_business_recommendations(request: BusinessRecommendRequest, http_r
                 "image_data": image_data,
                 "token": token,
                 "Is_translate": Is_translate,
-                "Is_emotion": Is_emotion
+                "Is_emotion": Is_emotion,
+                "metadata": technical_metadata
             }
         } 
         logger.info(f"开始处理商业推荐: {request.query or '图片输入'}")

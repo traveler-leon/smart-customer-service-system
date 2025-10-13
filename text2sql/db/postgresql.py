@@ -52,8 +52,19 @@ class PostgresqlConnector(AsyncDBConnector):
     async def run_sql(self, sql: str, **kwargs) -> Union[pd.DataFrame, Dict[str, Any]]:
         """
         异步执行SQL查询
+        只允许执行SELECT语句，其他语句视为破坏性语句
         成功时返回DataFrame，失败时返回包含错误信息的字典
         """
+        # 检查SQL语句类型，只允许SELECT语句
+        sql_stripped = sql.strip().upper()
+        if not sql_stripped.startswith('SELECT'):
+            return {
+                "error": True,
+                "message": "用户正在执行破坏性操作。试图执行非SELECT语句",
+                "exception_type": "SecurityError",
+                "sql": sql
+            }
+        
         if not self.pool:
             await self.connect()
         
