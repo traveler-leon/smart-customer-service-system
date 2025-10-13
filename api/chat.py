@@ -236,8 +236,6 @@ async def airport_chat_websocket(websocket: WebSocket):
                 await websocket.send_text(json.dumps(start_response, ensure_ascii=False))                
                 # 处理聊天消息并发送事件
                 result_count = 0
-                logger.info(f"3333333msg_nodes: {msg_nodes}")
-                logger.info(f"4444444custom_nodes: {custom_nodes}")
                 async for msg_type, node, result in graph_manager.process_chat_message_stream(
                     message=query,
                     thread_id=threads,
@@ -313,7 +311,8 @@ async def airport_chat_websocket(websocket: WebSocket):
                         # 处理机场知识                        
                         # 尝试解析 qa 事件的 JSON 数据
                         try:
-                            if result.get('type') == 'qa' and 'answer' in result:
+                            if result.get('type') == 'expert_qa' and 'answer' in result:
+                                logger.info(f"1111111result: {result}")
                                 answer = result.get('answer', '')
                                 images = result.get('images', '')
                                

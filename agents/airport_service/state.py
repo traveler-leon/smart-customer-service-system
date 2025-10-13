@@ -30,7 +30,7 @@ class RetrievalResult(BaseModel):
         default=0.0, 
         description="检索结果的相似度分数"
     )
-    images: Optional[List[str]] = Field(
+    images: Optional[str] = Field(
         default=None, 
         description="相关图片列表（如果有）"
     )
