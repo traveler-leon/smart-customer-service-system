@@ -184,7 +184,9 @@ uv run main.py
 
 系统将在 `http://localhost:8081` 启动。
 可进入到docs文件夹下的chat.html下进行对话聊天测试。
-
+<p align="center">
+  <img src="./images/example_chat.png" alt="案例截图 1" width="260"/>
+</p>
 ### 📖 详细配置
 
 完整的配置说明和部署指南请参考：
