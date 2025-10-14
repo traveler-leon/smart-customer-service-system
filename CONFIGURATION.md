@@ -258,7 +258,7 @@ uv run main.py
 启动成功后，访问以下地址验证：
 
 - **API 文档**: http://localhost:8081/docs
-
+- 打开docs文件夹下的chat.html文件进行聊天对话测试
 ---
 
 **最后更新**: 2025-10-14
