@@ -1,8 +1,16 @@
 # 智能客服系统 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![GitHub stars](https://img.shields.io/github/stars/traveler-leon/smart-customer-service-system)](https://github.com/traveler-leon/smart-customer-service-system/stargazers) [![GitHub forks](https://img.shields.io/github/forks/traveler-leon/smart-customer-service-system)](https://github.com/traveler-leon/smart-customer-service-system/network) [![GitHub issues](https://img.shields.io/github/issues/traveler-leon/smart-customer-service-system)](https://github.com/traveler-leon/smart-customer-service-system/issues)
 
-[English](./README_EN.md) | [中文](./README.md)
+[English](./README_EN.md) | [中文](./README.md) | [📖 开始使用](./GET_STARTED.md)
 
 **一个为机场领域设计，但可轻松迁移至千行百业的、基于多智能体协作的开源智能客服系统。**
+
+<div align="center">
+
+### 🚀 快速开始
+
+[5分钟启动](./QUICKSTART.md) · [完整配置](./CONFIGURATION.md) · [Docker部署](./DOCKER.md) · [文档索引](./docs/index.md)
+
+</div>
 
 ## 📝 项目概述
 
@@ -50,6 +58,7 @@
   - [环境要求](#环境要求)
   - [安装步骤](#安装步骤)
   - [运行系统](#运行系统)
+  - [📖 详细配置](#-详细配置)
 - [🤝 贡献指南](#-贡献指南)
 - [📜 许可证](#-许可证)
 
@@ -140,7 +149,8 @@
 ### 环境要求
 
 - Python 3.12+
-- `uv` 包管理器
+- `uv` 包管理器（推荐）或 pip
+- Redis（用于会话存储）
 
 ### 安装步骤
 
@@ -162,6 +172,7 @@
     cp .env.example .env
     
     # 编辑 .env 文件，填入必要的 API 密钥和配置
+    # 详细配置说明请参考 CONFIGURATION.md
     ```
 
 ### 运行系统
@@ -169,6 +180,23 @@
 ```bash
 # 运行 FastAPI 应用
 uv run main.py
+```
+
+系统将在 `http://localhost:8081` 启动。
+
+### 📖 详细配置
+
+完整的配置说明和部署指南请参考：
+- **[配置与启动指南](./CONFIGURATION.md)** - 详细的环境变量配置、依赖服务部署和启动说明
+- **[环境变量模板](./.env.example)** - 包含所有可配置项的模板文件
+
+### 🐳 多种部署方式
+
+#### 方式 1: 本地开发（使用启动脚本）
+
+```bash
+# 一键检查环境并启动
+./start.sh
 ```
 
 ## 🤝 贡献指南

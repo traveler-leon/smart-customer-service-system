@@ -24,6 +24,6 @@ TEXT2KB_CONFIG = {
     "kb_topK": os.getenv("KB_TOPK"),
     "kb_key_words": os.getenv("KB_KEY_WORDS"),
     "reranker_model": os.getenv("RERANKER_MODEL"),
-    "reranker_address": os.getenv("RERANKER_ADDRESS",reranker_add),
+    "reranker_base_url": os.getenv("RERANKER_BASE_URL",reranker_add),
     "reranker_api_key": os.getenv("RERANKER_API_KEY",os.getenv("LLM_API_KEY"))
 }
