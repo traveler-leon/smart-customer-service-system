@@ -152,11 +152,11 @@ EMBEDDING_MAX_TOKENS=1024
 
 ```bash
 # xinference部署案例（其他本地部署方式类似）
-#RERANK_BASE_URL=http://192.168.0.105:9997/v1/rerank
+#RERANKER_BASE_URL=http://192.168.0.105:9997/v1/rerank
 #RERANKER_API_KEY='leon'
 #RERANKER_MODEL=bge-reranker-large
 
-RERANK_BASE_URL=https://api.example.com/v1/rerank
+RERANKER_BASE_URL=https://api.example.com/v1/rerank
 RERANKER_API_KEY='leon'
 RERANKER_MODEL=bge-reranker-large
 ```
