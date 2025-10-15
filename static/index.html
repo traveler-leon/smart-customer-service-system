@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>智能客服系统 - 从"问答机器"到"真正会沟通的AI" | 开源多智能体协作平台</title>
+    <meta name="description" content="突破传统AI客服局限，实现真正的对话智能。支持追问反问、多智能体协作、千人千面服务。开源、可扩展、易迁移至各行业。">
+    <meta name="keywords" content="智能客服,多智能体,LangGraph,开源AI,追问反问,对话智能,RAG,Text2SQL,用户画像">
+    <meta name="author" content="Smart Customer Service System">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    
+    <!-- Stylesheets -->
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #7c3aed;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-dark: #0f172a;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        /* Navigation */
+        .nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="%23ffffff"></path></svg>') no-repeat bottom;
+            background-size: cover;
+            opacity: 0.1;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-outline:hover {
+            background: white;
+            color: var(--primary);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Section */
+        section {
+            padding: 5rem 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 4rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Comparison Cards */
+        .comparison {
+            background: var(--bg-secondary);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .comparison-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .comparison-card.old {
+            border-left: 4px solid var(--warning);
+        }
+
+        .comparison-card.new {
+            border-left: 4px solid var(--success);
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(124, 58, 237, 0.05));
+        }
+
+        .comparison-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .badge-old {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-new {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin: 3rem 0;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .check {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .cross {
+            color: var(--text-secondary);
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
+            font-weight: 600;
+        }
+
+        /* Architecture */
+        .architecture {
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        .architecture .section-title {
+            -webkit-text-fill-color: white;
+        }
+
+        .arch-flow {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .arch-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .arrow {
+            font-size: 2rem;
+            opacity: 0.6;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 5rem 2rem;
+        }
+
+        .cta h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--bg-dark);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer h4 {
+            margin-bottom: 1rem;
+        }
+
+        .footer ul {
+            list-style: none;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        /* Code Block */
+        pre {
+            background: var(--bg-dark);
+            color: #fff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+
+        /* Stats Bar */
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="nav-logo">🤖 智能客服系统</div>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="features.html">核心优势</a></li>
+                <li><a href="evaluation.html">评估体系</a></li>
+                <li><a href="expert-review.html">专家审核</a></li>
+                <li><a href="chat.html">在线体验</a></li>
+                <li><a href="https://github.com/traveler-leon/smart-customer-service-system" target="_blank">GitHub ⭐</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🚀 开源 · 可扩展 · 多智能体协作</div>
+            <h1>从"问答机器"<br>到"真正会沟通的AI"</h1>
+            <p class="hero-subtitle">
+                突破传统AI客服的"玻璃天花板"，实现真正的对话智能
+            </p>
+            <p style="font-size: 1.1rem; margin: 2rem auto; max-width: 700px; opacity: 0.95;">
+                大多数AI客服只是高效的"信息检索器"，遇到模糊问题就束手无策。<br>
+                我们通过<strong>追问/反问机制</strong>和<strong>多智能体协作</strong>，让AI真正理解用户意图，<br>
+                从被动回答到主动解决问题。
+            </p>
+            <div class="hero-cta">
+                <a href="https://github.com/traveler-leon/smart-customer-service-system" class="btn btn-primary">
+                    ⭐ GitHub 开源项目
+                </a>
+                <a href="#comparison" class="btn btn-outline">
+                    📊 查看功能对比
+                </a>
+                </div>
+                </div>
+    </section>
+
+    <!-- Problem & Solution -->
+    <section class="comparison">
+        <div class="container">
+            <h2 class="section-title">为什么需要"会沟通"的AI?</h2>
+            <p class="section-subtitle">
+                用户的意图往往是模糊的，知识库的规定也无法穷尽所有情况。<br>
+                这时，一次精准的追问，才是连接用户与答案的桥梁。
+            </p>
+
+            <div class="comparison-grid">
+                <!-- Traditional AI -->
+                <div class="comparison-card old">
+                    <span class="comparison-badge badge-old">❌ 传统AI客服</span>
+                    <h3>单向问答模式</h3>
+                    <ul style="line-height: 2; color: var(--text-secondary);">
+                        <li>🔴 <strong>用户问题模糊</strong> → 返回一堆可能相关的文档</li>
+                        <li>🔴 <strong>知识库无精确匹配</strong> → 给出模棱两可的答案</li>
+                        <li>🔴 <strong>巨石型Prompt</strong> → If-Else逻辑脆弱、维护困难</li>
+                        <li>🔴 <strong>功能单一</strong> → 仅支持静态文档问答(RAG)</li>
+                        <li>🔴 <strong>千人一面</strong> → 无法记忆用户、无个性化</li>
+                    </ul>
+                    <p style="margin-top: 1.5rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; color: #92400e; font-size: 0.9rem;">
+                        <strong>核心问题：</strong>把用户当"数据源"，而非"沟通对象"
+                    </p>
+                </div>
+
+                <!-- Our Solution -->
+                <div class="comparison-card new">
+                    <span class="comparison-badge badge-new">✅ 我们的智能客服</span>
+                    <h3>对话式问题解决</h3>
+                    <ul style="line-height: 2; color: var(--text-primary);">
+                        <li>🟢 <strong>主动追问澄清</strong> → 引导用户明确真实需求</li>
+                        <li>🟢 <strong>决策-执行分离</strong> → 轻量级决策 + 专家级小Prompt</li>
+                        <li>🟢 <strong>多智能体协作</strong> → RAG + Text2SQL + 业务流程</li>
+                        <li>🟢 <strong>全场景覆盖</strong> → 问答、查询、办理、闲聊全支持</li>
+                        <li>🟢 <strong>千人千面</strong> → 长中短期记忆 + 用户画像赋能</li>
+                    </ul>
+                    <p style="margin-top: 1.5rem; padding: 1rem; background: #d1fae5; border-radius: 0.5rem; color: #065f46; font-size: 0.9rem;">
+                        <strong>核心创新：</strong>从"回答问题"到"理解并解决问题"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Features -->
+    <section id="features">
+            <div class="container">
+            <h2 class="section-title">核心优势</h2>
+            <p class="section-subtitle">
+                行业唯一支持追问/反问的开源智能客服系统
+            </p>
+
+            <div class="feature-grid">
+                    <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>主动式交互</h3>
+                    <p>
+                        当用户问题模糊时，系统会主动追问和澄清，引导用户获得精准答案。
+                        通过<strong>"决策-执行"分离架构</strong>，避免传统巨石型Prompt的脆弱性。
+                    </p>
+                    </div>
+
+                    <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3>多智能体协作</h3>
+                    <p>
+                        基于<strong>LangGraph</strong>构建，采用业界前沿的Multi-Agent架构。
+                        意图分类器智能路由，各领域专家Agent精准处理，突破"画布+规则"束缚。
+                    </p>
+                    </div>
+
+                    <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>智能推荐引导</h3>
+                    <p>
+                        当无法完全确定用户意图时，基于知识库内容"逆向生成"推荐问题。
+                        <strong>"猜你想问"</strong>、<strong>"猜你想办"</strong>、<strong>"猜你想买"</strong>全覆盖。
+                    </p>
+                    </div>
+
+                    <div class="feature-card">
+                    <div class="feature-icon">👤</div>
+                    <h3>千人千面服务</h3>
+                    <p>
+                        长、中、短期记忆结合，独立用户画像沉淀。
+                        可<strong>赋能第三方应用</strong>（如冷启动推荐），也可<strong>接入第三方画像</strong>增强效果。
+                    </p>
+                    </div>
+
+                    <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>全场景覆盖</h3>
+                    <p>
+                        <strong>文档问答(RAG)</strong> + <strong>数据库问答(Text2SQL)</strong> + <strong>业务流程办理(Agents)</strong>。
+                        支持20+字段排列组合查询，远超行业平均水平。
+                    </p>
+                    </div>
+
+                    <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3>多模态交互</h3>
+                    <p>
+                        支持文本、语音、实时语音、图片输入。
+                        多语言能力(含小语种)、情感识别、富文本展示。
+                        <strong>航班订阅</strong>等高级功能开箱即用。
+                    </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    <!-- Evaluation System -->
+    <section id="evaluation" class="architecture">
+            <div class="container">
+            <h2 class="section-title">全方位评估体系 - 基于DeepEval</h2>
+            <p style="text-align: center; font-size: 1.2rem; margin-bottom: 3rem; opacity: 0.9;">
+                系统上线≠万事大吉。我们内置完整的LLM评估框架，确保每个模块持续优化。
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 3rem 0;">
+                <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 2rem;">🧪</span>
+                        DeepEval驱动的评估能力
+                    </h3>
+                    <ul style="line-height: 2;">
+                        <li>✅ <strong>40+ 研究支持的指标</strong> - G-Eval、Faithfulness、Relevancy等</li>
+                        <li>✅ <strong>原生Pytest集成</strong> - 像单元测试一样测试LLM</li>
+                        <li>✅ <strong>单轮&多轮评估</strong> - 覆盖简单问答到复杂对话</li>
+                        <li>✅ <strong>多模态评估</strong> - 支持文本、图片、语音全链路测试</li>
+                        <li>✅ <strong>LLM-as-a-Judge</strong> - 用大模型评估大模型</li>
+                    </ul>
+                    <p style="margin-top: 1rem; padding: 1rem; background: rgba(37, 99, 235, 0.1); border-radius: 0.5rem; font-size: 0.9rem;">
+                        参考：<a href="https://deepeval.com/" target="_blank" style="color: var(--primary); text-decoration: underline;">DeepEval - The Open-Source LLM Evaluation Framework</a>
+                    </p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem;">
+                    <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 2rem;">📊</span>
+                        端到端评估体系
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border-left: 3px solid var(--success);">
+                            <strong>组件级评估</strong><br>
+                            <span style="opacity: 0.8; font-size: 0.9rem;">检索质量、意图分类准确率、生成质量独立评估</span>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border-left: 3px solid var(--primary);">
+                            <strong>端到端评估</strong><br>
+                            <span style="opacity: 0.8; font-size: 0.9rem;">从用户输入到最终回复的全流程质量评估</span>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border-left: 3px solid var(--warning);">
+                            <strong>业务指标监控</strong><br>
+                            <span style="opacity: 0.8; font-size: 0.9rem;">满意度、转化率、问题解决率等业务KPI</span>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem; border-left: 3px solid var(--accent);">
+                            <strong>实时监控看板</strong><br>
+                            <span style="opacity: 0.8; font-size: 0.9rem;">可视化界面实时追踪每次咨询的评估结果</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1)); padding: 2rem; border-radius: 1rem; margin-top: 2rem;">
+                <h4 style="margin-bottom: 1rem;">💡 为什么评估如此重要？</h4>
+                <p style="line-height: 1.8;">
+                    传统AI客服上线后，效果衰减是常态。我们的系统<strong>上线即自带全方位评估平台</strong>，无需额外开发。
+                    通过持续评估，及时发现问题、优化Prompt、调整策略，确保系统能力<strong>不衰减反增强</strong>。
+                    这是从"一次性交付"到"持续进化"的质的飞跃。
+                </p>
+                </div>
+            </div>
+        </section>
+
+    <!-- Expert Review & Self-Evolution -->
+    <section id="expert-review">
+            <div class="container">
+            <h2 class="section-title">专家审核与系统自进化</h2>
+            <p class="section-subtitle">
+                从被动响应到主动进化，让AI系统拥有"学习能力"
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 3rem 0;">
+                <!-- Expert Review Interface -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: var(--shadow);">
+                    <h3 style="color: var(--primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 2rem;">👨‍⚕️</span>
+                        专家审核机制
+                    </h3>
+                    <ul style="line-height: 2; color: var(--text-primary);">
+                        <li>🔍 <strong>智能筛选</strong> - 按时间、用户、智能体等多维度筛选历史对话</li>
+                        <li>⚡ <strong>批量审核</strong> - 支持单条审核和批量操作，提升效率</li>
+                        <li>📝 <strong>质量评分</strong> - 0-1分精细化评分，标注回复质量</li>
+                        <li>✏️ <strong>内容纠正</strong> - 专家可修正错误回复，作为标准答案</li>
+                        <li>📋 <strong>审核备注</strong> - 记录审核理由和改进建议</li>
+                    </ul>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem;">
+                        <code style="font-size: 0.85rem; color: var(--text-secondary);">
+                            💡 提示：查看 <a href="expert_review_v2.html" target="_blank" style="color: var(--primary);">专家审核界面演示</a>
+                        </code>
+                        </div>
+                    </div>
+                    
+                <!-- Self-Evolution Pipeline -->
+                <div style="background: white; padding: 2rem; border-radius: 1rem; box-shadow: var(--shadow);">
+                    <h3 style="color: var(--secondary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 2rem;">🔄</span>
+                        数据闭环与自进化
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="min-width: 30px; height: 30px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">1</div>
+                            <div>
+                                <strong>动态知识库增强</strong><br>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">专家审核通过的优质问答对自动入库</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="min-width: 30px; height: 30px; background: var(--secondary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">2</div>
+                            <div>
+                                <strong>向量模型微调</strong><br>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">高质量标注数据用于微调Embedding模型</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="min-width: 30px; height: 30px; background: var(--success); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">3</div>
+                            <div>
+                                <strong>垂直大模型训练</strong><br>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">专家纠正的对话数据作为行业模型训练语料</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: start; gap: 1rem;">
+                            <div style="min-width: 30px; height: 30px; background: var(--warning); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">4</div>
+                            <div>
+                                <strong>Prompt持续优化</strong><br>
+                                <span style="color: var(--text-secondary); font-size: 0.9rem;">基于审核反馈迭代优化系统Prompt</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2.5rem; border-radius: 1rem; margin-top: 2rem; text-align: center;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">🚀 从"一次性交付"到"持续进化"</h3>
+                <p style="font-size: 1.1rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">
+                    大多数AI客服上线后就"僵化"了。我们的系统通过<strong>评估→审核→反馈→优化</strong>的完整闭环，
+                    让AI不断从真实对话中学习，从专家经验中汲取营养，实现<strong>自我进化</strong>。
+                    这不仅仅是一个客服系统，更是一个<strong>可持续成长的智能中枢</strong>。
+                </p>
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem; flex-wrap: wrap;">
+                    <div>
+                        <div style="font-size: 2.5rem; font-weight: bold;">∞</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">持续学习</div>
+                    </div>
+                                <div>
+                        <div style="font-size: 2.5rem; font-weight: bold;">📈</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">能力增长</div>
+                                </div>
+                                <div>
+                        <div style="font-size: 2.5rem; font-weight: bold;">🎯</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">精准优化</div>
+                                </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    <!-- Comparison Table -->
+    <section id="comparison" class="comparison">
+            <div class="container">
+            <h2 class="section-title">功能对比</h2>
+            <p class="section-subtitle">
+                对比行业主流客服系统（数据来源：实际产品调研）
+            </p>
+
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>功能维度</th>
+                            <th>乌鲁木齐机场</th>
+                            <th>杭州机场</th>
+                            <th>无锡机场</th>
+                            <th>航旅纵横</th>
+                            <th class="highlight">我们的系统 🚀</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>多模态覆盖</strong></td>
+                            <td>文本</td>
+                            <td>文本、图片</td>
+                            <td>文本</td>
+                            <td>文本、语音</td>
+                            <td class="highlight">文本、语音、实时语音、图片 ✨</td>
+                        </tr>
+                        <tr>
+                            <td><strong>多轮对话</strong></td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="check">✓</td>
+                            <td class="check">✓</td>
+                            <td class="highlight check">✓✓✓</td>
+                        </tr>
+                        <tr>
+                            <td><strong>追问/反问</strong></td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="highlight check">✓ 行业唯一 🏆</td>
+                        </tr>
+                        <tr>
+                            <td><strong>知识库范围</strong></td>
+                            <td>安检为主</td>
+                            <td>安检为主</td>
+                            <td>安检为主</td>
+                            <td>安检、联检、海关</td>
+                            <td class="highlight">安检、联检、海关、边检、机场设施 ✨</td>
+                        </tr>
+                        <tr>
+                            <td><strong>航班查询</strong></td>
+                            <td>4字段</td>
+                            <td>多字段</td>
+                            <td>5字段</td>
+                            <td>多字段</td>
+                            <td class="highlight">20+字段排列组合(Text2SQL) 🎯</td>
+                        </tr>
+                        <tr>
+                            <td><strong>富文本展示</strong></td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="highlight check">✓ 图文卡片</td>
+                        </tr>
+                        <tr>
+                            <td><strong>航班卡片</strong></td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="highlight check">✓ 进港/出港/中转 3种样式</td>
+                        </tr>
+                        <tr>
+                            <td><strong>多语言</strong></td>
+                            <td class="cross">✗</td>
+                            <td class="check">✓</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="highlight check">✓ 含小语种</td>
+                        </tr>
+                        <tr>
+                            <td><strong>航班订阅</strong></td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="cross">✗</td>
+                            <td class="highlight check">✓ 实时推送</td>
+                        </tr>
+                        <tr>
+                            <td><strong>技术架构</strong></td>
+                            <td>画布+规则</td>
+                            <td>画布+规则</td>
+                            <td>画布+规则</td>
+                            <td>画布+规则</td>
+                            <td class="highlight">多智能体协作(LangGraph) 🏗️</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p style="text-align: center; margin-top: 2rem; color: var(--text-secondary);">
+                <strong>总结：</strong>目前市场上的机场客服功能单一，聚焦知识问答。
+                我们通过多智能体架构实现<strong>全场景覆盖</strong>，是行业唯一支持<strong>追问/反问</strong>的开源方案。
+            </p>
+                                </div>
+    </section>
+
+    <!-- Architecture -->
+    <section id="architecture" class="architecture">
+        <div class="container">
+            <h2 class="section-title">技术创新：决策-执行分离架构</h2>
+            <p style="text-align: center; font-size: 1.2rem; margin-bottom: 3rem; opacity: 0.9;">
+                如何优雅地实现"追问/反问"？传统的巨石型If-Else Prompt已经行不通。
+            </p>
+
+            <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem; margin: 2rem 0;">
+                <h3 style="margin-bottom: 1.5rem;">传统方案的困境</h3>
+                <pre style="background: rgba(0,0,0,0.3);"><code># 臃肿的巨石型Prompt（伪代码）
+你是一个智能客服。
+IF 用户的问题很宽泛 AND 检索到的知识是多个具体细则 THEN 
+    你需要总结这些细则的分类，并向用户提问，引导他明确具体类别
+ELSE IF 用户的问题很具体 AND 检索到的知识能直接回答 THEN 
+    你就直接根据知识回答
+ELSE IF ... (更多其他逻辑分支)
+...
+
+问题：
+❌ 脆弱且不可预测 - LLM对复杂指令理解不精确
+❌ 维护成本极高 - 每次调整都是"牵一发而动全身"
+❌ 认知负担过重 - 要求LLM同时完成分析、判断和生成</code></pre>
+                            </div>
+
+            <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem; margin: 2rem 0;">
+                <h3 style="margin-bottom: 1.5rem;">✅ 我们的解决方案：解构Prompt</h3>
+                
+                <div class="arch-flow">
+                    <div class="arch-box">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🔍</div>
+                        <h4>1. 轻量级决策层</h4>
+                        <p style="opacity: 0.8; margin-top: 0.5rem;">关系向量匹配 或<br>专用分类模型</p>
+                                </div>
+                    <div class="arrow">→</div>
+                    <div class="arch-box">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">🎯</div>
+                        <h4>2. 动态Prompt选择</h4>
+                        <p style="opacity: 0.8; margin-top: 0.5rem;">根据决策结果<br>选择专家级小Prompt</p>
+                            </div>
+                    <div class="arrow">→</div>
+                    <div class="arch-box">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">✨</div>
+                        <h4>3. 专注生成</h4>
+                        <p style="opacity: 0.8; margin-top: 0.5rem;">LLM只需专注<br>单一生成任务</p>
+                                </div>
+                            </div>
+
+                <h4 style="margin: 2rem 0 1rem;">核心优势：</h4>
+                <ul style="line-height: 2;">
+                    <li>🎯 <strong>专注的力量</strong> - LLM从"通才"变"专家"，准确率显著提升</li>
+                    <li>💰 <strong>降低成本</strong> - 可使用更小、更经济的模型完成高质量对话</li>
+                    <li>🔧 <strong>易于维护</strong> - 每个Prompt职责单一，调整互不影响</li>
+                    <li>📈 <strong>可扩展</strong> - 新增对话模式只需添加决策规则和对应Prompt</li>
+                </ul>
+                        </div>
+
+            <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 1rem; margin: 2rem 0;">
+                <h3 style="margin-bottom: 1.5rem;">技术栈</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
+                        <strong>🏗️ 核心框架</strong><br>
+                        <span style="opacity: 0.8;">LangGraph · LangChain</span>
+                    </div>
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
+                        <strong>🤖 模型服务</strong><br>
+                        <span style="opacity: 0.8;">Xinference (本地部署)</span>
+                            </div>
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
+                        <strong>📚 知识库</strong><br>
+                        <span style="opacity: 0.8;">RAGFlow</span>
+                            </div>
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
+                        <strong>🔌 外部服务</strong><br>
+                        <span style="opacity: 0.8;">MCP (高德、12306等)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section>
+        <div class="container">
+            <h2 class="section-title">系统亮点一览</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">开源免费</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">唯一</div>
+                    <div class="stat-label">支持追问/反问</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">40+</div>
+                    <div class="stat-label">评估指标(DeepEval)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">20+</div>
+                    <div class="stat-label">字段组合查询</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">4维</div>
+                    <div class="stat-label">自进化闭环</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">3种</div>
+                    <div class="stat-label">智能推荐模式</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container">
+            <h2>构建一个会思考、能进化的AI客服</h2>
+            <p style="font-size: 1.1rem; margin: 1rem 0;">
+                不只是"问答"，更是"沟通" · 不只是"交付"，更是"进化"
+            </p>
+            <p style="opacity: 0.9;">
+                ✨ 追问/反问能力 · 🧪 DeepEval评估 · 👨‍⚕️ 专家审核 · 🔄 自进化闭环<br>
+                完全开源，可轻松迁移至各行各业
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+                <a href="https://github.com/traveler-leon/smart-customer-service-system" class="btn btn-primary" style="background: white; color: var(--primary);">
+                    ⭐ Star on GitHub
+                </a>
+                <a href="expert_review_v2.html" class="btn btn-outline" target="_blank">
+                    👨‍⚕️ 专家审核演示
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <h4>📖 核心功能</h4>
+                    <ul>
+                        <li><a href="#features">核心优势</a></li>
+                        <li><a href="#evaluation">评估体系</a></li>
+                        <li><a href="#expert-review">专家审核</a></li>
+                        <li><a href="#architecture">技术架构</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🛠️ 技术文档</h4>
+                    <ul>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🔗 开源生态</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system" target="_blank">GitHub 仓库</a></li>
+                        <li><a href="https://deepeval.com/" target="_blank">DeepEval</a></li>
+                        <li><a href="https://www.langchain.com/" target="_blank">LangChain</a></li>
+                        <li><a href="https://github.com/infiniflow/ragflow" target="_blank">RAGFlow</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🤝 社区</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/discussions" target="_blank">讨论区</a></li>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/issues" target="_blank">Issue 反馈</a></li>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/blob/main/LICENSE" target="_blank">MIT License</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Smart Customer Service System. 开源项目，基于 MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

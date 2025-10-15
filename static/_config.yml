@@ -1,0 +1,119 @@
+# GitHub Pages 配置文件
+
+# 网站基本信息
+title: "智能客服系统文档"
+description: "基于大语言模型的机场客户服务解决方案"
+url: "https://traveler-leon.github.io"
+baseurl: "/smart-customer-service-system"
+
+# 作者信息
+author:
+  name: "开发团队"
+  email: "leon1399@163.com"
+
+# 构建设置
+markdown: kramdown
+highlighter: rouge
+theme: jekyll-theme-minimal
+
+# 插件
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# 排除文件
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .sass-cache
+  - .jekyll-cache
+  - .jekyll-metadata
+
+# 包含文件
+include:
+  - _pages
+  - assets
+
+# 默认设置
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+
+# SEO 设置
+lang: zh-CN
+locale: zh_CN
+
+# 社交链接
+social:
+  github: "traveler-leon/smart-customer-service-system"
+
+# 导航菜单
+navigation:
+  - title: "首页"
+    url: "/"
+  - title: "核心优势"
+    url: "/features.html"
+  - title: "评估体系"
+    url: "/evaluation.html"
+  - title: "专家审核"
+    url: "/expert-review.html"
+  - title: "用户画像"
+    url: "/user-profile.html"
+  - title: "智能记忆"
+    url: "/memory-filter.html"
+
+# 功能特性
+features:
+  - title: "用户画像系统"
+    description: "三步走战略，从实时会话分析到长期行为洞察"
+    icon: "👤"
+  - title: "WebSocket API"
+    description: "实时双向通信，支持文本对话、图片识别、表单交互"
+    icon: "🔗"
+  - title: "智能记忆筛选"
+    description: "基于多因子综合评分的记忆检索算法"
+    icon: "🧠"
+  - title: "混合式架构"
+    description: "TrustCall 语义提取 + 数据统计计算的混合模式"
+    icon: "🏗️"
+
+# 版权信息
+copyright: "© 2024 xtron. 版权所有."
+
+# Google Analytics (可选)
+# google_analytics: "G-XXXXXXXXXX"
+
+# 评论系统 (可选)
+# comments:
+#   provider: "disqus"
+#   disqus:
+#     shortname: "your-disqus-shortname"
+
+# 搜索功能 (可选)
+search: true
+search_full_content: true
+
+# 时区
+timezone: Asia/Shanghai
+
+# 网站图标
+favicon: "/assets/images/favicon.ico"
+logo: "/assets/images/logo.png"
+
+# 代码高亮主题
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: false
+      start_line: 1

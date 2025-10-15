@@ -336,7 +336,11 @@ class MemoryManager:
                     "query_device": metadata.get('query_device', '手机'),
                     "query_ip": metadata.get('query_ip', ''),
                     "network_type": metadata.get('network_type', '5g'),
-
+                    "retrieval_content": metadata.get('retrieval_content', ''),
+                    "retrieval_source": metadata.get('retrieval_source', ''),
+                    "retrieval_score": metadata.get('retrieval_score', 0.0),
+                    "retrieval_images": metadata.get('retrieval_images', ''),
+                    "retrieval_query_list": metadata.get('retrieval_query_list', []),
                     "created_at": memory.get('created_at'),
                     "updated_at": memory.get('updated_at')
                 }

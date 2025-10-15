@@ -67,7 +67,10 @@ source_query：在几号登机口
 target_query：今天我的航班在几号登机口，什么时候开始登机
 </example7>
 </examples>
-
+历史对话信息为
+<history_dialogue>
+{messages}
+</history_dialogue>
 <input>
 {original_query}
 </input>
@@ -127,7 +130,10 @@ QUERY_REWRITE_PROMPT = """
 改写后：成都航空的国内航班值机区域在哪里
 </example3>
 </examples>
-
+历史对话信息为
+<history_dialogue>
+{messages}
+</history_dialogue>
 <input>
 {original_query}
 </input>
@@ -158,7 +164,10 @@ STEP_BACK_QUERY_PROMPT = """
 回退后的问题：液体化妆品的携带规定是什么
 </example1>
 </examples>
-
+历史对话信息为
+<history_dialogue>
+{messages}
+</history_dialogue>
 <input>
 {original_query}
 </input>

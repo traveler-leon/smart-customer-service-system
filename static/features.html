@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核心优势 - 智能客服系统</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-dark: #0f172a;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--primary); }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 { font-size: 3rem; margin-bottom: 1rem; }
+
+        .hero p { font-size: 1.3rem; opacity: 0.95; max-width: 800px; margin: 0 auto; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        section { padding: 4rem 0; }
+
+        .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        .card h3 { color: var(--primary); margin-bottom: 1rem; }
+
+        .feature-list {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
+            padding: 2rem;
+            border-radius: 1rem;
+            border-left: 4px solid var(--primary);
+            margin: 2rem 0;
+        }
+
+        .comparison-table {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin: 3rem 0;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table tr:hover { background: var(--bg-secondary); }
+
+        .check { color: var(--success); font-weight: bold; }
+        .cross { color: var(--text-secondary); }
+        .highlight { background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1)); font-weight: 600; }
+
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-radius: 1rem;
+            margin: 4rem 0;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-block;
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .footer {
+            background: var(--bg-dark);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer h4 { margin-bottom: 1rem; }
+        .footer ul { list-style: none; }
+        .footer a { color: rgba(255, 255, 255, 0.7); text-decoration: none; transition: color 0.3s; }
+        .footer a:hover { color: white; }
+        .footer-bottom { border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 2rem; text-align: center; opacity: 0.7; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .section-title { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">🤖 智能客服系统</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="features.html">核心优势</a></li>
+                <li><a href="evaluation.html">评估体系</a></li>
+                <li><a href="expert-review.html">专家审核</a></li>
+                <li><a href="chat.html">在线体验</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>✨ 核心优势</h1>
+        <p>行业唯一支持追问/反问的开源智能客服系统</p>
+    </section>
+
+    <main>
+        <section>
+            <div class="container">
+                <h2 class="section-title">六大核心功能</h2>
+                <p class="section-subtitle">全面超越传统AI客服的能力边界</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-icon">💬</div>
+                        <h3>主动式交互</h3>
+                        <p>当用户问题模糊时，系统会主动追问和澄清，引导用户获得精准答案。</p>
+                        <ul class="feature-list">
+                            <li>追问/反问机制（行业唯一）</li>
+                            <li>决策-执行分离架构</li>
+                            <li>避免巨石型Prompt脆弱性</li>
+                            <li>轻量级决策 + 专家级小Prompt</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🤝</div>
+                        <h3>多智能体协作</h3>
+                        <p>基于LangGraph构建，采用业界前沿的Multi-Agent架构。</p>
+                        <ul class="feature-list">
+                            <li>意图分类器智能路由</li>
+                            <li>各领域专家Agent精准处理</li>
+                            <li>突破"画布+规则"束缚</li>
+                            <li>灵活可扩展</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🎯</div>
+                        <h3>智能推荐引导</h3>
+                        <p>基于知识库内容"逆向生成"推荐问题。</p>
+                        <ul class="feature-list">
+                            <li>"猜你想问" - 问题推荐</li>
+                            <li>"猜你想办" - 业务推荐</li>
+                            <li>"猜你想买" - 商品推荐</li>
+                            <li>答案驱动问题生成</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">👤</div>
+                        <h3>千人千面服务</h3>
+                        <p>长、中、短期记忆结合，独立用户画像沉淀。</p>
+                        <ul class="feature-list">
+                            <li>长中短期记忆系统</li>
+                            <li>独立用户画像</li>
+                            <li>赋能第三方应用</li>
+                            <li>接入第三方画像</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🌐</div>
+                        <h3>全场景覆盖</h3>
+                        <p>不只是问答，更是全流程服务平台。</p>
+                        <ul class="feature-list">
+                            <li>文档问答 (RAG)</li>
+                            <li>数据库问答 (Text2SQL)</li>
+                            <li>业务流程办理 (Agents)</li>
+                            <li>20+字段组合查询</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🚀</div>
+                        <h3>多模态交互</h3>
+                        <p>支持文本、语音、图片全方位交互。</p>
+                        <ul class="feature-list">
+                            <li>文本、语音、实时语音、图片</li>
+                            <li>多语言能力（含小语种）</li>
+                            <li>情感识别</li>
+                            <li>富文本展示 + 航班订阅</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section style="background: var(--bg-secondary);">
+            <div class="container">
+                <h2 class="section-title">与行业对比</h2>
+                <p class="section-subtitle">基于实际产品调研的数据对比</p>
+
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>功能维度</th>
+                                <th>行业平均水平</th>
+                                <th class="highlight">我们的系统 🚀</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>追问/反问</strong></td>
+                                <td class="cross">✗ 不支持</td>
+                                <td class="highlight check">✓ 行业唯一支持</td>
+                            </tr>
+                            <tr>
+                                <td><strong>多模态覆盖</strong></td>
+                                <td>文本、语音</td>
+                                <td class="highlight">文本、语音、实时语音、图片</td>
+                            </tr>
+                            <tr>
+                                <td><strong>航班查询</strong></td>
+                                <td>4-5个字段</td>
+                                <td class="highlight">20+字段排列组合(Text2SQL)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>技术架构</strong></td>
+                                <td>画布+规则</td>
+                                <td class="highlight">多智能体协作(LangGraph)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>评估体系</strong></td>
+                                <td class="cross">✗ 无</td>
+                                <td class="highlight check">✓ DeepEval 40+指标</td>
+                            </tr>
+                            <tr>
+                                <td><strong>专家审核</strong></td>
+                                <td class="cross">✗ 无</td>
+                                <td class="highlight check">✓ 完整审核平台</td>
+                            </tr>
+                            <tr>
+                                <td><strong>自进化能力</strong></td>
+                                <td class="cross">✗ 无</td>
+                                <td class="highlight check">✓ 4维自进化闭环</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2 class="section-title">为什么选择我们？</h2>
+                <p class="section-subtitle">三大核心竞争力，构建完整闭环</p>
+
+                <div class="highlight-box">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1.5rem;">🔄 完整的进化闭环</h3>
+                    <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💬</div>
+                            <strong>对话能力</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">追问/反问</span>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.5;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🧪</div>
+                            <strong>评估能力</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">DeepEval</span>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.5;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👨‍⚕️</div>
+                            <strong>审核能力</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">专家审核</span>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.5;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔄</div>
+                            <strong>进化能力</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">自优化</span>
+                        </div>
+                    </div>
+                    <p style="margin-top: 2rem; text-align: center; font-size: 1.1rem;">
+                        这三个能力形成完整闭环：<strong>对话→评估→审核→优化→再对话</strong>，<br>
+                        实现真正的AI系统自进化！
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <div class="cta-section">
+                    <h2 style="font-size: 2rem; margin-bottom: 1rem;">准备好体验下一代智能客服了吗？</h2>
+                    <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.95;">
+                        100%开源免费，可轻松迁移至各行各业
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="https://github.com/traveler-leon/smart-customer-service-system" class="btn" target="_blank">
+                            ⭐ GitHub开源项目
+                        </a>
+                        <a href="evaluation.html" class="btn">
+                            🧪 了解评估体系
+                        </a>
+                        <a href="expert-review.html" class="btn">
+                            👨‍⚕️ 了解专家审核
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <h4>📖 核心功能</h4>
+                    <ul>
+                        <li><a href="features.html">核心优势</a></li>
+                        <li><a href="evaluation.html">评估体系</a></li>
+                        <li><a href="expert-review.html">专家审核</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🛠️ 技术文档</h4>
+                    <ul>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🔗 开源生态</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system" target="_blank">GitHub 仓库</a></li>
+                        <li><a href="https://deepeval.com/" target="_blank">DeepEval</a></li>
+                        <li><a href="https://www.langchain.com/" target="_blank">LangChain</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🤝 社区</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/discussions" target="_blank">讨论区</a></li>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/issues" target="_blank">Issue 反馈</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Smart Customer Service System. 开源项目，基于 MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+

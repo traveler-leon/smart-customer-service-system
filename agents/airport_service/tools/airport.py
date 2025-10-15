@@ -68,7 +68,7 @@ async def airport_knowledge_query2docs_main(user_question:str,messages:List[AnyM
                         api_key=KB_API_KEY,
                         similarity_threshold=0.01,
                         vector_similarity_weight=KB_VECTOR_SIMILARITY_WEIGHT,
-                        top_k=KB_TOP_K*15,
+                        top_k=KB_TOP_K*5,
                         key_words=KB_KEY_WORDS)
         for query in query_list
     ]
@@ -89,7 +89,7 @@ async def airport_knowledge_query2docs_main(user_question:str,messages:List[AnyM
             content=expert_qa["answer"],
             score=expert_qa.get("score", 1.0),
             images=expert_qa.get("images"),
-            metadata={"query_list": query_list}
+            query_list=query_list
         )
     
     # 合并所有检索结果
@@ -112,24 +112,26 @@ async def airport_knowledge_query2docs_main(user_question:str,messages:List[AnyM
     # 重排模型
     if len(results) > 0 and RERANKER_MODEL and RERANKER_BASE_URL:
         results, max_score = await rerank_results(results, user_question, RERANKER_MODEL, RERANKER_BASE_URL, RERANKER_API_KEY, KB_TOP_K)
-        text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        # text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        text = "\n\n".join(f"{doc['content']}" for i, doc in enumerate(results))
         logger.info(f"知识库检索成功，最高分数: {max_score}")
         return RetrievalResult(
             source="knowledge_base",
             content=text,
             score=max_score,
             images=None,
-            metadata={"query_list": query_list, "doc_count": len(results)}
+            query_list=query_list
         )
     elif len(results) > 0:
-        text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        text = "\n\n".join(f"{doc['content']}" for i, doc in enumerate(results))
+        # text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
         logger.info(f"知识库检索成功（未使用重排）")
         return RetrievalResult(
             source="knowledge_base",
             content=text,
             score=0.0,
             images=None,
-            metadata={"query_list": query_list, "doc_count": len(results)}
+            query_list=query_list
         )
     
     # 没有找到任何结果
@@ -139,7 +141,7 @@ async def airport_knowledge_query2docs_main(user_question:str,messages:List[AnyM
         content="抱歉，在知识库中没有找到与问题相关的信息。",
         score=0.0,
         images=None,
-        metadata={"query_list": query_list}
+        query_list=query_list
     )
 
 
@@ -204,24 +206,26 @@ async def airport_knowledge_query2docs(user_question:str,messages:List[AnyMessag
     # 重排模型
     if len(results) > 0 and RERANKER_MODEL and RERANKER_BASE_URL:
         results, max_score = await rerank_results(results, user_question, RERANKER_MODEL, RERANKER_BASE_URL, RERANKER_API_KEY, KB_TOP_K)
-        text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        # text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        text = "\n\n".join(f"{doc['content']}" for i, doc in enumerate(results))
         logger.info(f"知识库检索成功，最高分数: {max_score}")
         return RetrievalResult(
             source="knowledge_base",
             content=text,
             score=max_score,
             images=None,
-            metadata={"query_list": query_list, "doc_count": len(results)}
+            query_list=query_list,
         )
     elif len(results) > 0:
-        text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        # text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
+        text = "\n\n".join(f"{doc['content']}" for i, doc in enumerate(results))
         logger.info(f"知识库检索成功（未使用重排）")
         return RetrievalResult(
             source="knowledge_base",
             content=text,
             score=0.0,
             images=None,
-            metadata={"query_list": query_list, "doc_count": len(results)}
+            query_list=query_list,
         )
     
     # 没有找到任何结果
@@ -231,5 +235,5 @@ async def airport_knowledge_query2docs(user_question:str,messages:List[AnyMessag
         content="抱歉，在知识库中没有找到与问题相关的信息。",
         score=0.0,
         images=None,
-        metadata={"query_list": query_list}
+        query_list=query_list,
     )

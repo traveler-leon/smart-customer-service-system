@@ -188,7 +188,7 @@ async def get_conversation_history(
 @router.post("/conversations/expert-review")
 async def expert_review_conversation(request: ExpertReviewRequest):
     """
-    专家审核单个对话 - 使用 mem0 update API
+    专家审核单个对话
     支持修改回答内容、质量评分、审核备注等
     """
     logger.info(f"专家审核对话: memory_id={request.memory_id}, approved={request.expert_approved}")

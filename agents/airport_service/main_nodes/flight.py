@@ -142,9 +142,7 @@ async def flight_info_agent(state: AirportMainServiceState, config: RunnableConf
         ("system", main_graph_prompts.FLIGHT_INFO_SYSTEM_PROMPT),
         ("human", main_graph_prompts.FLIGHT_INFO_HUMAN_PROMPT)
     ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
-    context_docs = state.get("db_context_docs", {})
-    # 获取消息历史
+    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")    # 获取消息历史
     new_messages = filter_messages_for_agent(state, max_msg_len, "航班信息问答子智能体")
     logger.info(f"航班信息问答子智能体隔离后的消息:---------")
     logger.info(f"{new_messages}")
@@ -152,8 +150,8 @@ async def flight_info_agent(state: AirportMainServiceState, config: RunnableConf
 
     messages = new_messages if len(new_messages) > 0 else [AIMessage(content="暂无对话历史")]
     # 处理不同格式的sql_result
-    sql_result = context_docs.get("data", "")
-    sql_query = context_docs.get("sql", "")
+    sql_result = state.get("retrieval_result").content or ""
+    sql_query = state.get("retrieval_result").sql or ""
 
     # 数据有效，调用LLM进行处理
     kb_chain = kb_prompt | base_model
@@ -164,7 +162,7 @@ async def flight_info_agent(state: AirportMainServiceState, config: RunnableConf
         "messages": messages
     })
     res.name = "航班信息问答子智能体"
-    await send_flight_info_to_user(sql_result,5)
+    await send_flight_info_to_user(json.loads(sql_result),5)
 
     return {"messages":[res],"db_context_docs":None}
 
@@ -172,6 +170,6 @@ async def flight_info_agent(state: AirportMainServiceState, config: RunnableConf
 async def flight_info_search(state: AirportMainServiceState, config: RunnableConfig):
     messages = filter_messages_for_agent(state, max_msg_len, "航班信息问答子智能体")
     user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
-    docs = await flight_info_query2docs(user_query, messages)
-    return {"db_context_docs":docs["db_context_docs"]}
+    retrieval_result = await flight_info_query2docs(user_query, messages)
+    return {"retrieval_result":retrieval_result}
 

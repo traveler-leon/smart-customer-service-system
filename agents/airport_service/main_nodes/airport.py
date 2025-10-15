@@ -28,7 +28,8 @@ async def airport_knowledge_agent(state: AirportMainServiceState, config: Runnab
     """
     logger.info("进入机场知识问答子智能体")
 
-    user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
+    # user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
+    user_query = state.get("retrieval_result").query_list[1] if state.get("retrieval_result", "") else config["configurable"].get("user_query", "")
     
     # 获取统一的检索结果
     retrieval_result = state.get("retrieval_result")
@@ -98,6 +99,7 @@ async def airport_knowledge_search(state: AirportMainServiceState, config: Runna
     
     # 执行统一检索
     retrieval_result = await airport_knowledge_query2docs_main(user_query, messages)
+    logger.info(f"机场知识检索结果{retrieval_result.score}: {retrieval_result.content}")
     
     writer = get_stream_writer()
     

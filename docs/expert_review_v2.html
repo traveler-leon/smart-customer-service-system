@@ -295,7 +295,7 @@
         }
 
         .conversation-content {
-            max-width: 300px;
+            max-width: 100%;
         }
 
         .query-text, .response-text {
@@ -321,6 +321,75 @@
         .response-text {
             border-left-color: #10b981;
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
+        }
+
+        .retrieval-info {
+            border-left-color: #8b5cf6;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(139, 92, 246, 0.03) 100%);
+        }
+
+        .retrieval-section {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%);
+            border-radius: 10px;
+            border-left: 4px solid #8b5cf6;
+            font-size: 0.85rem;
+        }
+
+        .retrieval-item {
+            margin-bottom: 0.5rem;
+            padding: 0.4rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 6px;
+        }
+
+        .retrieval-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .retrieval-label {
+            font-weight: 600;
+            color: #6d28d9;
+            margin-right: 0.5rem;
+        }
+
+        .retrieval-content-preview {
+            max-height: 100px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+            margin-top: 0.3rem;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .retrieval-query-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-top: 0.3rem;
+        }
+
+        .query-tag {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+        }
+
+        .score-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 0.3rem 0.7rem;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
         }
 
         .text-ellipsis {
@@ -839,11 +908,11 @@
                 <table class="results-table">
                     <thead>
                         <tr>
-                            <th width="5%">选择</th>
-                            <th width="15%">基本信息</th>
-                            <th width="35%">对话内容</th>
-                            <th width="10%">当前状态</th>
-                            <th width="35%">审核操作</th>
+                            <th width="3%">选择</th>
+                            <th width="13%">基本信息</th>
+                            <th width="42%">对话内容</th>
+                            <th width="8%">当前状态</th>
+                            <th width="34%">审核操作</th>
                         </tr>
                     </thead>
                     <tbody id="resultsTableBody">
@@ -1093,6 +1162,7 @@
                                     <span class="tooltiptext">${safeText(conv.response)}</span>
                                 </div>
                             </div>
+                            ${createRetrievalInfo(conv)}
                         </div>
                     </td>
                     <td>
@@ -1115,6 +1185,89 @@
                     </td>
                 </tr>
             `;
+        }
+
+        // 创建知识库检索信息显示
+        function createRetrievalInfo(conv) {
+            // 如果没有任何检索信息，则不显示
+            const hasRetrievalInfo = conv.retrieval_content || conv.retrieval_source || 
+                                    conv.retrieval_score > 0 || conv.retrieval_images || 
+                                    (conv.retrieval_query_list && conv.retrieval_query_list.length > 0);
+            
+            if (!hasRetrievalInfo) {
+                return '';
+            }
+
+            const safeText = (text) => {
+                if (text === null || text === undefined) return '';
+                return String(text).replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            };
+
+            let html = '<div class="retrieval-section"><strong>📚 知识库检索信息</strong>';
+            
+            // 检索来源和评分
+            if (conv.retrieval_source) {
+                html += `
+                    <div class="retrieval-item">
+                        <span class="retrieval-label">🔍 检索来源:</span>
+                        <span>${safeText(conv.retrieval_source)}</span>
+                        ${conv.retrieval_score > 0 ? 
+                            `<span class="score-badge" style="margin-left: 0.5rem;">匹配分数: ${conv.retrieval_score.toFixed(3)}</span>` 
+                            : ''}
+                    </div>
+                `;
+            }
+
+            // 问题重写列表
+            if (conv.retrieval_query_list && conv.retrieval_query_list.length > 0) {
+                let queryList = conv.retrieval_query_list;
+                // 如果是字符串，尝试解析为数组
+                if (typeof queryList === 'string') {
+                    try {
+                        queryList = JSON.parse(queryList);
+                    } catch (e) {
+                        queryList = [];
+                    }
+                }
+                
+                if (Array.isArray(queryList) && queryList.length > 0) {
+                    html += `
+                        <div class="retrieval-item">
+                            <span class="retrieval-label">🔄 问题重写:</span>
+                            <div class="retrieval-query-list">
+                                ${queryList.map(q => `<span class="query-tag">${safeText(q)}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 检索内容
+            if (conv.retrieval_content) {
+                const content = safeText(conv.retrieval_content);
+                const preview = content.length > 200 ? content.substring(0, 200) + '...' : content;
+                html += `
+                    <div class="retrieval-item">
+                        <span class="retrieval-label">📄 检索内容:</span>
+                        <div class="retrieval-content-preview" title="${content}">
+                            ${preview}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 相关图片
+            if (conv.retrieval_images) {
+                html += `
+                    <div class="retrieval-item">
+                        <span class="retrieval-label">🖼️ 相关图片:</span>
+                        <span>${safeText(conv.retrieval_images)}</span>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            return html;
         }
 
         // 创建审核控件

@@ -40,7 +40,6 @@ async def identify_intent(state: AirportMainServiceState, config: RunnableConfig
     logger.info(f"进入主路由子智能体：{user_query}")
     router_assistant_prompt = ChatPromptTemplate.from_messages([
         ("system", main_graph_prompts.ROUTER_SYSTEM_PROMPT),
-        ("placeholder", "{messages}"),
         ("human", main_graph_prompts.ROUTER_HUMAN_PROMPT)
     ])
 

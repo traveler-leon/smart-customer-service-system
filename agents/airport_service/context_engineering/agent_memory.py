@@ -1,9 +1,11 @@
 """
 智能体记忆集成工具
-按照LangGraph + Mem0最佳实践，为每个智能体节点集成记忆功能
+按照LangGraph + Mem0最佳实践,为每个智能体节点集成记忆功能
 """
 from typing import Dict, Any, List, Optional
 import asyncio
+import json
+from copy import deepcopy
 from .memory_manager import memory_manager
 from common.logging import get_logger
 
@@ -140,18 +142,28 @@ def memory_enabled_agent(application_id: str,agent_id: Optional[str] = None):
             user_id = config["configurable"].get("user_id", "unknown_user")
             user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
             metadata = state.get("metadata") if state.get("metadata") else config["configurable"].get("metadata", {})
-    
+            new_metadata = deepcopy(metadata)   
             try:
                 result = await agent_func(state, config, *args, **kwargs)
                 # 提取智能体回复
                 agent_response = ""
                 msg_name = ""
+                retrieval_result = None
                 if isinstance(result, dict):
                     # 从返回的消息中提取内容
                     messages = result.get("messages", [])
                     if messages:
                         agent_response = messages[-1].content
                         msg_name = messages[-1].name
+                    if state.get("retrieval_result"):
+                        retrieval_result = state.get("retrieval_result")
+                    elif result.get("retrieval_result"):
+                        retrieval_result = result.get("retrieval_result")
+                    if retrieval_result:
+                        new_metadata["retrieval_content"] = retrieval_result.sql or retrieval_result.content or None
+                        new_metadata["retrieval_source"] = retrieval_result.source or None
+                        new_metadata["retrieval_score"] = retrieval_result.score or 0.0
+                        new_metadata["retrieval_query_list"] = json.dumps(retrieval_result.query_list,ensure_ascii=False) or None
                 if user_query and agent_response:
                     
                     asyncio.create_task(
@@ -162,7 +174,7 @@ def memory_enabled_agent(application_id: str,agent_id: Optional[str] = None):
                             agent_id=agent_id if agent_id else msg_name,
                             messages=user_query,
                             response=agent_response,
-                            metadata=metadata
+                            metadata=new_metadata
                         )
                     )
                 

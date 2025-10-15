@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专家审核与自进化 - 智能客服系统</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👨‍⚕️</text></svg>">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #7c3aed;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-dark: #0f172a;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: 4rem 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
+            padding: 2rem;
+            border-radius: 1rem;
+            border-left: 4px solid var(--primary);
+            margin: 2rem 0;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: start;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .timeline-number {
+            min-width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-content h3 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-radius: 1rem;
+            margin: 4rem 0;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .demo-preview {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 2px dashed var(--border);
+            text-align: center;
+        }
+
+        .demo-preview img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .footer {
+            background: var(--bg-dark);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer h4 {
+            margin-bottom: 1rem;
+        }
+
+        .footer ul {
+            list-style: none;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .section-title {
+                font-size: 2rem;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">🤖 智能客服系统</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="features.html">核心优势</a></li>
+                <li><a href="evaluation.html">评估体系</a></li>
+                <li><a href="expert-review.html">专家审核</a></li>
+                <li><a href="chat.html">在线体验</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>👨‍⚕️ 专家审核与系统自进化</h1>
+        <p>从被动响应到主动进化，让AI系统拥有真正的"学习能力"</p>
+    </section>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Overview -->
+        <section>
+            <div class="container">
+                <h2 class="section-title">为什么需要专家审核？</h2>
+                <p class="section-subtitle">AI不是完美的，但它可以通过学习变得更好</p>
+                
+                <div class="highlight-box">
+                    <h3 style="margin-bottom: 1rem;">🤔 传统AI的"僵化"问题</h3>
+                    <p style="line-height: 1.8;">
+                        大多数AI客服系统上线后就"僵化"了——它们只能基于训练时的知识回答问题，
+                        无法从实际对话中学习，无法根据业务变化调整。<strong>结果就是：随着时间推移，
+                        系统的回答越来越不符合实际需求，满意度逐渐下降。</strong>
+                    </p>
+                </div>
+
+                <div class="highlight-box" style="border-left-color: var(--success);">
+                    <h3 style="margin-bottom: 1rem;">✅ 专家审核：让AI从经验中学习</h3>
+                    <p style="line-height: 1.8;">
+                        通过专家对历史对话的审核，我们可以：<br>
+                        ✓ 发现并纠正AI的错误回复<br>
+                        ✓ 提取高质量的问答对扩充知识库<br>
+                        ✓ 积累标注数据用于模型微调<br>
+                        ✓ 为垂直领域大模型训练提供语料<br>
+                        <strong>这形成了一个完整的数据闭环，让AI系统持续进化。</strong>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expert Review Interface -->
+        <section style="background: var(--bg-secondary);">
+            <div class="container">
+                <h2 class="section-title">🖥️ 专家审核平台</h2>
+                <p class="section-subtitle">强大而易用的审核工具，提升专家工作效率</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-icon">🔍</div>
+                        <h3>智能筛选</h3>
+                        <p>多维度快速定位需要审核的对话</p>
+                        <ul class="feature-list">
+                            <li>按时间范围筛选</li>
+                            <li>按用户ID/会话ID查询</li>
+                            <li>按智能体类型过滤</li>
+                            <li>按审核状态分类</li>
+                            <li>按应用ID筛选</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">⚡</div>
+                        <h3>批量操作</h3>
+                        <p>提升审核效率，一次处理多条记录</p>
+                        <ul class="feature-list">
+                            <li>批量选择对话记录</li>
+                            <li>批量质量评分</li>
+                            <li>批量通过/拒绝</li>
+                            <li>批量添加备注</li>
+                            <li>导出审核报告</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">📝</div>
+                        <h3>质量评分</h3>
+                        <p>精细化评估每条回复的质量</p>
+                        <ul class="feature-list">
+                            <li>0-1分连续评分</li>
+                            <li>自定义评分标准</li>
+                            <li>评分理由记录</li>
+                            <li>评分统计分析</li>
+                            <li>趋势变化追踪</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">✏️</div>
+                        <h3>内容纠正</h3>
+                        <p>专家修正错误回复，作为标准答案</p>
+                        <ul class="feature-list">
+                            <li>在线编辑回复内容</li>
+                            <li>保留修改历史</li>
+                            <li>对比原始/修正版本</li>
+                            <li>自动入库优质答案</li>
+                            <li>生成训练数据</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">📋</div>
+                        <h3>审核备注</h3>
+                        <p>记录审核理由和改进建议</p>
+                        <ul class="feature-list">
+                            <li>自由文本备注</li>
+                            <li>问题类型标签</li>
+                            <li>改进方向建议</li>
+                            <li>知识缺失标记</li>
+                            <li>优化优先级</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">📊</div>
+                        <h3>统计分析</h3>
+                        <p>数据驱动的系统优化决策</p>
+                        <ul class="feature-list">
+                            <li>审核通过率统计</li>
+                            <li>问题类型分布</li>
+                            <li>高频错误汇总</li>
+                            <li>优化效果追踪</li>
+                            <li>专家工作量统计</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="demo-preview" style="margin-top: 3rem;">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--primary);">🎬 审核界面演示</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        实际的专家审核系统界面，支持复杂筛选、批量操作和精细化评分
+                    </p>
+                    <a href="expert_review_v2.html" target="_blank" class="btn btn-primary">
+                        🔗 查看完整演示界面
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Self-Evolution Loop -->
+        <section>
+            <div class="container">
+                <h2 class="section-title">🔄 四维自进化闭环</h2>
+                <p class="section-subtitle">专家审核不是终点，而是系统进化的起点</p>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-number" style="background: var(--primary);">1</div>
+                        <div class="timeline-content">
+                            <h3>动态知识库增强</h3>
+                            <p style="color: var(--text-secondary);">
+                                专家审核通过的高质量问答对自动添加到知识库中。这些来自真实对话的问答对，
+                                往往比人工编写的FAQ更贴近用户实际需求，能显著提升未来的回答质量。
+                            </p>
+                            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem;">
+                                <strong>示例：</strong>用户问"雨天能带雨伞登机吗？"，AI初次回答不够准确，
+                                专家纠正后，这个优质问答对自动入库，下次遇到类似问题就能准确回答。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-number" style="background: var(--secondary);">2</div>
+                        <div class="timeline-content">
+                            <h3>向量模型微调</h3>
+                            <p style="color: var(--text-secondary);">
+                                高质量的标注数据用于微调Embedding模型。通过专家审核积累的大量
+                                "相似问题对"和"不相似问题对"，可以训练出更适合本领域的向量模型，
+                                提升检索准确率。
+                            </p>
+                            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem;">
+                                <strong>优势：</strong>通用Embedding模型无法理解行业术语和专业表达，
+                                微调后的模型能更准确地匹配用户意图。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-number" style="background: var(--success);">3</div>
+                        <div class="timeline-content">
+                            <h3>垂直大模型训练</h3>
+                            <p style="color: var(--text-secondary);">
+                                专家纠正的对话数据，是训练行业垂直大模型的宝贵语料。这些数据既有真实的
+                                用户问法，又有专家级的标准答案，是比互联网爬取数据质量更高的训练素材。
+                            </p>
+                            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem;">
+                                <strong>长期价值：</strong>随着审核数据积累，可以训练出专属的领域大模型，
+                                摆脱对通用模型的依赖，降低成本的同时提升效果。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-number" style="background: var(--warning);">4</div>
+                        <div class="timeline-content">
+                            <h3>Prompt持续优化</h3>
+                            <p style="color: var(--text-secondary);">
+                                基于专家的审核反馈和改进建议，持续迭代优化系统Prompt。
+                                发现某类问题经常回答不好？调整Prompt策略。发现某个引导话术效果好？
+                                固化到Prompt模板中。
+                            </p>
+                            <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem;">
+                                <strong>数据驱动：</strong>不再靠"拍脑袋"优化Prompt，而是基于真实数据
+                                和专家经验，让每次优化都有据可依。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="highlight-box" style="margin-top: 3rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem; text-align: center; color: white;">
+                        🚀 从"一次性交付"到"持续进化"
+                    </h3>
+                    <p style="font-size: 1.1rem; line-height: 1.8; text-align: center; opacity: 0.95;">
+                        专家审核不是额外的负担，而是系统能力增长的加速器。<br>
+                        每一次审核，都是AI向专家学习的机会。<br>
+                        这不仅仅是一个客服系统，更是一个<strong>可持续成长的智能中枢</strong>。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits -->
+        <section style="background: var(--bg-secondary);">
+            <div class="container">
+                <h2 class="section-title">💎 专家审核带来的价值</h2>
+                <p class="section-subtitle">投入产出比远超预期</p>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-number">↓70%</div>
+                        <div class="stat-label">错误率下降</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">↑300%</div>
+                        <div class="stat-label">知识库增速</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">↑50%</div>
+                        <div class="stat-label">检索准确率提升</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">持续学习能力</div>
+                    </div>
+                </div>
+
+                <div class="grid" style="margin-top: 3rem;">
+                    <div class="card">
+                        <h3 style="color: var(--success);">🎯 短期收益</h3>
+                        <ul class="feature-list">
+                            <li>快速发现并修复系统错误</li>
+                            <li>补充知识库缺失内容</li>
+                            <li>提升用户满意度</li>
+                            <li>减少人工介入次数</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: var(--primary);">📈 中期收益</h3>
+                        <ul class="feature-list">
+                            <li>建立高质量标注数据集</li>
+                            <li>微调专属向量模型</li>
+                            <li>优化核心Prompt策略</li>
+                            <li>形成系统优化方法论</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: var(--secondary);">🚀 长期收益</h3>
+                        <ul class="feature-list">
+                            <li>训练垂直领域大模型</li>
+                            <li>构建行业知识壁垒</li>
+                            <li>降低对通用模型依赖</li>
+                            <li>实现真正的AI自进化</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Workflow -->
+        <section>
+            <div class="container">
+                <h2 class="section-title">⚙️ 审核工作流</h2>
+                <p class="section-subtitle">从审核到优化的完整流程</p>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h3 style="color: var(--primary);">📋 日常审核流程</h3>
+                        <ol style="padding-left: 1.5rem; line-height: 2;">
+                            <li>每日自动推送待审核对话</li>
+                            <li>专家通过筛选条件快速定位</li>
+                            <li>查看对话详情和系统回复</li>
+                            <li>评分、纠正、备注</li>
+                            <li>批量通过/拒绝</li>
+                            <li>查看审核统计报告</li>
+                        </ol>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: var(--secondary);">🔄 数据闭环流程</h3>
+                        <ol style="padding-left: 1.5rem; line-height: 2;">
+                            <li>审核通过的数据自动入库</li>
+                            <li>系统定期分析审核数据</li>
+                            <li>识别高频问题和改进点</li>
+                            <li>生成优化建议报告</li>
+                            <li>执行Prompt/模型优化</li>
+                            <li>验证优化效果并持续迭代</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="highlight-box" style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">💡 最佳实践建议</h3>
+                    <ul class="feature-list">
+                        <li><strong>定期审核：</strong>建议每周审核100-200条对话，保持系统鲜活度</li>
+                        <li><strong>聚焦Bad Case：</strong>优先审核评分低或用户反馈差的对话</li>
+                        <li><strong>建立标准：</strong>制定审核评分标准和质量要求，确保一致性</li>
+                        <li><strong>团队协作：</strong>多位专家交叉审核，提升标注质量</li>
+                        <li><strong>效果追踪：</strong>定期分析审核后的系统改进效果</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section>
+            <div class="container">
+                <div class="cta-section">
+                    <h2 style="font-size: 2rem; margin-bottom: 1rem;">让你的AI系统拥有"学习能力"</h2>
+                    <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.95;">
+                        不要让AI僵化，通过专家审核实现持续进化
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="expert_review_v2.html" target="_blank" class="btn btn-primary">
+                            🎬 查看审核界面演示
+                        </a>
+                        <a href="https://github.com/traveler-leon/smart-customer-service-system" class="btn btn-primary" target="_blank">
+                            ⭐ GitHub开源项目
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <h4>📖 核心功能</h4>
+                    <ul>
+                        <li><a href="features.html">核心优势</a></li>
+                        <li><a href="evaluation.html">评估体系</a></li>
+                        <li><a href="expert-review.html">专家审核</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🛠️ 技术文档</h4>
+                    <ul>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🔗 开源生态</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system" target="_blank">GitHub 仓库</a></li>
+                        <li><a href="https://www.langchain.com/" target="_blank">LangChain</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🤝 社区</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/discussions" target="_blank">讨论区</a></li>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/issues" target="_blank">Issue 反馈</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Smart Customer Service System. 开源项目，基于 MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+

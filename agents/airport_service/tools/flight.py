@@ -5,10 +5,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 from typing import List
 from langchain_core.messages import AnyMessage
 import asyncio
+import json
 from agents.airport_service.core.query import comprehensive_query_transform
 from text2sql import create_text2sql
 from config.utils import config_manager
 from common.logging import get_logger
+from agents.airport_service.state import RetrievalResult
 
 # 获取航班工具专用日志记录器
 logger = get_logger("agents.tools.flight")
@@ -68,7 +70,12 @@ async def flight_info_query2docs(question: str, messages:List[AnyMessage]) -> st
     rewritten_query = await comprehensive_query_transform(question,'flight_rewrite',messages)
     result = await perform_query(rewritten_query)
     logger.debug(f"查询结果: {result}")
-    return {"db_context_docs": result}
+    return RetrievalResult(
+        source="flight",
+        content=json.dumps(result["data"]),
+        sql=result["sql"],
+        query_list=[rewritten_query]
+    )
 
 
 # if __name__ == "__main__": 

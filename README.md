@@ -1,15 +1,13 @@
 # 智能客服系统 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![GitHub stars](https://img.shields.io/github/stars/traveler-leon/smart-customer-service-system)](https://github.com/traveler-leon/smart-customer-service-system/stargazers) [![GitHub forks](https://img.shields.io/github/forks/traveler-leon/smart-customer-service-system)](https://github.com/traveler-leon/smart-customer-service-system/network) [![GitHub issues](https://img.shields.io/github/issues/traveler-leon/smart-customer-service-system)](https://github.com/traveler-leon/smart-customer-service-system/issues)
 
-[English](./README_EN.md) | [中文](./README.md) | [📖 开始使用](./GET_STARTED.md)
-
+[English](./README_EN.md) | [中文](./README.md) |
 **一个为机场领域设计，但可轻松迁移至千行百业的、基于多智能体协作的开源智能客服系统。**
 
 <div align="center">
 
 ### 🚀 快速开始
 
-[5分钟启动](./QUICKSTART.md) · [完整配置](./CONFIGURATION.md) · [Docker部署](./DOCKER.md) · [文档索引](./docs/index.md)
-
+[完整配置](./CONFIGURATION.md)
 </div>
 
 ## 📝 项目概述
@@ -135,7 +133,41 @@
   <img src="./images/mutillanguage.png" alt="案例截图 1" width="400"/>
 </p>
 
+### 专家审核平台 (系统自进化的数据闭环)
+<p align="center">
+  <img src="./images/expert_platform.png" alt="专家审核平台界面" width="800"/>
+</p>
 
+传统 AI 客服系统上线后往往"僵化"——无法从实际对话中学习，无法根据业务变化调整。我们通过**专家审核平台**实现了从"一次性交付"到"持续进化"的跨越。
+
+#### 🔍 核心功能
+- **智能筛选**：多维度快速定位需要审核的对话（时间范围、用户ID、会话ID、智能体类型、审核状态等）
+- **批量操作**：提升审核效率，支持批量评分、批量通过/拒绝、批量添加备注
+- **质量评分**：0-1分连续评分，精细化评估每条回复质量，追踪趋势变化
+- **内容纠正**：专家在线修正错误回复，保留修改历史，自动生成训练数据
+- **统计分析**：审核通过率、问题类型分布、高频错误汇总、优化效果追踪
+
+<p align="center">
+  <img src="./images/expert_platform.png" alt="审核详情与数据分析" width="800"/>
+  <img src="./images/expert_platform2.png" alt="审核详情与数据分析" width="800"/>
+</p>
+
+#### 🔄 四维自进化闭环
+专家审核不是终点，而是系统能力增长的起点：
+
+1. **动态知识库增强**  
+   专家审核通过的高质量问答对自动添加到知识库。这些来自真实对话的问答对，比人工编写的 FAQ 更贴近用户实际需求。![alt text](https://file%2B.vscode-resource.vscode-cdn.net/Users/hzwl/Documents/coding/smart-customer-service-system/images/expert_platform2.png)
+
+2. **向量模型微调**  
+   积累的"相似问题对"和"不相似问题对"用于微调 Embedding 模型，提升检索准确率，让模型更懂行业术语和专业表达。
+
+3. **垂直大模型训练**  
+   专家纠正的对话数据是训练行业垂直大模型的宝贵语料，长期可训练出专属的领域大模型，摆脱对通用模型的依赖。
+
+4. **Prompt 持续优化**  
+   基于审核反馈和改进建议，数据驱动地迭代优化系统 Prompt，让每次优化都有据可依。
+
+> 💡 **价值体现**：每一次审核，都是 AI 向专家学习的机会。系统不仅仅是一个客服工具，更是一个**可持续成长的智能中枢**。
 
 ## 🎯 下一步计划 (Next Steps)
 

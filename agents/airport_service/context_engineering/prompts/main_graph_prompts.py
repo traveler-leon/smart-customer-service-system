@@ -200,7 +200,7 @@ FLIGHT_INFO_HUMAN_PROMPT = """
     - 充分考虑历史对话信息，理解用户的持续需求
     - 不要引用 <flight_data> 或提及数据来源
 </instructions>
-这是历史对话信息: <history_dialogue>{messages}</history_dialogue>
+历史对话信息: <history_dialogue>{messages}</history_dialogue>
 这是当前用户的问题: <question>{user_query}</question>
 """
 
@@ -317,7 +317,7 @@ ROUTER_HUMAN_PROMPT = """
     - 不要添加任何解释、分析或额外内容
     - 社交性对话的识别优先级最高，不受历史对话影响
 </instructions>
-
+历史对话信息: <history_dialogue>{messages}</history_dialogue>
 用户的问题是: {user_query}
 """
 

@@ -19,7 +19,7 @@ class TranslationResult(BaseModel):
 
 class RetrievalResult(BaseModel):
     """统一的检索结果模型"""
-    source: Literal["expert_qa", "knowledge_base", "none"] = Field(
+    source: Literal["expert_qa", "knowledge_base", "flight","none"] = Field(
         description="检索来源类型：expert_qa(专家问答), knowledge_base(知识库), none(无结果)"
     )
     content: Optional[str] = Field(
@@ -34,9 +34,13 @@ class RetrievalResult(BaseModel):
         default=None, 
         description="相关图片列表（如果有）"
     )
-    metadata: Optional[Dict] = Field(
-        default=None,
-        description="额外的元数据信息"
+    sql: Optional[str] = Field(
+        default=None, 
+        description="相关SQL（如果有）"
+    )
+    query_list: Optional[List[str]] = Field(
+        default=None, 
+        description="相关查询列表（如果有）"
     )
 
 def dict_merge(old_dict, new_dict):
@@ -54,7 +58,6 @@ class AirportMainServiceState(MessagesState):
     translator_result: Optional[TranslationResult] = None
     emotion_result: Optional[Dict] = None
     retrieval_result: Optional[RetrievalResult] = None  # 统一的检索结果
-    db_context_docs: Optional[Dict] = None
     chart_config: Optional[Dict] = None
     metadata: Optional[Dict] = None
 
@@ -67,7 +70,6 @@ class BusinessRecommendState(MessagesState):
     translator_result: Optional[TranslationResult] = None
     emotion_result: Optional[Dict] = None
     retrieval_result: Optional[RetrievalResult] = None  # 统一的检索结果
-    db_context_docs: Optional[Dict] = None
     chart_config: Optional[Dict] = None
     metadata: Optional[Dict] = None
 

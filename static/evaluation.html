@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评估体系 - 智能客服系统</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #7c3aed;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-dark: #0f172a;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: 4rem 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
+            padding: 2rem;
+            border-radius: 1rem;
+            border-left: 4px solid var(--primary);
+            margin: 2rem 0;
+        }
+
+        .code-block {
+            background: var(--bg-dark);
+            color: #e5e7eb;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--primary);
+        }
+
+        .metric-card h4 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-radius: 1rem;
+            margin: 4rem 0;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .footer {
+            background: var(--bg-dark);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer h4 {
+            margin-bottom: 1rem;
+        }
+
+        .footer ul {
+            list-style: none;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">🤖 智能客服系统</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="features.html">核心优势</a></li>
+                <li><a href="evaluation.html">评估体系</a></li>
+                <li><a href="expert-review.html">专家审核</a></li>
+                <li><a href="chat.html">在线体验</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>🧪 全方位评估体系</h1>
+        <p>基于DeepEval构建的完整LLM评估框架，确保系统持续优化、能力不衰减</p>
+    </section>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Overview -->
+        <section>
+            <div class="container">
+                <h2 class="section-title">为什么评估如此重要？</h2>
+                <p class="section-subtitle">AI客服不是"一劳永逸"的工程，它需要持续监控和优化</p>
+                
+                <div class="highlight-box">
+                    <h3 style="margin-bottom: 1rem;">📉 传统AI客服的困境</h3>
+                    <p style="line-height: 1.8;">
+                        传统AI客服系统上线后，效果往往会随时间衰减。原因包括：用户问题的演变、知识库的陈旧、模型性能的波动等。
+                        <strong>缺乏评估体系的AI客服，就像没有仪表盘的汽车</strong>——你不知道它跑得快不快，也不知道什么时候会出问题。
+                    </p>
+                </div>
+
+                <div class="highlight-box" style="border-left-color: var(--success);">
+                    <h3 style="margin-bottom: 1rem;">✅ 我们的解决方案</h3>
+                    <p style="line-height: 1.8;">
+                        我们的系统<strong>上线即自带全方位评估平台</strong>，无需额外开发。通过持续评估，
+                        及时发现问题、优化Prompt、调整策略，确保系统能力<strong>不衰减反增强</strong>。
+                        这是从"一次性交付"到"持续进化"的质的飞跃。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- DeepEval Framework -->
+        <section style="background: var(--bg-secondary);">
+            <div class="container">
+                <h2 class="section-title">🎯 DeepEval - 开源LLM评估框架</h2>
+                <p class="section-subtitle">业界领先的评估工具，为我们的系统提供强大支撑</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <div class="card-icon">📊</div>
+                        <h3>40+ 研究支持的指标</h3>
+                        <p>涵盖从答案质量到系统性能的全方位指标</p>
+                        <ul class="feature-list">
+                            <li>G-Eval - 基于GPT的评估</li>
+                            <li>Faithfulness - 事实准确性</li>
+                            <li>Relevancy - 相关性评分</li>
+                            <li>Coherence - 连贯性检测</li>
+                            <li>Hallucination - 幻觉检测</li>
+                            <li>Toxicity - 毒性检测</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🧪</div>
+                        <h3>原生Pytest集成</h3>
+                        <p>像单元测试一样测试LLM，融入CI/CD流程</p>
+                        <div class="code-block" style="margin-top: 1rem; font-size: 0.85rem;">
+<pre>import pytest
+from deepeval import assert_test
+from deepeval.metrics import AnswerRelevancyMetric
+
+def test_customer_service():
+    metric = AnswerRelevancyMetric()
+    assert_test({
+        "input": "如何办理登机牌？",
+        "actual_output": response,
+        "expected_output": expected
+    }, [metric])</pre>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🔄</div>
+                        <h3>单轮 & 多轮评估</h3>
+                        <p>支持简单问答和复杂对话场景</p>
+                        <ul class="feature-list">
+                            <li>单轮问答评估</li>
+                            <li>多轮对话一致性</li>
+                            <li>上下文理解评估</li>
+                            <li>对话流畅度测试</li>
+                            <li>追问处理能力</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-icon">🎨</div>
+                        <h3>多模态支持</h3>
+                        <p>评估不仅限于文本，支持全链路测试</p>
+                        <ul class="feature-list">
+                            <li>文本问答评估</li>
+                            <li>图像识别准确性</li>
+                            <li>语音转文字质量</li>
+                            <li>多模态融合效果</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <h3 style="margin-bottom: 1rem;">🔗 了解更多</h3>
+                    <p>
+                        DeepEval是由Confident AI开发的开源LLM评估框架，已被数千家企业和开发者使用。<br>
+                        官网：<a href="https://deepeval.com/" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 600;">https://deepeval.com/</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Evaluation Architecture -->
+        <section>
+            <div class="container">
+                <h2 class="section-title">🏗️ 端到端评估体系</h2>
+                <p class="section-subtitle">从组件到系统，从技术到业务的全方位评估</p>
+
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h4>📦 组件级评估</h4>
+                        <p><strong>检索质量</strong> - 评估知识库检索的准确性和相关性</p>
+                        <p><strong>意图分类</strong> - 测试意图识别的准确率</p>
+                        <p><strong>生成质量</strong> - 评估回复的流畅度和准确性</p>
+                    </div>
+
+                    <div class="metric-card" style="border-left-color: var(--secondary);">
+                        <h4>🔗 端到端评估</h4>
+                        <p><strong>全流程测试</strong> - 从输入到输出的完整链路</p>
+                        <p><strong>场景覆盖</strong> - 多种业务场景的测试集</p>
+                        <p><strong>边界测试</strong> - 极端情况和异常处理</p>
+                    </div>
+
+                    <div class="metric-card" style="border-left-color: var(--success);">
+                        <h4>📈 业务指标监控</h4>
+                        <p><strong>满意度</strong> - 用户反馈和评分统计</p>
+                        <p><strong>转化率</strong> - 业务办理和商品推荐转化</p>
+                        <p><strong>问题解决率</strong> - 一次性解决问题的比例</p>
+                    </div>
+
+                    <div class="metric-card" style="border-left-color: var(--warning);">
+                        <h4>📊 实时监控看板</h4>
+                        <p><strong>可视化界面</strong> - 实时追踪系统表现</p>
+                        <p><strong>告警机制</strong> - 性能下降自动通知</p>
+                        <p><strong>趋势分析</strong> - 长期表现趋势洞察</p>
+                    </div>
+                </div>
+
+                <div class="highlight-box" style="margin-top: 3rem;">
+                    <h3 style="margin-bottom: 1.5rem;">🔄 评估驱动的持续优化闭环</h3>
+                    <div style="display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">1️⃣</div>
+                            <strong>自动评估</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">DeepEval持续测试</span>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.5;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">2️⃣</div>
+                            <strong>问题发现</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">识别性能瓶颈</span>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.5;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">3️⃣</div>
+                            <strong>针对性优化</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">调整Prompt/参数</span>
+                        </div>
+                        <div style="font-size: 2rem; opacity: 0.5;">→</div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">4️⃣</div>
+                            <strong>验证提升</strong><br>
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">回归测试确认</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Use Cases -->
+        <section style="background: var(--bg-secondary);">
+            <div class="container">
+                <h2 class="section-title">💼 实际应用场景</h2>
+                <p class="section-subtitle">评估体系如何在实际业务中发挥价值</p>
+
+                <div class="grid">
+                    <div class="card">
+                        <h3 style="color: var(--primary);">🚀 上线前验收</h3>
+                        <p>在系统上线前，通过完整的评估测试集验证系统性能：</p>
+                        <ul class="feature-list">
+                            <li>核心场景100%覆盖</li>
+                            <li>准确率达标验证</li>
+                            <li>性能基线建立</li>
+                            <li>边界情况测试</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: var(--secondary);">📊 日常监控</h3>
+                        <p>系统上线后，持续监控各项指标：</p>
+                        <ul class="feature-list">
+                            <li>每日自动化测试</li>
+                            <li>性能趋势分析</li>
+                            <li>异常自动告警</li>
+                            <li>用户反馈统计</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: var(--success);">🔧 问题定位</h3>
+                        <p>当出现问题时，快速定位根本原因：</p>
+                        <ul class="feature-list">
+                            <li>分层诊断机制</li>
+                            <li>A/B测试对比</li>
+                            <li>Bad Case分析</li>
+                            <li>优化建议生成</li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="color: var(--warning);">🎯 版本迭代</h3>
+                        <p>新版本发布前后的对比评估：</p>
+                        <ul class="feature-list">
+                            <li>回归测试自动化</li>
+                            <li>新旧版本对比</li>
+                            <li>渐进式发布</li>
+                            <li>数据驱动决策</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section>
+            <div class="container">
+                <div class="cta-section">
+                    <h2 style="font-size: 2rem; margin-bottom: 1rem;">准备好构建可持续优化的AI系统了吗？</h2>
+                    <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.95;">
+                        完整的评估体系，让你的AI客服不断进化
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="https://github.com/traveler-leon/smart-customer-service-system" class="btn btn-primary" target="_blank">
+                            ⭐ GitHub开源项目
+                        </a>
+                        <a href="expert-review.html" class="btn btn-primary">
+                            👨‍⚕️ 了解专家审核
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div>
+                    <h4>📖 核心功能</h4>
+                    <ul>
+                        <li><a href="features.html">核心优势</a></li>
+                        <li><a href="evaluation.html">评估体系</a></li>
+                        <li><a href="expert-review.html">专家审核</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🛠️ 技术文档</h4>
+                    <ul>
+                        <li><a href="user-profile.html">用户画像</a></li>
+                        <li><a href="memory-filter.html">智能记忆</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🔗 开源生态</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system" target="_blank">GitHub 仓库</a></li>
+                        <li><a href="https://deepeval.com/" target="_blank">DeepEval</a></li>
+                        <li><a href="https://www.langchain.com/" target="_blank">LangChain</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🤝 社区</h4>
+                    <ul>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/discussions" target="_blank">讨论区</a></li>
+                        <li><a href="https://github.com/traveler-leon/smart-customer-service-system/issues" target="_blank">Issue 反馈</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Smart Customer Service System. 开源项目，基于 MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+

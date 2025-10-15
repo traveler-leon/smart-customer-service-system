@@ -23,14 +23,13 @@ async def flight_rewrite_query(original_query:str,messages:List[AnyMessage]):
     logger.info(f"开始重写查询: {original_query}")
     query_rewrite_prompt = ChatPromptTemplate.from_messages([
         ("system", query_transform_prompts.FLIGHT_QUERY_REWRITE_SYSTEM_PROMPT),
-        ("placeholder", "{messages}"),
         ("human", query_transform_prompts.FLIGHT_QUERY_REWRITE_PROMPT)
-    ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),messages=messages)
+    ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     query_rewriter = query_rewrite_prompt | model
 
     try:
 
-        response = await query_rewriter.ainvoke({"original_query": original_query})
+        response = await query_rewriter.ainvoke({"original_query": original_query,"messages": messages})
         rewritten_query = response.content.strip()
         logger.info(f"查询重写成功: {rewritten_query}")
         return rewritten_query
@@ -52,14 +51,13 @@ async def rewrite_query(original_query,messages:List[AnyMessage]):
     logger.info(f"开始重写查询: {original_query}")
     query_rewrite_prompt = ChatPromptTemplate.from_messages([
         ("system", query_transform_prompts.QUERY_REWRITE_SYSTEM_PROMPT),
-        ("placeholder", "{messages}"),
         ("human", query_transform_prompts.QUERY_REWRITE_PROMPT)
-    ]).partial(messages=messages)
+    ])
     query_rewriter = query_rewrite_prompt | model
 
     try:
 
-        response = await query_rewriter.ainvoke({"original_query": original_query})
+        response = await query_rewriter.ainvoke({"original_query": original_query,"messages": messages})
         rewritten_query = response.content.strip()
         return rewritten_query
     except Exception as e:
@@ -83,15 +81,14 @@ async def generate_step_back_query(original_query, messages:List[AnyMessage]=Non
     if messages:
         step_back_prompt = ChatPromptTemplate.from_messages([
             ("system", query_transform_prompts.STEP_BACK_QUERY_SYSTEM_PROMPT),
-            ("placeholder", "{messages}"),
             ("human", query_transform_prompts.STEP_BACK_QUERY_PROMPT)
-        ]).partial(messages=messages)
+        ])
     else:
         step_back_prompt = PromptTemplate.from_template(query_transform_prompts.STEP_BACK_QUERY_PROMPT)
     step_back_chain = step_back_prompt | model
 
     try:
-        response = await step_back_chain.ainvoke({"original_query": original_query})
+        response = await step_back_chain.ainvoke({"original_query": original_query,"messages": messages})
         step_back_query = response.content.strip()
         logger.info(f"回退查询生成成功: {step_back_query}")
         return step_back_query
