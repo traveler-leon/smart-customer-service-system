@@ -813,6 +813,32 @@
     </div>
 
     <div class="container">
+        <!-- 服务器配置区域 -->
+        <div class="search-section" style="margin-bottom: 1.5rem;">
+            <div class="search-title">
+                ⚙️ 服务器配置
+            </div>
+            
+            <div class="search-grid" style="grid-template-columns: 2fr 1fr 3fr;">
+                <div class="form-group">
+                    <label for="serverHost">服务器地址</label>
+                    <input type="text" id="serverHost" placeholder="例如: 192.168.0.105" value="192.168.0.105">
+                </div>
+                
+                <div class="form-group">
+                    <label for="serverPort">端口</label>
+                    <input type="number" id="serverPort" placeholder="端口" value="8081" min="1" max="65535">
+                </div>
+                
+                <div class="form-group">
+                    <label style="opacity: 0.7;">当前API地址</label>
+                    <div id="currentApiUrl" style="padding: 0.875rem 1.25rem; background: #f8fafc; border-radius: 12px; border: 2px solid #e2e8f0; color: #667eea; font-weight: 600; font-size: 0.9rem;">
+                        http://192.168.0.105:8081
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 查询搜索区域 -->
         <div class="search-section">
             <div class="search-title">
@@ -861,11 +887,7 @@
                 
                 <div class="form-group">
                     <label for="limit">返回数量</label>
-                    <select id="limit">
-                        <option value="50">50条</option>
-                        <option value="100">100条</option>
-                        <option value="200">200条</option>
-                    </select>
+                    <input type="number" id="limit" placeholder="输入记录数量" value="50" min="1" step="1">
                 </div>
             </div>
             
@@ -934,6 +956,22 @@
         let currentPage = 1;
         let itemsPerPage = 20;
 
+        // 获取API基础URL
+        function getApiBaseUrl() {
+            const host = document.getElementById('serverHost').value.trim() || '192.168.0.105';
+            const port = document.getElementById('serverPort').value.trim() || '8081';
+            return `http://${host}:${port}`;
+        }
+
+        // 更新当前API地址显示
+        function updateApiUrlDisplay() {
+            const apiUrl = getApiBaseUrl();
+            const displayElement = document.getElementById('currentApiUrl');
+            if (displayElement) {
+                displayElement.textContent = apiUrl;
+            }
+        }
+
         // 页面初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 设置默认日期范围（最近30天）
@@ -943,6 +981,13 @@
             
             document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
             document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+            
+            // 监听服务器配置变化
+            document.getElementById('serverHost').addEventListener('input', updateApiUrlDisplay);
+            document.getElementById('serverPort').addEventListener('input', updateApiUrlDisplay);
+            
+            // 初始化API地址显示
+            updateApiUrlDisplay();
         });
 
         // 清空搜索条件
@@ -954,7 +999,7 @@
             document.getElementById('expertVerified').value = '';
             document.getElementById('startDate').value = '';
             document.getElementById('endDate').value = '';
-            document.getElementById('limit').value = '50';
+            document.getElementById('limit').value = 50;
         }
 
         // 执行搜索
@@ -969,7 +1014,13 @@
             const expertVerified = document.getElementById('expertVerified').value;
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            const limit = document.getElementById('limit').value;
+            let limit = parseInt(document.getElementById('limit').value);
+            
+            // 验证返回数量
+            if (isNaN(limit) || limit < 1) {
+                alert('⚠️ 请输入有效的记录数量（至少为1）');
+                return;
+            }
 
             // 构建查询参数
             if (userId) params.append('user_id', userId);
@@ -984,7 +1035,8 @@
             try {
                 showLoading();
                 
-                const response = await fetch(`/memory/v1/conversations/history?${params}`);
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/memory/v1/conversations/history?${params}`);
                 
                 // 检查HTTP状态
                 if (!response.ok) {
@@ -1368,7 +1420,8 @@
             }
 
             try {
-                const response = await fetch('/memory/v1/conversations/expert-review', {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/memory/v1/conversations/expert-review`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1410,7 +1463,8 @@
             }
             
             try {
-                const response = await fetch('/memory/v1/conversations/expert-review', {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/memory/v1/conversations/expert-review`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1471,7 +1525,8 @@
                     };
                 });
 
-                const response = await fetch('/memory/v1/conversations/batch-expert-review', {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/memory/v1/conversations/batch-expert-review`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1521,7 +1576,8 @@
                     };
                 });
 
-                const response = await fetch('/memory/v1/conversations/batch-expert-review', {
+                const apiBaseUrl = getApiBaseUrl();
+                const response = await fetch(`${apiBaseUrl}/memory/v1/conversations/batch-expert-review`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

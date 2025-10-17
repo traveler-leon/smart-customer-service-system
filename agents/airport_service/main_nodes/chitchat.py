@@ -56,6 +56,6 @@ async def chitchat_agent(state: AirportMainServiceState, config: RunnableConfig)
     
     res = await chain.ainvoke({"messages": messages,"user_query":user_query,"language":language})
     # response = AIMessage(content="抱歉您的问题我暂时无法回答，请你拨打客服电话进行咨询。14634563456")
-    res.name = "机场知识问答2号子智能体"
+    res.name = "机场知识问答1号子智能体"
     
     return {"messages": [res]}

@@ -160,10 +160,17 @@ def memory_enabled_agent(application_id: str,agent_id: Optional[str] = None):
                     elif result.get("retrieval_result"):
                         retrieval_result = result.get("retrieval_result")
                     if retrieval_result:
+                        
                         new_metadata["retrieval_content"] = retrieval_result.sql or retrieval_result.content or None
                         new_metadata["retrieval_source"] = retrieval_result.source or None
                         new_metadata["retrieval_score"] = retrieval_result.score or 0.0
                         new_metadata["retrieval_query_list"] = json.dumps(retrieval_result.query_list,ensure_ascii=False) or None
+                    if state.get("pre_retrieval_result"):
+                        pre_retrieval_result = state.get("pre_retrieval_result")
+                        new_metadata["pre_retrieval_content"] = pre_retrieval_result.sql or pre_retrieval_result.content or None
+                        new_metadata["pre_retrieval_source"] = pre_retrieval_result.source or None
+                        new_metadata["pre_retrieval_score"] = pre_retrieval_result.score or 0.0
+                        new_metadata["pre_retrieval_query_list"] = json.dumps(pre_retrieval_result.query_list,ensure_ascii=False) or None
                 if user_query and agent_response:
                     
                     asyncio.create_task(

@@ -30,7 +30,6 @@ async def business_chatbot(state: BusinessServiceState, config: RunnableConfig):
     user_query = state.get("user_query", "") if state.get("user_query", "") else config["configurable"].get("user_query", "")
     business_prompt = ChatPromptTemplate.from_messages([
         ("system", main_graph_prompts.BUSINESS_AGENT_PROMPT),
-        ("placeholder", "{messages}")
     ]).partial(time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     
     # 过滤消息
@@ -60,8 +59,8 @@ def create_business_agent():
         "chatbot",
         tools_condition,
     )
-    graph_builder.add_edge("tools", "chatbot")
     graph_builder.add_edge(START, "chatbot")
+    graph_builder.add_edge("tools", "chatbot")
     graph = graph_builder.compile()
     logger.info("业务办理子智能体图创建完成")
     return graph

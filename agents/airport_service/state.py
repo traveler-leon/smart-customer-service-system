@@ -57,6 +57,7 @@ class AirportMainServiceState(MessagesState):
     router: Optional[str] = None
     translator_result: Optional[TranslationResult] = None
     emotion_result: Optional[Dict] = None
+    pre_retrieval_result: Optional[RetrievalResult] = None
     retrieval_result: Optional[RetrievalResult] = None  # 统一的检索结果
     chart_config: Optional[Dict] = None
     metadata: Optional[Dict] = None

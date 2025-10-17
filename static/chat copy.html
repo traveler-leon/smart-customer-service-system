@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能客服助手 - 宝安小飞</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-bottom: 3px solid #667eea;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .status-indicator.disconnected .status-dot {
+            background: #ef4444;
+            animation: none;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            overflow: hidden;
+            height: calc(100vh - 200px);
+        }
+
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.5) 0%, rgba(241, 245, 249, 0.8) 100%);
+        }
+
+        /* Message Bubble */
+        .message {
+            display: flex;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.25rem;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            white-space: pre-wrap; /* 保留换行和空格 */
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin: 0 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            order: 2;
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Rich Content */
+        .rich-content {
+            margin-top: 1rem;
+        }
+
+        .rich-content img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* Flight List */
+        .flight-list {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .flight-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+
+        .flight-item:last-child {
+            border-bottom: none;
+        }
+
+        .flight-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .flight-number {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .flight-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        /* Form */
+        .message-form {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-field {
+            margin-bottom: 1rem;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .form-button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .form-button.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .form-button.secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        /* Suggestions */
+        .suggestions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding: 0 2rem;
+        }
+
+        .suggestion-chip {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #e5e7eb;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #374151;
+        }
+
+        .suggestion-chip:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 推荐区域 */
+        .recommendations-area {
+            padding: 1rem 2rem;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .recommendation-section {
+            margin-bottom: 1.5rem;
+            min-height: 60px;
+        }
+
+        .recommendation-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .recommendation-section.loading .recommendation-chips {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+        }
+
+        .recommendation-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recommendation-title .icon {
+            font-size: 1.2rem;
+        }
+
+        .recommendation-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .recommendation-chip {
+            padding: 0.5rem 1rem;
+            background: rgba(102, 126, 234, 0.05);
+            border: 1.5px solid #e5e7eb;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #4b5563;
+        }
+
+        .recommendation-chip:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+        }
+
+        .recommendation-chip.business {
+            background: rgba(251, 191, 36, 0.05);
+        }
+
+        .recommendation-chip.business:hover {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-color: #fbbf24;
+        }
+
+        /* 推荐加载动画 */
+        .recommendation-loading {
+            display: inline-flex;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        .recommendation-loading-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #9ca3af;
+            animation: recommendLoading 1.4s infinite;
+        }
+
+        .recommendation-loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .recommendation-loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes recommendLoading {
+            0%, 60%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            30% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        .recommendation-placeholder {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 1.5rem 2rem;
+            background: white;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 24px;
+            font-size: 1rem;
+            resize: none;
+            max-height: 120px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 1rem;
+            bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-button {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .icon-button:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .send-button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-button:hover {
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading */
+        .typing-indicator {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            align-items: center;
+        }
+
+        .typing-text {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+            animation: fadeInOut 2s infinite;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            animation: typing 1.4s infinite ease-in-out;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0) scale(1);
+                opacity: 0.6;
+            }
+            30% {
+                transform: translateY(-12px) scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Image Preview */
+        .image-preview {
+            position: relative;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        .image-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .image-preview .remove-image {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ef4444;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 12px;
+            border-left: 4px solid #ef4444;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #6b7280;
+        }
+
+        .welcome-screen h2 {
+            font-size: 1.8rem;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-screen p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .quick-questions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .quick-question {
+            padding: 1.5rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-question:hover {
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .quick-question-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .quick-question-text {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-container {
+                margin: 1rem;
+                height: calc(100vh - 160px);
+                border-radius: 16px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .quick-questions {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Transfer to Human */
+        .transfer-notice {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+        }
+
+        .transfer-icon {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>✈️ 宝安小飞 - 智能客服助手</h1>
+            <div class="status-indicator" id="statusIndicator">
+                <div class="status-dot"></div>
+                <span id="statusText">已连接</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="messages-area" id="messagesArea">
+            <div class="welcome-screen" id="welcomeScreen">
+                <h2>👋 您好！我是宝安小飞</h2>
+                <p>我可以帮您查询航班信息、办理业务、解答疑问等。请问有什么可以帮您？</p>
+                
+                <div class="quick-questions">
+                    <div class="quick-question" onclick="sendQuickQuestion('查询航班动态')">
+                        <div class="quick-question-icon">✈️</div>
+                        <div class="quick-question-text">查询航班动态</div>
+                    </div>
+                    <div class="quick-question" onclick="sendQuickQuestion('行李规定')">
+                        <div class="quick-question-icon">🧳</div>
+                        <div class="quick-question-text">行李规定</div>
+                    </div>
+                    <div class="quick-question" onclick="sendQuickQuestion('值机办理')">
+                        <div class="quick-question-icon">🎫</div>
+                        <div class="quick-question-text">值机办理</div>
+                    </div>
+                    <div class="quick-question" onclick="sendQuickQuestion('机场服务设施')">
+                        <div class="quick-question-icon">🏢</div>
+                        <div class="quick-question-text">机场服务设施</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="suggestions" id="suggestionsArea" style="display: none;"></div>
+
+        <!-- 推荐区域 -->
+        <div class="recommendations-area" id="recommendationsArea">
+            <div class="recommendation-section" id="questionRecommendSection">
+                <div class="recommendation-title">
+                    <span class="icon">💡</span>
+                    <span>猜你想问</span>
+                </div>
+                <div class="recommendation-chips" id="questionRecommendChips">
+                    <div class="recommendation-placeholder">开始聊天后会显示相关问题推荐</div>
+                </div>
+            </div>
+            <div class="recommendation-section" id="businessRecommendSection">
+                <div class="recommendation-title">
+                    <span class="icon">🎯</span>
+                    <span>猜你想办</span>
+                </div>
+                <div class="recommendation-chips" id="businessRecommendChips">
+                    <div class="recommendation-placeholder">开始聊天后会显示相关业务推荐</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        class="message-input" 
+                        id="messageInput" 
+                        placeholder="输入您的问题..."
+                        rows="1"
+                        onkeydown="handleKeyPress(event)"
+                    ></textarea>
+                    <div class="input-actions">
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+                        <button class="icon-button" onclick="document.getElementById('imageInput').click()" title="上传图片">
+                            📷
+                        </button>
+                    </div>
+                    <div id="imagePreviewContainer"></div>
+                </div>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <span>发送</span>
+                    <span>📤</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let ws = null;
+        let currentThreadId = generateThreadId();
+        let currentUserId = generateUserId();
+        let selectedImage = null;
+        let isConnected = false;
+        let currentMessageElement = null; // 当前正在接收的消息元素
+        let lastUserQuery = ''; // 最后一次用户输入的问题
+        let lastUserImage = null; // 最后一次用户上传的图片
+
+        // 生成唯一ID
+        function generateThreadId() {
+            return 'thread_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function generateUserId() {
+            return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 初始化WebSocket连接
+        function initWebSocket() {
+            const wsUrl = `ws://192.168.0.105:8081/api/v1/airport-assistant/chat/ws`;
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('✅ WebSocket 连接成功');
+                isConnected = true;
+                updateStatus(true);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const response = JSON.parse(event.data);
+                    handleWebSocketMessage(response);
+                } catch (error) {
+                    console.error('❌ 解析消息失败:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('❌ WebSocket 错误:', error);
+                updateStatus(false);
+            };
+
+            ws.onclose = () => {
+                console.log('🔌 WebSocket 连接关闭');
+                isConnected = false;
+                updateStatus(false);
+                // 3秒后自动重连
+                setTimeout(initWebSocket, 3000);
+            };
+        }
+
+        // 更新连接状态
+        function updateStatus(connected) {
+            const indicator = document.getElementById('statusIndicator');
+            const text = document.getElementById('statusText');
+            
+            if (connected) {
+                indicator.classList.remove('disconnected');
+                text.textContent = '已连接';
+            } else {
+                indicator.classList.add('disconnected');
+                text.textContent = '连接断开';
+            }
+        }
+
+        // 处理WebSocket消息
+        function handleWebSocketMessage(response) {
+            console.log('📨 收到消息:', response);
+
+            const { event, data } = response;
+
+            switch (event) {
+                case 'start':
+                    // AI开始回复，移除typing indicator
+                    removeTypingIndicator();
+                    // 创建新的消息气泡用于接收流式文本
+                    createStreamingMessage();
+                    break;
+                
+                case 'text':
+                    // 确保typing indicator已移除
+                    removeTypingIndicator();
+                    // 追加文本到当前消息气泡
+                    appendToStreamingMessage(data.content.text);
+                    break;
+                
+                case 'rich_content':
+                    removeTypingIndicator();
+                    finalizeStreamingMessage();
+                    addRichContentMessage(data.content);
+                    break;
+                
+                case 'flight_list':
+                    removeTypingIndicator();
+                    finalizeStreamingMessage();
+                    addFlightListMessage(data.content);
+                    break;
+                
+                case 'form':
+                    removeTypingIndicator();
+                    finalizeStreamingMessage();
+                    addFormMessage(data.content);
+                    break;
+                
+                case 'transfer_to_human':
+                    removeTypingIndicator();
+                    finalizeStreamingMessage();
+                    addTransferMessage(data.content.text);
+                    break;
+                
+                case 'end':
+                    removeTypingIndicator();
+                    finalizeStreamingMessage();
+                    if (data.content.suggestions && data.content.suggestions.length > 0) {
+                        showSuggestions(data.content.suggestions);
+                    }
+                    // 获取推荐内容
+                    fetchRecommendations();
+                    enableInput();
+                    break;
+                
+                case 'error':
+                    removeTypingIndicator();
+                    finalizeStreamingMessage();
+                    addErrorMessage(data.content.error_message);
+                    enableInput();
+                    break;
+            }
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message && !selectedImage) {
+                return;
+            }
+
+            if (!isConnected) {
+                alert('连接已断开，请稍后重试');
+                return;
+            }
+
+            // 隐藏欢迎屏幕
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            if (welcomeScreen) {
+                welcomeScreen.style.display = 'none';
+            }
+
+            // 保存用户输入用于推荐
+            lastUserQuery = message;
+            lastUserImage = selectedImage;
+
+            // 显示用户消息
+            if (message) {
+                addMessage('user', message);
+            }
+
+            // 如果有图片，显示图片预览
+            if (selectedImage) {
+                addImageMessage('user', selectedImage);
+            }
+
+            // 显示推荐加载状态
+            showRecommendationLoading();
+
+            // 显示输入中状态
+            addTypingIndicator();
+
+            // 重置流式消息状态
+            currentMessageElement = null;
+
+            // 构建请求数据
+            const requestData = {
+                thread_id: currentThreadId,
+                user_id: currentUserId,
+                query: message,
+                image: selectedImage,
+                metadata: {
+                    query_source: "网页",
+                    query_device: "电脑",
+                    Is_translate: false,
+                    Is_emotion: false
+                }
+            };
+
+            // 发送WebSocket消息
+            ws.send(JSON.stringify(requestData));
+
+            // 清空输入
+            input.value = '';
+            selectedImage = null;
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+            
+            // 禁用输入直到收到响应
+            disableInput();
+            
+            // 自动调整输入框高度
+            input.style.height = 'auto';
+        }
+
+        // 添加消息到聊天区域
+        function addMessage(sender, text) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 添加图片消息
+        function addImageMessage(sender, imageData) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            const img = document.createElement('img');
+            img.src = imageData;
+            img.style.maxWidth = '100%';
+            img.style.borderRadius = '8px';
+            
+            content.appendChild(img);
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 添加富文本消息
+        function addRichContentMessage(content) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+
+            // 添加文本
+            const textDiv = document.createElement('div');
+            textDiv.textContent = content.text;
+            messageContent.appendChild(textDiv);
+
+            // 添加图片
+            if (content.images && content.images.length > 0) {
+                const richContent = document.createElement('div');
+                richContent.className = 'rich-content';
+                
+                content.images.forEach(img => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = img.data;
+                    imgElement.alt = img.alt_text || '图片';
+                    richContent.appendChild(imgElement);
+                });
+                
+                messageContent.appendChild(richContent);
+            }
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 添加航班列表消息
+        function addFlightListMessage(content) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+
+            // 添加标题
+            const title = document.createElement('div');
+            title.innerHTML = `<strong>${content.title}</strong>`;
+            messageContent.appendChild(title);
+
+            // 添加航班列表
+            const flightList = document.createElement('div');
+            flightList.className = 'flight-list';
+
+            content.flights.forEach(flight => {
+                const flightItem = document.createElement('div');
+                flightItem.className = 'flight-item';
+                
+                // 格式化时间
+                const formatTime = (timeStr) => {
+                    if (!timeStr) return '--';
+                    try {
+                        const date = new Date(timeStr);
+                        return date.toLocaleString('zh-CN', { 
+                            month: '2-digit', 
+                            day: '2-digit', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                    } catch {
+                        return timeStr;
+                    }
+                };
+                
+                // 获取实际起飞/到达时间（优先显示实际时间，其次变更时间，最后计划时间）
+                const departureTime = flight.actual_departure_time || 
+                                    flight.changed_departure_time || 
+                                    flight.scheduled_departure_time;
+                const arrivalTime = flight.actual_arrival_time || 
+                                  flight.changed_arrival_time || 
+                                  flight.scheduled_arrival_time;
+                
+                // 构建HTML
+                let html = `
+                    <div class="flight-number">
+                        ${flight.flight_number}
+                        ${flight.shared_flight_number ? `/ ${flight.shared_flight_number}` : ''}
+                    </div>
+                    <div class="flight-details">
+                        <div><strong>航空公司:</strong> ${flight.airline_company || '--'}</div>
+                        <div><strong>机型:</strong> ${flight.aircraft_type || '--'}</div>
+                        <div><strong>起飞:</strong> ${flight.departure_station || '--'}</div>
+                        <div><strong>目的地:</strong> ${flight.destination_station || '--'}</div>
+                        <div><strong>起飞时间:</strong> ${formatTime(departureTime)}</div>
+                        <div><strong>到达时间:</strong> ${formatTime(arrivalTime)}</div>
+                `;
+                
+                // 显示航站楼信息
+                if (flight.departure_terminal) {
+                    html += `<div><strong>起飞航站楼:</strong> ${flight.departure_terminal}</div>`;
+                }
+                if (flight.destination_terminal) {
+                    html += `<div><strong>到达航站楼:</strong> ${flight.destination_terminal}</div>`;
+                }
+                
+                // 显示登机口
+                if (flight.boarding_gate) {
+                    html += `<div><strong>登机口:</strong> ${flight.boarding_gate}</div>`;
+                }
+                
+                // 显示值机柜台
+                if (flight.checkin_counter) {
+                    html += `<div><strong>值机柜台:</strong> ${flight.checkin_counter}</div>`;
+                }
+                
+                // 显示行李转盘
+                if (flight.baggage_carousel) {
+                    html += `<div><strong>行李转盘:</strong> ${flight.baggage_carousel}</div>`;
+                }
+                
+                // 显示航班状态
+                if (flight.flight_status || flight.abnormal_status) {
+                    const status = flight.abnormal_status || flight.flight_status;
+                    html += `<div><strong>状态:</strong> <span style="color: ${flight.abnormal_status ? '#ef4444' : '#10b981'}">${status}</span></div>`;
+                }
+                
+                // 显示异常原因
+                if (flight.abnormal_reason) {
+                    html += `<div style="color: #ef4444; grid-column: 1 / -1;"><strong>异常原因:</strong> ${flight.abnormal_reason}</div>`;
+                }
+                
+                html += '</div>';
+                
+                flightItem.innerHTML = html;
+                flightList.appendChild(flightItem);
+            });
+
+            messageContent.appendChild(flightList);
+
+            if (content.action_hint) {
+                const hint = document.createElement('div');
+                hint.style.marginTop = '0.5rem';
+                hint.style.fontSize = '0.9rem';
+                hint.style.color = '#6b7280';
+                hint.textContent = content.action_hint;
+                messageContent.appendChild(hint);
+            }
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 添加表单消息
+        function addFormMessage(content) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+
+            const form = document.createElement('div');
+            form.className = 'message-form';
+
+            // 标题
+            const title = document.createElement('h3');
+            title.textContent = content.title;
+            title.style.marginBottom = '1rem';
+            form.appendChild(title);
+
+            // 描述
+            if (content.description) {
+                const desc = document.createElement('p');
+                desc.textContent = content.description;
+                desc.style.marginBottom = '1rem';
+                desc.style.color = '#6b7280';
+                form.appendChild(desc);
+            }
+
+            // 表单字段
+            content.fields.forEach(field => {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'form-field';
+
+                const label = document.createElement('label');
+                label.textContent = field.label + (field.required ? ' *' : '');
+                fieldDiv.appendChild(label);
+
+                let input;
+                if (field.type === 'select') {
+                    input = document.createElement('select');
+                    field.options.forEach(option => {
+                        const opt = document.createElement('option');
+                        opt.value = option.value;
+                        opt.textContent = option.label;
+                        input.appendChild(opt);
+                    });
+                } else if (field.type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.rows = 3;
+                } else {
+                    input = document.createElement('input');
+                    input.type = field.type;
+                }
+
+                input.id = field.name;
+                input.name = field.name;
+                input.placeholder = field.placeholder || '';
+                if (field.required) input.required = true;
+
+                fieldDiv.appendChild(input);
+                form.appendChild(fieldDiv);
+            });
+
+            // 按钮
+            const buttonsDiv = document.createElement('div');
+            buttonsDiv.className = 'form-buttons';
+
+            content.buttons.forEach(button => {
+                const btn = document.createElement('button');
+                btn.className = `form-button ${button.type}`;
+                btn.textContent = button.label;
+                btn.onclick = () => handleFormAction(button.action, content.form_id);
+                buttonsDiv.appendChild(btn);
+            });
+
+            form.appendChild(buttonsDiv);
+            messageContent.appendChild(form);
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 添加转人工消息
+        function addTransferMessage(text) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+
+            const transferNotice = document.createElement('div');
+            transferNotice.className = 'transfer-notice';
+            transferNotice.innerHTML = `
+                <div class="transfer-icon">👨‍💼</div>
+                <div>${text}</div>
+            `;
+
+            content.appendChild(transferNotice);
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 添加错误消息
+        function addErrorMessage(errorText) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '⚠️';
+
+            const content = document.createElement('div');
+            content.className = 'message-content error-message';
+            content.textContent = errorText;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 显示输入中指示器
+        function addTypingIndicator() {
+            const messagesArea = document.getElementById('messagesArea');
+            const existingIndicator = document.getElementById('typingIndicator');
+            
+            if (existingIndicator) return;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'typingIndicator';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <span class="typing-text">正在思考</span>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            
+            content.appendChild(typingDiv);
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesArea.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        // 移除输入中指示器
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        // 创建流式消息气泡
+        function createStreamingMessage() {
+            // 如果已经有正在接收的消息，先结束它
+            if (currentMessageElement) {
+                finalizeStreamingMessage();
+            }
+
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'streamingMessage';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = ''; // 初始为空
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesArea.appendChild(messageDiv);
+
+            currentMessageElement = content;
+            scrollToBottom();
+        }
+
+        // 追加文本到流式消息
+        function appendToStreamingMessage(text) {
+            if (!currentMessageElement) {
+                createStreamingMessage();
+            }
+            
+            currentMessageElement.textContent += text;
+            scrollToBottom();
+        }
+
+        // 结束流式消息
+        function finalizeStreamingMessage() {
+            if (currentMessageElement) {
+                const streamingMsg = document.getElementById('streamingMessage');
+                if (streamingMsg) {
+                    streamingMsg.removeAttribute('id');
+                }
+                currentMessageElement = null;
+            }
+        }
+
+        // 显示建议
+        function showSuggestions(suggestions) {
+            const suggestionsArea = document.getElementById('suggestionsArea');
+            suggestionsArea.innerHTML = '';
+            
+            suggestions.forEach(suggestion => {
+                const chip = document.createElement('div');
+                chip.className = 'suggestion-chip';
+                chip.textContent = suggestion;
+                chip.onclick = () => {
+                    document.getElementById('messageInput').value = suggestion;
+                    sendMessage();
+                    suggestionsArea.style.display = 'none';
+                };
+                suggestionsArea.appendChild(chip);
+            });
+            
+            suggestionsArea.style.display = 'flex';
+        }
+
+        // 处理图片选择
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedImage = e.target.result;
+                
+                // 显示预览
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                previewContainer.innerHTML = `
+                    <div class="image-preview">
+                        <img src="${selectedImage}" alt="预览">
+                        <button class="remove-image" onclick="removeImage()">×</button>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 移除图片
+        function removeImage() {
+            selectedImage = null;
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+            document.getElementById('imageInput').value = '';
+        }
+
+        // 快捷问题
+        function sendQuickQuestion(question) {
+            document.getElementById('messageInput').value = question;
+            sendMessage();
+        }
+
+        // 处理表单操作
+        function handleFormAction(action, formId) {
+            console.log('表单操作:', action, formId);
+            // 这里可以实现表单提交逻辑
+            alert('表单功能开发中...');
+        }
+
+        // 禁用/启用输入
+        function disableInput() {
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendButton').disabled = true;
+        }
+
+        function enableInput() {
+            document.getElementById('messageInput').disabled = false;
+            document.getElementById('sendButton').disabled = false;
+        }
+
+        // 滚动到底部
+        function scrollToBottom() {
+            const messagesArea = document.getElementById('messagesArea');
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // 处理回车键
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 自动调整输入框高度
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // 获取推荐内容
+        async function fetchRecommendations() {
+            // 同时获取问题推荐和业务推荐
+            await Promise.all([
+                fetchQuestionRecommendations(),
+                fetchBusinessRecommendations()
+            ]);
+        }
+
+        // 获取问题推荐
+        async function fetchQuestionRecommendations() {
+            try {
+                const requestData = {
+                    thread_id: currentThreadId,
+                    user_id: currentUserId,
+                    query: lastUserQuery || undefined,
+                    image: lastUserImage ? {
+                        filename: "user_image.jpg",
+                        content_type: "image/jpeg",
+                        data: lastUserImage
+                    } : undefined,
+                    metadata: {
+                        query_source: "网页",
+                        query_device: "电脑",
+                        Is_translate: false,
+                        Is_emotion: false
+                    }
+                };
+
+                const response = await fetch('http://192.168.0.105:8081/api/v1/question-recommend/questions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.ret_code === '000000' && data.item.recommended_questions) {
+                        showQuestionRecommendations(data.item.recommended_questions);
+                    } else {
+                        showQuestionRecommendations([]);
+                    }
+                } else {
+                    console.error('问题推荐请求失败:', response.status);
+                    showQuestionRecommendations([]);
+                }
+            } catch (error) {
+                console.error('获取问题推荐失败:', error);
+                showQuestionRecommendations([]);
+            }
+        }
+
+        // 获取业务推荐
+        async function fetchBusinessRecommendations() {
+            try {
+                const requestData = {
+                    thread_id: currentThreadId,
+                    user_id: currentUserId,
+                    query: lastUserQuery || undefined,
+                    image: lastUserImage ? {
+                        filename: "user_image.jpg",
+                        content_type: "image/jpeg",
+                        data: lastUserImage
+                    } : undefined,
+                    metadata: {
+                        query_source: "网页",
+                        query_device: "电脑",
+                        Is_translate: false,
+                        Is_emotion: false
+                    }
+                };
+
+                const response = await fetch('http://192.168.0.105:8081/api/v1/business-recommend/business', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.ret_code === '000000' && data.item.recommended_business) {
+                        showBusinessRecommendations(data.item.recommended_business);
+                    } else {
+                        showBusinessRecommendations([]);
+                    }
+                } else {
+                    console.error('业务推荐请求失败:', response.status);
+                    showBusinessRecommendations([]);
+                }
+            } catch (error) {
+                console.error('获取业务推荐失败:', error);
+                showBusinessRecommendations([]);
+            }
+        }
+
+        // 显示问题推荐
+        function showQuestionRecommendations(questions) {
+            const section = document.getElementById('questionRecommendSection');
+            const chipsContainer = document.getElementById('questionRecommendChips');
+            
+            // 移除加载状态
+            section.classList.remove('loading');
+            
+            if (!questions || questions.length === 0) {
+                chipsContainer.innerHTML = '<div class="recommendation-placeholder">暂无推荐问题</div>';
+                return;
+            }
+            
+            chipsContainer.innerHTML = '';
+            
+            questions.forEach(question => {
+                const chip = document.createElement('div');
+                chip.className = 'recommendation-chip';
+                chip.textContent = question;
+                chip.onclick = () => {
+                    document.getElementById('messageInput').value = question;
+                    sendMessage();
+                };
+                chipsContainer.appendChild(chip);
+            });
+        }
+
+        // 显示业务推荐
+        function showBusinessRecommendations(businesses) {
+            const section = document.getElementById('businessRecommendSection');
+            const chipsContainer = document.getElementById('businessRecommendChips');
+            
+            // 移除加载状态
+            section.classList.remove('loading');
+            
+            if (!businesses || businesses.length === 0) {
+                chipsContainer.innerHTML = '<div class="recommendation-placeholder">暂无推荐业务</div>';
+                return;
+            }
+            
+            chipsContainer.innerHTML = '';
+            
+            businesses.forEach(business => {
+                const chip = document.createElement('div');
+                chip.className = 'recommendation-chip business';
+                chip.textContent = business;
+                chip.onclick = () => {
+                    document.getElementById('messageInput').value = business;
+                    sendMessage();
+                };
+                chipsContainer.appendChild(chip);
+            });
+        }
+
+        // 显示推荐加载状态
+        function showRecommendationLoading() {
+            const questionSection = document.getElementById('questionRecommendSection');
+            const businessSection = document.getElementById('businessRecommendSection');
+            const questionChips = document.getElementById('questionRecommendChips');
+            const businessChips = document.getElementById('businessRecommendChips');
+            
+            // 添加加载状态
+            questionSection.classList.add('loading');
+            businessSection.classList.add('loading');
+            
+            // 显示加载动画
+            const loadingHTML = '<div class="recommendation-loading"><div class="recommendation-loading-dot"></div><div class="recommendation-loading-dot"></div><div class="recommendation-loading-dot"></div></div>';
+            questionChips.innerHTML = loadingHTML;
+            businessChips.innerHTML = loadingHTML;
+        }
+
+        // 页面加载时初始化WebSocket
+        window.addEventListener('load', () => {
+            initWebSocket();
+        });
+
+        // 页面卸载时关闭WebSocket
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>
+

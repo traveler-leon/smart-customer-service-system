@@ -90,7 +90,7 @@ async def get_conversation_history(
     run_id: Optional[str] = Query(None, description="会话ID"),
     application_id: Optional[str] = Query(None, description="应用ID"),
     expert_verified: Optional[bool] = Query(None, description="是否专家校验"),
-    limit: int = Query(default=50, ge=1, le=200, description="返回数量限制"),
+    limit: int = Query(default=50, ge=1, le=10000000, description="返回数量限制"),
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
 ):

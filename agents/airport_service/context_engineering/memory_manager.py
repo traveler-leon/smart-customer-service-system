@@ -341,6 +341,10 @@ class MemoryManager:
                     "retrieval_score": metadata.get('retrieval_score', 0.0),
                     "retrieval_images": metadata.get('retrieval_images', ''),
                     "retrieval_query_list": metadata.get('retrieval_query_list', []),
+                    "pre_retrieval_content": metadata.get('pre_retrieval_content', ''),
+                    "pre_retrieval_source": metadata.get('pre_retrieval_source', ''),
+                    "pre_retrieval_score": metadata.get('pre_retrieval_score', 0.0),
+                    "pre_retrieval_query_list": metadata.get('pre_retrieval_query_list', []),
                     "created_at": memory.get('created_at'),
                     "updated_at": memory.get('updated_at')
                 }

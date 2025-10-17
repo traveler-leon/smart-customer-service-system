@@ -205,7 +205,7 @@ async def airport_knowledge_query2docs(user_question:str,messages:List[AnyMessag
     
     # 重排模型
     if len(results) > 0 and RERANKER_MODEL and RERANKER_BASE_URL:
-        results, max_score = await rerank_results(results, user_question, RERANKER_MODEL, RERANKER_BASE_URL, RERANKER_API_KEY, KB_TOP_K)
+        results, max_score = await rerank_results(results, query_list[1], RERANKER_MODEL, RERANKER_BASE_URL, RERANKER_API_KEY, KB_TOP_K)
         # text = "\n\n".join(f"第{i+1}个与用户问题相关的文档内容如下：\n{doc['content']}" for i, doc in enumerate(results))
         text = "\n\n".join(f"{doc['content']}" for i, doc in enumerate(results))
         logger.info(f"知识库检索成功，最高分数: {max_score}")
